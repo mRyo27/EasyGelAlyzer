@@ -247,7 +247,7 @@ __marimo__/
 # Releases folder (do not upload)
 Releases/
 
-# Build script for release
+# Build script for release(this file only for developer)
 exe_build for Release.bat
 
 # Shortcuts
