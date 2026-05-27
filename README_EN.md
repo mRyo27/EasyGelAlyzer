@@ -182,13 +182,13 @@ Three sheets are generated:
 
 ### Annotated Image
 
-Four layout options are available:
-1. Annotated gel image only
-2. Gel image + results table
-3. Gel image + standard curve graph
-4. Gel image + table + graph (combined)
+You　can select and output from four different layouts.
 
-Grayscale mode and margin trimming options are also available.
+Black and white mode and margin trimming options are also available.
+
+Start lines, end lines, molecular weight markers, sample markers, and labels can be excluded from the output image by unchecking the checkboxes in the Layers tab.
+
+The eye icon in the Layers tab toggles the display on the operation screen and does not affect the output image.
 
 ---
 
