@@ -1,6 +1,6 @@
 # EasyGelAlyzer
 
-**EasyGelAlyzer** is a lightweight desktop application for quantitative analysis of gel electrophoresis images. It supports both protein (SDS-PAGE) and DNA gel modes, providing band position measurement, Rf value calculation, standard curve fitting, and molecular weight (or fragment size) estimation — all within a single GUI.
+**EasyGelAlyzer** is a lightweight desktop application for quantitative analysis of gel electrophoresis images. It supports both protein (SDS-PAGE) and DNA gel modes, providing band position measurement, Rf value calculation, standard curve fitting, and molecular weight (or bp size) estimation — all within a single GUI.
 
 ---
 
