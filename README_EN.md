@@ -182,7 +182,7 @@ Three sheets are generated:
 
 ### Annotated Image
 
-You　can select and output from four different layouts.
+You can select and output from four different layouts.
 
 Black and white mode and margin trimming options are also available.
 
