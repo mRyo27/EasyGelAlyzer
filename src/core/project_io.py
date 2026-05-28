@@ -26,7 +26,7 @@ class ProjectIOMixin:
 
     def save_project(self):
         """Save project with dialog only when needed.
-        """Save As dialog (always show) used by Save As menu and Ctrl+Shift+S.
+        Save As dialog (always show) used by Save As menu and Ctrl-Shift-S.
         If a project is already saved and there are no unsaved changes, we still prompt the user.
         """
         if self.original_image is None:
@@ -283,6 +283,5 @@ class ProjectIOMixin:
             self.lbl_status.config(text="")
 
         except Exception as e:
-            messagebox.showerror(
-                T('err_title'),
+            messagebox.showerror(T('err_title'), T('err_project_load') + str(e))
 
