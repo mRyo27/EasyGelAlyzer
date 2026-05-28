@@ -2,14 +2,39 @@ from common import *
 
 
 class ProjectIOMixin:
+    def _has_unsaved_changes(self):
+        """Return True if current project state differs from last saved state."""
+        current = {
+            'start_line_y': self.start_line_y,
+            'end_line_y': self.end_line_y,
+            'markers': [m.copy() for m in self.markers],
+            'samples': [s.copy() for s in self.samples],
+            'lane_labels': [l.copy() for l in self.lane_labels],
+            'lane_label_font_size': self.lane_label_font_size,
+            'calibration_a': self.calibration_a,
+            'calibration_b': self.calibration_b,
+            'calibration_r2': self.calibration_r2,
+            'brightness_val': self.brightness_val,
+            'contrast_val': self.contrast_val,
+            'grayscale': self.grayscale,
+            'marker_visible': self.marker_visible,
+            'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
+            'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
+        }
+        saved = getattr(self, '_saved_state', {})
+        return current != saved
+
     def save_project(self):
-        """計測データをJSONプロジェクトファイルとして保存する (Save As)"""
+        """Save project with dialog only when needed.
+        """Save As dialog (always show) used by Save As menu and Ctrl+Shift+S.
+        If a project is already saved and there are no unsaved changes, we still prompt the user.
+        """
         if self.original_image is None:
             messagebox.showwarning(
                 T('warn_title'), T('warn_no_image'))
             return False
 
-        # プロジェクトの保存ダイアログを表示し、path を取得
+        # Show Save As dialog
         path = filedialog.asksaveasfilename(
             title=T('dlg_save_project'),
             defaultextension=".gelproj",
@@ -17,8 +42,7 @@ class ProjectIOMixin:
         )
         if not path:
             return False
-
-        # Encode image and write project
+        # Encode image and write project (same as previous implementation)
         try:
             buf = io.BytesIO()
             self.original_image.save(buf, format='PNG')
@@ -77,7 +101,7 @@ class ProjectIOMixin:
             return False
 
     def save_project_quick(self):
-        """Ctrl+S shortcut: save to existing project file if available, otherwise invoke Save As dialog."""
+        """Ctrl+S shortcut: quick overwrite if project exists, otherwise fall back to Save As."""
         path = getattr(self, "project_path", None)
         if path:
             try:
@@ -134,6 +158,7 @@ class ProjectIOMixin:
                 messagebox.showerror(T('err_title'), T('err_project_save') + str(e))
                 return False
         else:
+            # No existing project, fall back to Save As dialog
             return self.save_project()
 
     def load_project(self):
@@ -165,8 +190,7 @@ class ProjectIOMixin:
                     T('warn_title'),
                     "This project was saved with a newer version of EasyGelAlyzer.\n"
                     "Some data may not load correctly."
-                    if get_language() == 'en' else
-T('project_version_warn'))
+                    if get_language() == 'en' else T('project_version_warn'))
 
             # モード切替が必要な場合
             proj_mode = project.get('mode', 'protein')
@@ -255,10 +279,10 @@ T('project_version_warn'))
                 'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
                 'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
             }
+            # Clear initial status message after a project is loaded
+            self.lbl_status.config(text="")
 
         except Exception as e:
             messagebox.showerror(
                 T('err_title'),
-                T('err_project_load') + str(e))
-
 

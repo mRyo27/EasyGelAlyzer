@@ -532,10 +532,13 @@ class MainWindowMixin:
             self._edit_menu.entryconfig(0, label=T('menu_switch_mode'))
             self._edit_menu.entryconfig(1, label=T('menu_undo'))
             self._edit_menu.entryconfig(2, label=T('menu_redo'))
-            # index 3 = separator
+            # Save As and Overwrite Save entries
+            self._edit_menu.entryconfig(3, label=T('menu_save_as'))
+            self._edit_menu.entryconfig(4, label=T('menu_save'))
+            # index 5 = separator
             # 言語切替ボタンは常に英語表記のみ
             lang_label = 'Switch to English' if get_language() == 'ja' else 'Switch to Japanese'
-            self._edit_menu.entryconfig(4, label=lang_label)
+            self._edit_menu.entryconfig(6, label=lang_label)
         except Exception:
             pass
 
