@@ -1,0 +1,26 @@
+Patch Update（パッチアップデート）
+- プロジェクト保存確認ダイアログの不具合を修正
+アプリ終了時、すでにプロジェクトが保存されている場合でも保存確認ダイアログが表示されてしまう問題を修正しました。
+保存後に変更が加えられている場合のみ、ダイアログが表示されます。
+- 翻訳バグの修正
+マイナーアップデートに伴い発生していた一部文言の翻訳不具合を修正しました。
+
+Minor Update（マイナーアップデート）
+- 上書き保存機能の追加（日本語・英語対応）
+既存プロジェクトを同名で保存し直す「上書き保存」機能を追加しました。
+- 上書き保存のショートカットを追加
+よりスムーズに作業できるよう、上書き保存用のショートカットキーを追加しました。
+
+🌍 English Version (Polished Patch Notes)
+Patch Update
+- Fixed an issue with the project save confirmation dialog
+A bug was fixed where the save confirmation dialog appeared on exit even when the project had already been saved.
+The dialog will now only appear if there are unsaved changes.
+- Fixed translation issues
+Resolved several minor translation bugs introduced in the previous minor update.
+
+Minor Update
+- Added “Overwrite Save” feature (Japanese & English supported)
+You can now overwrite an existing project with the same file name.
+- Added shortcut key for Overwrite Save
+A new shortcut has been added to streamline the saving workflow
