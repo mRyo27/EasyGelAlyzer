@@ -292,7 +292,9 @@ class MainWindowMixin:
         self.root.bind("<Control-y>", lambda e: self.redo())
         # Shortcuts for load/save/export/marker
         self.root.bind("<Control-l>", lambda e: self.load_image())
-        self.root.bind("<Control-s>", lambda e: self.save_project())
+        # Ctrl+S for quick overwrite save, Ctrl+Shift+S for Save As
+        self.root.bind("<Control-s>", lambda e: self.save_project_quick())
+        self.root.bind("<Control-Shift-s>", lambda e: self.save_project())
         self.root.bind("<Control-e>", lambda e: self.export_to_excel())
         self.root.bind("<Control-i>", lambda e: self.export_annotated_image())
         self.root.bind("<Control-m>", lambda e: self.start_marker_measurement())
