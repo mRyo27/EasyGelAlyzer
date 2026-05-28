@@ -144,6 +144,30 @@ class EasyGelAlyzerApp(
 
     def on_app_close(self):
         """アプリを閉じる時の確認ダイアログを表示"""
+        # If project has been saved and no changes since save, close directly
+        if getattr(self, "_project_saved", False) and hasattr(self, "_saved_state"):
+            # Compare current relevant fields with saved state
+            current = {
+                'start_line_y': self.start_line_y,
+                'end_line_y': self.end_line_y,
+                'markers': self.markers,
+                'samples': self.samples,
+                'lane_labels': self.lane_labels,
+                'lane_label_font_size': self.lane_label_font_size,
+                'calibration_a': self.calibration_a,
+                'calibration_b': self.calibration_b,
+                'calibration_r2': self.calibration_r2,
+                'brightness_val': self.brightness_val,
+                'contrast_val': self.contrast_val,
+                'grayscale': self.grayscale,
+                'marker_visible': self.marker_visible,
+                'item_visibility': self.item_visibility,
+                'item_export_visibility': self.item_export_visibility,
+            }
+            if current == self._saved_state:
+                self.root.destroy()
+                return
+        # Fallback to original behavior: prompt if there is any unsaved work
         if self.original_image is not None and (
                 self.start_line_y is not None or self.end_line_y is not None
                 or self.markers or self.samples or self.lane_labels):
