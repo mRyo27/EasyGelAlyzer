@@ -250,5 +250,8 @@ Releases/
 # Build script for release
 exe_build for Release.bat
 
+# launcher.exe build
+launcher/
+
 # Shortcuts
 *.lnk
