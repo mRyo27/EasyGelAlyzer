@@ -10,7 +10,10 @@ class MainWindowMixin:
         self.menubar.add_cascade(label='File', menu=self._file_menu)
         self._file_menu.add_command(label=T('menu_load'), command=self.load_image)
         self._file_menu.add_separator()
-        self._file_menu.add_command(label=T('menu_save_project'), command=self.save_project)
+        # Save As (名前を付けて保存)
+        self._file_menu.add_command(label=T('menu_save_as'), command=self.save_project)
+        # Overwrite Save (上書き保存)
+        self._file_menu.add_command(label=T('menu_save'), command=self.save_project_quick)
         self._file_menu.add_command(label=T('menu_load_project'), command=self.load_project)
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_excel'), command=self.export_to_excel)
@@ -509,7 +512,8 @@ class MainWindowMixin:
         try:
             self._file_menu.entryconfig(0, label=T('menu_load'))
             # index 1 = separator
-            self._file_menu.entryconfig(2, label=T('menu_save_project'))
+            self._file_menu.entryconfig(2, label=T('menu_save_as'))
+            self._file_menu.entryconfig(3, label=T('menu_save'))
             self._file_menu.entryconfig(3, label=T('menu_load_project'))
             # index 4 = separator
             self._file_menu.entryconfig(5, label=T('menu_excel'))
