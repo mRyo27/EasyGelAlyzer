@@ -3,7 +3,7 @@ from common import *
 
 class ProjectIOMixin:
     def save_project(self):
-        """計測データをJSONプロジェクトファイルとして保存する"""
+        """計測データをJSONプロジェクトファイルとして保存する (Save As)"""
         if self.original_image is None:
             messagebox.showwarning(
                 T('warn_title'), T('warn_no_image'))
@@ -18,12 +18,11 @@ class ProjectIOMixin:
         if not path:
             return False
 
+        # Encode image and write project
         try:
-            # 画像をBase64エンコードして埋め込む
             buf = io.BytesIO()
             self.original_image.save(buf, format='PNG')
             img_b64 = __import__('base64').b64encode(buf.getvalue()).decode('ascii')
-
             project = {
                 'version': 1,
                 'mode': self.mode,
@@ -47,14 +46,13 @@ class ProjectIOMixin:
                 'item_visibility': self.item_visibility,
                 'item_export_visibility': self.item_export_visibility,
             }
-
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(project, f, ensure_ascii=False, indent=2)
 
             fname = os.path.basename(path)
             self.lbl_status.config(text=T('status_project_saved').format(path=fname))
-
-            # Save successful: record saved state for future change detection
+            # Record saved path and state for quick save
+            self.project_path = path
             self._project_saved = True
             self._saved_state = {
                 'start_line_y': self.start_line_y,
@@ -73,12 +71,70 @@ class ProjectIOMixin:
                 'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
                 'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
             }
-
+            return True
         except Exception as e:
-            messagebox.showerror(
-                T('err_title'),
-                T('err_project_save') + str(e))
+            messagebox.showerror(T('err_title'), T('err_project_save') + str(e))
             return False
+
+    def save_project_quick(self):
+        """Ctrl+S shortcut: save to existing project file if available, otherwise invoke Save As dialog."""
+        path = getattr(self, "project_path", None)
+        if path:
+            try:
+                buf = io.BytesIO()
+                self.original_image.save(buf, format='PNG')
+                img_b64 = __import__('base64').b64encode(buf.getvalue()).decode('ascii')
+                project = {
+                    'version': 1,
+                    'mode': self.mode,
+                    'image_b64': img_b64,
+                    'image_format': 'PNG',
+                    'start_line_y': self.start_line_y,
+                    'end_line_y': self.end_line_y,
+                    'markers': self.markers,
+                    'samples': [
+                        {k: v for k, v in s.items()} for s in self.samples
+                    ],
+                    'lane_labels': self.lane_labels,
+                    'lane_label_font_size': self.lane_label_font_size,
+                    'calibration_a': self.calibration_a,
+                    'calibration_b': self.calibration_b,
+                    'calibration_r2': self.calibration_r2,
+                    'brightness_val': self.brightness_val,
+                    'contrast_val': self.contrast_val,
+                    'grayscale': self.grayscale,
+                    'marker_visible': self.marker_visible,
+                    'item_visibility': self.item_visibility,
+                    'item_export_visibility': self.item_export_visibility,
+                }
+                with open(path, 'w', encoding='utf-8') as f:
+                    json.dump(project, f, ensure_ascii=False, indent=2)
+                fname = os.path.basename(path)
+                self.lbl_status.config(text=T('status_project_saved').format(path=fname))
+                self._project_saved = True
+                self._saved_state = {
+                    'start_line_y': self.start_line_y,
+                    'end_line_y': self.end_line_y,
+                    'markers': [m.copy() for m in self.markers],
+                    'samples': [s.copy() for s in self.samples],
+                    'lane_labels': [l.copy() for l in self.lane_labels],
+                    'lane_label_font_size': self.lane_label_font_size,
+                    'calibration_a': self.calibration_a,
+                    'calibration_b': self.calibration_b,
+                    'calibration_r2': self.calibration_r2,
+                    'brightness_val': self.brightness_val,
+                    'contrast_val': self.contrast_val,
+                    'grayscale': self.grayscale,
+                    'marker_visible': self.marker_visible,
+                    'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
+                    'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
+                }
+                return True
+            except Exception as e:
+                messagebox.showerror(T('err_title'), T('err_project_save') + str(e))
+                return False
+        else:
+            return self.save_project()
 
     def load_project(self):
         """プロジェクトファイルを読み込んで計測データを復元する"""
@@ -179,11 +235,8 @@ T('project_version_warn'))
             self.fit_image_to_canvas()
             self.recalculate_rf_and_sizes()
             self.update_layer_panel()
-            self.update_result_table()
-            self.calculate_calibration_curve()
-            self.redraw_canvas()
-
-            # Load successful: record saved state for future change detection
+            self.project_path = path  # Store path for quick save
+            # Save successful: record saved state for future change detection
             self._project_saved = True
             self._saved_state = {
                 'start_line_y': self.start_line_y,
