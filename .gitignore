@@ -152,6 +152,7 @@ Releases/
 >>>>>>> 57fd65b (Update: .gitignore を整理し、Launcher/launcher.py を追加)
 exe_build for Release.bat
 launcher/
+launcher/launcher.py
 *.exe
 *.dll
 *.pyd
