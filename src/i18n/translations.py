@@ -8,6 +8,14 @@ TRANSLATIONS = {
         "en": "Load Image",
         "ja": "画像読み込み"
     },
+    "menu_save_as": {
+        "en": "Save As...",
+        "ja": "名前を付けて保存..."
+    },
+    "menu_save": {
+        "en": "Save",
+        "ja": "上書き保存"
+    },
     "menu_save_project": {
         "en": "Save Project",
         "ja": "プロジェクト保存"
