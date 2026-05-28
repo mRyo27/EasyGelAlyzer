@@ -22,10 +22,14 @@ class MainWindowMixin:
         self._file_menu.add_command(label=T('menu_quit'), command=self.on_app_close)
 
         edit_menu = tk.Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label='Edit', menu=edit_menu)
+        self.menubar.add_cascade(label=T('menu_edit'), menu=edit_menu)
         edit_menu.add_command(label=T('menu_switch_mode'), command=self.switch_mode_via_menu)
         edit_menu.add_command(label=T('menu_undo'), command=self.undo)
         edit_menu.add_command(label=T('menu_redo'), command=self.redo)
+        # Save As (名前を付けて保存)
+        edit_menu.add_command(label=T('menu_save_as'), command=self.save_project)
+        # Overwrite Save (上書き保存)
+        edit_menu.add_command(label=T('menu_save'), command=self.save_project_quick)
         edit_menu.add_separator()
         _lang_btn_label = 'Switch to English' if get_language() == 'ja' else 'Switch to Japanese'
         edit_menu.add_command(label=_lang_btn_label, command=self.switch_language)
@@ -297,7 +301,7 @@ class MainWindowMixin:
         self.root.bind("<Control-l>", lambda e: self.load_image())
         # Ctrl+S for quick overwrite save, Ctrl+Shift+S for Save As
         self.root.bind("<Control-s>", lambda e: self.save_project_quick())
-        self.root.bind("<Control-Shift-s>", lambda e: self.save_project())
+        self.root.bind("<Control-Shift-S>", lambda e: self.save_project())
         self.root.bind("<Control-e>", lambda e: self.export_to_excel())
         self.root.bind("<Control-i>", lambda e: self.export_annotated_image())
         self.root.bind("<Control-m>", lambda e: self.start_marker_measurement())
@@ -514,12 +518,12 @@ class MainWindowMixin:
             # index 1 = separator
             self._file_menu.entryconfig(2, label=T('menu_save_as'))
             self._file_menu.entryconfig(3, label=T('menu_save'))
-            self._file_menu.entryconfig(3, label=T('menu_load_project'))
-            # index 4 = separator
-            self._file_menu.entryconfig(5, label=T('menu_excel'))
-            self._file_menu.entryconfig(6, label=T('menu_image'))
-            # index 7 = separator
-            self._file_menu.entryconfig(8, label=T('menu_quit'))
+            self._file_menu.entryconfig(4, label=T('menu_load_project'))
+            # index 5 = separator
+            self._file_menu.entryconfig(6, label=T('menu_excel'))
+            self._file_menu.entryconfig(7, label=T('menu_image'))
+            # index 8 = separator
+            self._file_menu.entryconfig(9, label=T('menu_quit'))
         except Exception:
             pass
 
