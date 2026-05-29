@@ -27,7 +27,7 @@
 
 ### Option A — Use a pre-built executable (recommended)
 
-Download the latest `EasyGelAlyzer_version.zip` from the [Releases](../../releases) page, extract it, and double-click `EasyGelAlyzer.exe` or the provided shortcut. No Python or additional library installation is required.
+Download the latest `EasyGelAlyzer_version.zip` from the [Releases](../../releases) page, extract it, and double-click `dirt/EasyGelAlyzer.exe` or the launcer.exe. No Python or additional library installation is required.
 
 ### Option B — Build from source
 
