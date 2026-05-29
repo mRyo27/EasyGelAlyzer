@@ -34,7 +34,7 @@
 
 ### 方法 A — ビルド済み実行ファイルを使う（推奨）
 
-[Releases](../../releases) ページから最新の `EasyGelAlyzer_バージョン.zip` をダウンロードし、解凍後、`EasyGelAlyzer.exe` か `ショートカット` をダブルクリックで起動します。Python や追加ライブラリのインストールは不要です。
+[Releases](../../releases) ページから最新の `EasyGelAlyzer_バージョン.zip` をダウンロードし、解凍後、`EasyGelAlyzer.exe` か `launcer.exe` をダブルクリックで起動します。Python や追加ライブラリのインストールは不要です。
 
 ### 方法 B — ソースコードからビルドする
 
