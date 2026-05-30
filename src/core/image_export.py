@@ -150,8 +150,8 @@ class ImageExportMixin:
             img_w, img_h = base_img.size
             font_size = max(12, int(img_h * 0.015))
             
-            # ズームスケールを考慮して、画面の見た目と相対サイズを合わせる
-            lane_label_font_size_px = max(10, int(self.lane_label_font_size / self.zoom_scale))
+            # マーカー・サンプルのフォントサイズ (font_size) を基準に、スライダーの設定比率 (fs / 9.0) でスケーリング
+            lane_label_font_size_px = max(6, int(font_size * (self.lane_label_font_size / 9.0)))
             
             font = get_japanese_font(size=font_size)
             lane_label_font = get_japanese_font(size=lane_label_font_size_px)
@@ -284,7 +284,7 @@ class ImageExportMixin:
                               else self._get_label_color(lbl_item['name']))
                         lbl_display = T('marker_node') if lbl_item['type'] == 'marker' else lbl_item['name']
                         draw.text((lx2, ll_y), lbl_display,
-                                  fill=lc, font=lane_label_font, anchor="mm")
+                                  fill=lc, font=lane_label_font, anchor="mt")
 
                 out_img.save(path)
                 messagebox.showinfo(T("ok_title"), T("ok_image"))
@@ -441,9 +441,10 @@ class ImageExportMixin:
                                      if not self.grayscale else self._annot_bw_color())
                         lbl_display = lbl['name']
                     fs = int(lbl.get('font_size', self.lane_label_font_size))
-                    lane_font_local = get_japanese_font(size=max(10, int(fs / max(self.zoom_scale, 0.01))))
+                    # マーカー・サンプルのフォントサイズ (font_size) を基準に、ラベルごとの設定比率 (fs / 9.0) でスケーリング
+                    lane_font_local = get_japanese_font(size=max(6, int(font_size * (fs / 9.0))))
                     draw.text((lx, lane_label_y), lbl_display,
-                              fill=lbl_color, font=lane_font_local, anchor="mm")
+                              fill=lbl_color, font=lane_font_local, anchor="mt")
 
             out_img.save(path)
             messagebox.showinfo(T("ok_title"), T("ok_image"))

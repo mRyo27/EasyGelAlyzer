@@ -151,9 +151,18 @@ Releases/
 =======
 >>>>>>> 57fd65b (Update: .gitignore を整理し、Launcher/launcher.py を追加)
 exe_build for Release.bat
+<<<<<<< HEAD
 launcher/
 launcher/launcher.py
 *.exe
 *.dll
 *.pyd
 *.lnk
+=======
+
+# launcher.exe build
+launcher/
+
+# Shortcuts
+*.lnk
+>>>>>>> dev

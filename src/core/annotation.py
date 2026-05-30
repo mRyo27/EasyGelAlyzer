@@ -176,7 +176,11 @@ class AnnotationMixin:
                 c_lx, _ = self.image_to_canvas_coords(lbl['x'], 0)
                 _, label_cy = self.image_to_canvas_coords(
                     0, self.start_line_y + lbl.get('drag_offset_y', -30))
-                if abs(cx - c_lx) <= 40 and abs(cy - label_cy) <= 20:
+                # anchor="n" のためテキスト上端が label_cy になる。
+                # クリック判定の中心をテキストの視覚的な中心（上端 + フォント高さ/2）に合わせる
+                fs_scaled = max(6, int(lbl.get('font_size', self.lane_label_font_size) * self.zoom_scale))
+                label_center_cy = label_cy + fs_scaled / 2
+                if abs(cx - c_lx) <= 40 and abs(cy - label_center_cy) <= fs_scaled:
                     self.active_mode = 'drag_lane_label'
                     self.drag_target = lbl['id']
                     return
