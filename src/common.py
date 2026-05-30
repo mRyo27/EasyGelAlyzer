@@ -1,15 +1,14 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog, simpledialog, ttk
-from PIL import Image, ImageTk, ImageDraw, ImageEnhance, ImageOps, ImageFont
+from tkinter import messagebox, filedialog, ttk
+from PIL import Image, ImageTk, ImageDraw, ImageEnhance, ImageFont
 import numpy as np
-import unicodedata
+
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import openpyxl
-from openpyxl.drawing.image import Image as OpenpyxlImage
 import io
 import os
 import math
@@ -18,7 +17,7 @@ import time
 from version import VERSION
 import json
 import sys
-import platform
+
 import ctypes
 
 # Optional drag & drop support: tkinterdnd2 may not be installed in all environments.
