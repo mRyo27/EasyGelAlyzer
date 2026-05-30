@@ -284,7 +284,7 @@ class ImageExportMixin:
                               else self._get_label_color(lbl_item['name']))
                         lbl_display = T('marker_node') if lbl_item['type'] == 'marker' else lbl_item['name']
                         draw.text((lx2, ll_y), lbl_display,
-                                  fill=lc, font=lane_label_font, anchor="mm")
+                                  fill=lc, font=lane_label_font, anchor="mt")
 
                 out_img.save(path)
                 messagebox.showinfo(T("ok_title"), T("ok_image"))
@@ -444,7 +444,7 @@ class ImageExportMixin:
                     # マーカー・サンプルのフォントサイズ (font_size) を基準に、ラベルごとの設定比率 (fs / 9.0) でスケーリング
                     lane_font_local = get_japanese_font(size=max(6, int(font_size * (fs / 9.0))))
                     draw.text((lx, lane_label_y), lbl_display,
-                              fill=lbl_color, font=lane_font_local, anchor="mm")
+                              fill=lbl_color, font=lane_font_local, anchor="mt")
 
             out_img.save(path)
             messagebox.showinfo(T("ok_title"), T("ok_image"))
