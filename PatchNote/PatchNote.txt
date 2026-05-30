@@ -1,3 +1,13 @@
-パッチアップデート
-1.解析タブの日本語の表示バグを修正
-2.ラベルを移動させる際に、実際のラベルの位置より上をクリックしないと移動できないバグを修正
+パッチアップデート内容
+
+1.解析タブにおける日本語表示の不具合を修正
+2.ラベル移動時に、実際の位置より上をクリックしないと移動できなかった問題を修正
+3.ラベルのフォントサイズが、操作画面と出力画像で異なっていた問題を修正
+4.ラベル位置が、操作画面と出力画像で一致しない問題を修正
+
+Patch Update
+
+1.Fixed an issue where Japanese text was displayed incorrectly in the Analysis tab
+2.Fixed a bug where labels could only be moved by clicking above their actual position
+3.Fixed a problem where label font sizes differed between the editor view and the exported image
+4.Fixed an issue where label positions did not match between the editor view and the exported image
