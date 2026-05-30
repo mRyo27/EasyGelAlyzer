@@ -213,7 +213,7 @@
   },
   lbl_font_size_prefix {
     en Size ,
-    ja サイズ 
+    ja サイズ
   },
   coeff_frame {
     en Regression (y = ax + b),
@@ -249,7 +249,7 @@
   },
   plot_add_markers {
     en Add 2+ markersnto show calibration,
-    ja マーカーを2点以上n追加してください
+    ja マーカーを2点以上追加してください
   },
   plot_cal_curve {
     en Calibration Curve,
@@ -432,44 +432,68 @@
     ja 削除の確認
   },
   dlg_delete_msg {
-    en {n} item(s) will be deleted. Continue,
-    ja {n}件のアイテムを削除しますか？
+    en {n
+    } item(s) will be deleted. Continue,
+    ja {n
+    }件のアイテムを削除しますか？
   },
   dlg_marker_input_title {
     en Marker Input,
     ja マーカーの入力
   },
   dlg_marker_rf {
-    en Migration distance Rf = {rf:.4f},
-    ja 移動度 Rf = {rf:.4f}
+    en Migration distance Rf = {rf:.4f
+    },
+    ja 移動度 Rf = {rf:.4f
+    }
   },
   dlg_marker_size_label {
-    en Size ({unit}),
-    ja サイズ ({unit})
+    en Size ({unit
+    }),
+    ja サイズ ({unit
+    })
   },
   dlg_marker_input_err {
-    en Please enter a valid {unit} value.,
-    ja 有効な {unit} 値を入力してください
+    en Please enter a valid {unit
+    } value.,
+    ja 有効な {unit
+    } 値を入力してください
   },
   dlg_marker_dup {
-    en {v} {unit} marker already exists.,
-    ja {v} {unit} のマーカーは既に存在します
+    en {v
+    } {unit
+    } marker already exists.,
+    ja {v
+    } {unit
+    } のマーカーは既に存在します
   },
   dlg_edit_marker_title {
-    en Edit Marker Value ({unit}),
-    ja マーカー値の編集 ({unit})
+    en Edit Marker Value ({unit
+    }),
+    ja マーカー値の編集 ({unit
+    })
   },
   dlg_edit_marker_current {
-    en Current value {val} {unit},
-    ja 現在の値 {val} {unit}
+    en Current value {val
+    } {unit
+    },
+    ja 現在の値 {val
+    } {unit
+    }
   },
   dlg_edit_marker_new {
-    en New value ({unit}),
-    ja 新しい値 ({unit})
+    en New value ({unit
+    }),
+    ja 新しい値 ({unit
+    })
   },
   dlg_edit_marker_dup {
-    en {v} {unit} already exists.,
-    ja {v} {unit} は既に存在します。
+    en {v
+    } {unit
+    } already exists.,
+    ja {v
+    } {unit
+    } は既に存在します。
   },
   dlg_sample_title {
     en Enter Sample Name,
@@ -496,12 +520,16 @@
     ja 名前
   },
   dlg_sample_name_err {
-    en '{name}' is not allowed.nSample1-1 or Sample-1 style names are prohibited.nUse Sample1, Sample2, geneX1, etc.,
-    ja '{name}' は使用できません。nSample1-1 や Sample-1 のような名前は禁止されています。n例 Sample1, Sample2, geneX1 などを使用してください。
+    en '{name
+    }' is not allowed.nSample1-1 or Sample-1 style names are prohibited.nUse Sample1, Sample2, geneX1, etc.,
+    ja '{name
+    }' は使用できません。nSample1-1 や Sample-1 のような名前は禁止されています。n例 Sample1, Sample2, geneX1 などを使用してください。
   },
   dlg_sample_name_err2 {
-    en '{name}' is not allowed.nSample-1 style names are prohibited.,
-    ja '{name}' は使用できません。nSample-1 のような名前は禁止されています。
+    en '{name
+    }' is not allowed.nSample-1 style names are prohibited.,
+    ja '{name
+    }' は使用できません。nSample-1 のような名前は禁止されています。
   },
   dlg_label_type_title {
     en Select Label Type,
@@ -768,8 +796,10 @@
     ja 名前
   },
   status_sample_lbl_added {
-    en Sample label '{name}' added (drag to reposition),
-    ja 試料ラベル '{name}' を追加しました（ドラッグで横移動可能）
+    en Sample label '{name
+    }' added (drag to reposition),
+    ja 試料ラベル '{name
+    }' を追加しました（ドラッグで横移動可能）
   },
   out_success {
     en Annotated image exported successfully.,
@@ -792,19 +822,24 @@
     ja エラー
   },
   err_image_export {
-    en Error during image exportn{e},
-    ja 画像出力中にエラーが発生しましたn{e}
+    en Error during image exportn{e
+    },
+    ja 画像出力中にエラーが発生しましたn{e
+    }
   },
   err_excel {
-    en Error during Excel exportn{e},
-    ja Excelエクスポート中にエラーが発生しましたn{e}
+    en Error during Excel exportn{e
+    },
+    ja Excelエクスポート中にエラーが発生しましたn{e
+    }
   },
   help_title {
     en Help,
     ja ヘルプ
   },
   help_body {
-    en [EasyGelAlyzer Help]nn1. Load image, then pre-process with trimmingrotationadjustment.n2. Set StartEnd lines (Rf=0 and Rf=1.00).n3. Add Marker → click band → enter MWbp (continuous, Esc to stop).n4. Calibration curve auto-generated with 2+ markers.n5. Add Sample → click band to add point.n    Works even when markers are hidden.n6. Export to Excel or image.nnShortcutsn  Ctrl+Z Undo    Ctrl+Y Redon  Esc End measurementtrimming moden  Shift x2 (within 0.5 s) Reset zoom & positionn  Middle-click x2 (within 0.5 s) Reset zoom & positionnnTrackpadn  2-finger scroll Pan image horizontallyverticallyn  Pinch or Ctrl+scroll Zoom inoutnnMousen  Ctrl+wheel Zoomn  Right-drag  Middle-drag PannnDragn  Markers, samples, and StartEnd lines can be repositioned by drag.nnDisplayn  ColorB&W button Toggle grayscale display & exportnnExport optionsn  With margin Leader lines + margin labelsn    (B&W + white annotations → gray margin)n  No margin CAD style (line to image edge + label on line),
+    en [EasyGelAlyzer Help
+    ]nn1. Load image, then pre-process with trimmingrotationadjustment.n2. Set StartEnd lines (Rf=0 and Rf=1.00).n3. Add Marker → click band → enter MWbp (continuous, Esc to stop).n4. Calibration curve auto-generated with 2+ markers.n5. Add Sample → click band to add point.n    Works even when markers are hidden.n6. Export to Excel or image.nnShortcutsn  Ctrl+Z Undo    Ctrl+Y Redon  Esc End measurementtrimming moden  Shift x2 (within 0.5 s) Reset zoom & positionn  Middle-click x2 (within 0.5 s) Reset zoom & positionnnTrackpadn  2-finger scroll Pan image horizontallyverticallyn  Pinch or Ctrl+scroll Zoom inoutnnMousen  Ctrl+wheel Zoomn  Right-drag  Middle-drag PannnDragn  Markers, samples, and StartEnd lines can be repositioned by drag.nnDisplayn  ColorB&W button Toggle grayscale display & exportnnExport optionsn  With margin Leader lines + margin labelsn    (B&W + white annotations → gray margin)n  No margin CAD style (line to image edge + label on line),
     ja 【EasyGelAlyzer 使い方ヘルプ】nn1. 画像読み込み後、トリミング・回転・画像調整で前処理。n2. 開始終了ラインを設定（Rf=01.00の位置）。n3. マーカー追加ボタン → バンドをクリック → 分子量bp入力（連続測定、Escで終了）。n4. マーカー2点以上で検量線が自動表示されます。n5. 試料追加 → バンドをクリックして点を追加。n   ※マーカー一括非表示中でも試料追加は動作します。n6. Excel画像で出力。nnショートカットn  Ctrl+Z 元に戻す  Ctrl+Y やり直しn  Esc 測定トリミング終了n  Shiftキー2回押し（0.5秒以内） ズーム・位置リセットn  中ボタン2回クリック（0.5秒以内） ズーム・位置リセットnnトラックパッド操作n  2本指スクロール 画像を縦横に移動n  ピンチ または Ctrl+2本指スクロール ズームインアウトnnマウス操作n  Ctrl+ホイール ズームn  右ドラッグ中ドラッグ パンnnドラッグn  マーカーライン・試料点・開始終了ラインはn  追加後もドラッグで位置変更できます。nn表示モードn  カラー白黒ボタン 画像をグレースケール化して表示・出力nn画像出力オプションn  余白あり 引き出し線＋余白ラベル（白黒＋白注釈線時は余白をグレー表示）n  余白なし CADスタイル（画像端まで線を引きラベルを線上に表示）
   },
   about_title {
@@ -828,12 +863,16 @@
     ja プロジェクトファイルを開く
   },
   status_project_saved {
-    en Project saved {path},
-    ja プロジェクトを保存しました {path}
+    en Project saved {path
+    },
+    ja プロジェクトを保存しました {path
+    }
   },
   status_project_loaded {
-    en Project loaded {path},
-    ja プロジェクトを読み込みました {path}
+    en Project loaded {path
+    },
+    ja プロジェクトを読み込みました {path
+    }
   },
   err_project_save {
     en Failed to save projectn,
@@ -844,12 +883,16 @@
     ja プロジェクトの読み込みに失敗しましたn
   },
   err_project_image {
-    en Source image not foundn{path}nPlease re-load the image manually.,
-    ja 元の画像ファイルが見つかりませんn{path}n手動で画像を再読み込みしてください。
+    en Source image not foundn{path
+    }nPlease re-load the image manually.,
+    ja 元の画像ファイルが見つかりませんn{path
+    }n手動で画像を再読み込みしてください。
   },
   warn_project_mode {
-    en Project is in {mode} mode. Current mode will be switched.,
-    ja プロジェクトは {mode} モードです。現在のモードを切り替えます。
+    en Project is in {mode
+    } mode. Current mode will be switched.,
+    ja プロジェクトは {mode
+    } モードです。現在のモードを切り替えます。
   },
   warn_rotate_blocked {
     en Cannot rotate after adding markers, samples, lines, or labels.nPlease rotate the image before adding annotations.,
@@ -908,8 +951,10 @@
     ja このプロジェクトはより新しいバージョンで保存されました。n一部のデータが正しく読み込まれない場合があります。
   },
   project_mode_switch {
-    en Project mode {mode}. Current mode will be switched.,
-    ja プロジェクトは {mode} モードです。現在のモードを切り替えます。
+    en Project mode {mode
+    }. Current mode will be switched.,
+    ja プロジェクトは {mode
+    } モードです。現在のモードを切り替えます。
   },
   mode_protein_short {
     en Protein,
@@ -936,8 +981,12 @@
     ja 新しい画像を読み込むと現在の測定データは破棄されます。続行しますか？
   },
   dlg_marker_current {
-    en Current value {val} {unit},
-    ja 現在の値 {val} {unit}
+    en Current value {val
+    } {unit
+    },
+    ja 現在の値 {val
+    } {unit
+    }
   },
   dlg_sample_name_prompt {
     en Enter or select sample name,
