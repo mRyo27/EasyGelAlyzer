@@ -1,23 +1,16 @@
 @echo off
-
-set TEMP=C:\Temp
-set TMP=C:\Temp
-mkdir C:\Temp 2>nul
-echo TEMP=%TEMP%
-
 echo ============================
 echo   EasyGelAlyzer Release Build
-echo   (PyInstaller + UPX Edition)
 echo ============================
 
 rem ============================================================
-rem  0. Init
+rem  0. 初期設定
 rem ============================================================
 cd /d %~dp0
 
 
 rem ============================================================
-rem  1. Read version.py
+rem  1. version.py の読み取り
 rem ============================================================
 if not exist src\version.py (
     echo Error: src\version.py not found.
@@ -33,41 +26,7 @@ echo Version detected: %CURRENT%
 
 
 rem ============================================================
-rem  2. Download and extract UPX
-rem ============================================================
-set UPX_VERSION=4.2.4
-set UPX_DIR=%~dp0tools\upx
-set UPX_EXE=%UPX_DIR%\upx.exe
-
-if not exist "%UPX_EXE%" (
-    echo UPX not found. Downloading UPX v%UPX_VERSION%...
-    mkdir "%UPX_DIR%" 2>nul
-    set "_UPX_URL=https://github.com/upx/upx/releases/download/v%UPX_VERSION%/upx-%UPX_VERSION%-win64.zip"
-    set "_UPX_ZIP=%TEMP%\upx_%UPX_VERSION%.zip"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri $env:_UPX_URL -OutFile $env:_UPX_ZIP"
-    if not exist "%TEMP%\upx_%UPX_VERSION%.zip" (
-        echo Error: Failed to download UPX.
-        pause
-        exit /b 1
-    )
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Path $env:_UPX_ZIP -DestinationPath '%UPX_DIR%' -Force"
-    if exist "%UPX_DIR%\upx-%UPX_VERSION%-win64\upx.exe" (
-        copy /y "%UPX_DIR%\upx-%UPX_VERSION%-win64\upx.exe" "%UPX_DIR%\" >nul
-        rmdir /s /q "%UPX_DIR%\upx-%UPX_VERSION%-win64"
-    )
-    if not exist "%UPX_EXE%" (
-        echo Error: UPX extraction failed.
-        pause
-        exit /b 1
-    )
-    echo UPX downloaded successfully.
-) else (
-    echo UPX already exists: %UPX_EXE%
-)
-
-
-rem ============================================================
-rem  3. Prepare Release folder
+rem  2. Release フォルダ準備
 rem ============================================================
 set RELEASE_ROOT=%~dp0Releases
 set RELEASE_DIR=%RELEASE_ROOT%\EasyGelAlyzer
@@ -82,7 +41,7 @@ mkdir "%ASSETS_DIR%"
 
 
 rem ============================================================
-rem  4. Copy documents
+rem  3. ドキュメントコピー
 rem ============================================================
 copy /y "%~dp0LICENSE" "%RELEASE_DIR%" >nul
 copy /y "%~dp0README.md" "%RELEASE_DIR%" >nul
@@ -90,23 +49,22 @@ copy /y "%~dp0README_EN.md" "%RELEASE_DIR%" >nul
 
 
 rem ============================================================
-rem  5. Copy icon
+rem  4. アイコンコピー
 rem ============================================================
 set ICON_PATH=%~dp0src\assets\icon.ico
 if exist "%ICON_PATH%" copy /y "%ICON_PATH%" "%ASSETS_DIR%" >nul
 
 
 rem ============================================================
-rem  6. Copy test image
+rem  5. テスト画像コピー
 rem ============================================================
 set TEST_IMG_SRC=%~dp0src\assets\test_gel_image.png
 if exist "%TEST_IMG_SRC%" copy /y "%TEST_IMG_SRC%" "%RELEASE_DIR%" >nul
 
 
 rem ============================================================
-rem  7. Build main EXE (PyInstaller)
+rem  6. main EXE ビルド（onefile）
 rem ============================================================
-echo.
 echo Building main executable...
 
 set TEMP_BUILD_DIR=%TEMP%\EasyGelAlyzerBuild_%RANDOM%
@@ -114,7 +72,7 @@ set WORK_PATH=%TEMP_BUILD_DIR%\build
 set DIST_PATH=%TEMP_BUILD_DIR%\dist
 set SPEC_PATH=%TEMP_BUILD_DIR%
 
-python -m PyInstaller -v --onefile --windowed --name EasyGelAlyzer ^
+python -m PyInstaller --onefile --windowed --name EasyGelAlyzer ^
     --icon="%ICON_PATH%" ^
     --paths "%~dp0src" ^
     --add-data "%~dp0src\assets;assets" ^
@@ -129,18 +87,13 @@ if not exist "%DIST_PATH%\EasyGelAlyzer.exe" (
     exit /b 1
 )
 
-echo Compressing EasyGelAlyzer.exe with UPX...
-"%UPX_EXE%" --ultra-brute "%DIST_PATH%\EasyGelAlyzer.exe"
-
 copy /y "%DIST_PATH%\EasyGelAlyzer.exe" "%DIST_DIR%" >nul
 copy /y "%~dp0src\version.py" "%DIST_DIR%" >nul
-echo EasyGelAlyzer.exe build complete.
 
 
 rem ============================================================
-rem  8. Build launcher.exe (PyInstaller)
+rem  7. launcher.exe ビルド（onefile）
 rem ============================================================
-echo.
 echo Building launcher.exe...
 
 set LAUNCHER_TEMP=%TEMP%\LauncherBuild_%RANDOM%
@@ -162,15 +115,11 @@ if not exist "%LAUNCHER_DIST%\launcher.exe" (
     exit /b 1
 )
 
-echo Compressing launcher.exe with UPX...
-"%UPX_EXE%" --ultra-brute "%LAUNCHER_DIST%\launcher.exe"
-
 copy /y "%LAUNCHER_DIST%\launcher.exe" "%RELEASE_DIR%" >nul
-echo launcher.exe build complete.
 
 
 rem ============================================================
-rem  9. Copy PatchNote
+rem  8. PatchNote コピー
 rem ============================================================
 set PATCH_FILE_NAME=PatchNote_v%CURRENT%.txt
 if exist "%PATCHNOTE_SRC%\%PATCH_FILE_NAME%" (
@@ -179,7 +128,7 @@ if exist "%PATCHNOTE_SRC%\%PATCH_FILE_NAME%" (
 
 
 rem ============================================================
-rem  10. Create ZIP
+rem  9. ZIP 作成
 rem ============================================================
 set ZIP_NAME=EasyGelAlyzer_v%CURRENT%.zip
 powershell -NoProfile -ExecutionPolicy Bypass ^
@@ -187,12 +136,11 @@ powershell -NoProfile -ExecutionPolicy Bypass ^
 
 
 rem ============================================================
-rem  11. Delete Release folder
+rem  10. Release フォルダ削除
 rem ============================================================
 rmdir /s /q "%RELEASE_DIR%"
 
 
-echo.
 echo ============================
 echo Release Build Completed
 echo Output: %RELEASE_ROOT%\%ZIP_NAME%
