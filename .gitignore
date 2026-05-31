@@ -169,3 +169,5 @@ launcher/
 >>>>>>> dev
 
 tools/
+
+exe_build_for_Release.bat
