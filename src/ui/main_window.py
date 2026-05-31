@@ -348,7 +348,9 @@ class MainWindowMixin:
         except ValueError:
             return
         start, end = min(a, b), max(a, b)
-        self.layer_tree.selection_set(all_rows[start:end + 1])
+        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
+        target_rows = [r for r in all_rows[start:end + 1] if r not in parent_nodes]
+        self.layer_tree.selection_set(target_rows)
 
         # ドラッグ選択範囲ボックスの描画
         if not hasattr(self, '_tree_drag_box_borders') or not self._tree_drag_box_borders:
@@ -403,6 +405,15 @@ class MainWindowMixin:
 
     def _on_layer_select(self, event):
         selected = self.layer_tree.selection()
+        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
+        invalid = [iid for iid in selected if iid in parent_nodes]
+        if invalid:
+            valid = [iid for iid in selected if iid not in parent_nodes]
+            self.layer_tree.unbind("<<TreeviewSelect>>")
+            self.layer_tree.selection_set(valid)
+            self.layer_tree.bind("<<TreeviewSelect>>", self._on_layer_select)
+            selected = valid
+
         if not selected:
             try:
                 self._selected_label_font_slider.state(['disabled'])
