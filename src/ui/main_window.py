@@ -353,10 +353,10 @@ class MainWindowMixin:
         # ドラッグ選択範囲ボックスの描画
         if not hasattr(self, '_tree_drag_box_borders') or not self._tree_drag_box_borders:
             self._tree_drag_box_borders = [
-                tk.Frame(self.layer_tree, bg='#007AFF'), # 上
-                tk.Frame(self.layer_tree, bg='#007AFF'), # 下
-                tk.Frame(self.layer_tree, bg='#007AFF'), # 左
-                tk.Frame(self.layer_tree, bg='#007AFF')  # 右
+                tk.Frame(self.layer_tree, bg='#FF9500'), # 上
+                tk.Frame(self.layer_tree, bg='#FF9500'), # 下
+                tk.Frame(self.layer_tree, bg='#FF9500'), # 左
+                tk.Frame(self.layer_tree, bg='#FF9500')  # 右
             ]
 
         x = min(self._tree_drag_start_x, event.x)
