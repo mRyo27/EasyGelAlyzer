@@ -284,12 +284,13 @@ class MainWindowMixin:
         self.canvas.bind("<B1-Motion>", self.on_left_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_left_release)
 
-        self.layer_tree.bind("<Double-1>", self.on_layer_double_click)
+        self.layer_tree.bind("<Double-1>", lambda e: "break" if self.layer_tree.identify_region(e.x, e.y) == "separator" else self.on_layer_double_click(e))
         self.layer_tree.bind("<Delete>", lambda e: self.delete_selected_layer())
         self.layer_tree.bind("<BackSpace>", lambda e: self.delete_selected_layer())
         self.layer_tree.bind("<ButtonPress-1>", self._tree_drag_start)
         self.layer_tree.bind("<B1-Motion>", self._tree_drag_motion)
         self.layer_tree.bind("<ButtonRelease-1>", self._tree_drag_end)
+        self.layer_tree.bind("<Motion>", self._on_tree_motion)
         self.layer_tree.bind("<<TreeviewSelect>>", self._on_layer_select)
 
         self.root.bind("<Control-z>", lambda e: self.undo())
@@ -317,11 +318,22 @@ class MainWindowMixin:
     # ------------------------------------------------------------------ #
     #  レイヤーツリー ドラッグ選択 / 選択解除
     # ------------------------------------------------------------------ #
+    def _on_tree_motion(self, event):
+        if self.layer_tree.identify_region(event.x, event.y) == "separator":
+            self.layer_tree.config(cursor="arrow")
+            return "break"
+        else:
+            self.layer_tree.config(cursor="")
+
     def _tree_drag_start(self, event):
+        if self.layer_tree.identify_region(event.x, event.y) == "separator":
+            return "break"
         self._tree_drag_anchor = self.layer_tree.identify_row(event.y)
         # 通常のクリック選択はTkに任せる
 
     def _tree_drag_motion(self, event):
+        if self.layer_tree.identify_region(event.x, event.y) == "separator":
+            return "break"
         row = self.layer_tree.identify_row(event.y)
         if not row or not self._tree_drag_anchor:
             return
