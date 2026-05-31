@@ -329,6 +329,9 @@ class MainWindowMixin:
         if self.layer_tree.identify_region(event.x, event.y) == "separator":
             return "break"
         self._tree_drag_anchor = self.layer_tree.identify_row(event.y)
+        self._tree_drag_start_x = event.x
+        self._tree_drag_start_y = event.y
+        self._tree_drag_box_borders = []
         # 通常のクリック選択はTkに任せる
 
     def _tree_drag_motion(self, event):
@@ -347,8 +350,34 @@ class MainWindowMixin:
         start, end = min(a, b), max(a, b)
         self.layer_tree.selection_set(all_rows[start:end + 1])
 
+        # ドラッグ選択範囲ボックスの描画
+        if not hasattr(self, '_tree_drag_box_borders') or not self._tree_drag_box_borders:
+            self._tree_drag_box_borders = [
+                tk.Frame(self.layer_tree, bg='#007AFF'), # 上
+                tk.Frame(self.layer_tree, bg='#007AFF'), # 下
+                tk.Frame(self.layer_tree, bg='#007AFF'), # 左
+                tk.Frame(self.layer_tree, bg='#007AFF')  # 右
+            ]
+
+        x = min(self._tree_drag_start_x, event.x)
+        y = min(self._tree_drag_start_y, event.y)
+        w = abs(self._tree_drag_start_x - event.x)
+        h = abs(self._tree_drag_start_y - event.y)
+
+        bw = 2 # 枠線の太さ
+        if w > 0 and h > 0:
+            self._tree_drag_box_borders[0].place(x=x, y=y, width=w, height=bw)
+            self._tree_drag_box_borders[1].place(x=x, y=y + h - bw, width=w, height=bw)
+            self._tree_drag_box_borders[2].place(x=x, y=y, width=bw, height=h)
+            self._tree_drag_box_borders[3].place(x=x + w - bw, y=y, width=bw, height=h)
+
     def _tree_drag_end(self, event):
         self._tree_drag_anchor = None
+        if hasattr(self, '_tree_drag_box_borders') and self._tree_drag_box_borders:
+            for border in self._tree_drag_box_borders:
+                border.destroy()
+            self._tree_drag_box_borders = []
+
         region = self.layer_tree.identify_region(event.x, event.y)
         col = self.layer_tree.identify_column(event.x)
         row = self.layer_tree.identify_row(event.y)
