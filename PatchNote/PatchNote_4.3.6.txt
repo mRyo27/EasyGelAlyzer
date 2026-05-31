@@ -2,5 +2,7 @@
 
 1.レイヤータブの系列幅をユーザーが変更できる状態を固定に変更（修正）
 
+
 Patch Update
 
+1. Changed the ability for users to change the series width in the Layers tab to a fixed state (correction).

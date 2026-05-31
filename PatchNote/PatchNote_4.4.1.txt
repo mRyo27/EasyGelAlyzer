@@ -1,0 +1,11 @@
+パッチアップデート内容
+1.レイヤーのカテゴリーの親ノードを選択できなくする（修正）
+
+マイナーアップデート内容
+1.レイヤーを複数選択する際に選択範囲を表示するボックスを追加
+
+Patch Update Details
+1. Fixed an issue where the parent node of a layer category could not be selected.
+
+Minor Update Details
+1. Added a box to display the selection area when multiple layers are selected.
