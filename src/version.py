@@ -1,1 +1,5 @@
-VERSION = "4.3.6"
+<<<<<<< HEAD
+VERSION = "4.4.0"
+=======
+VERSION = "4.4.1"
+>>>>>>> feature/AddLayerSelectionBox
