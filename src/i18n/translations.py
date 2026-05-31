@@ -258,7 +258,7 @@ TRANSLATIONS = {
     },
     "plot_add_markers": {
         "en": "Add 2+ markersnto show calibration",
-        "ja": "マーカーを2点以上n追加してください"
+        "ja": "マーカーを2点以上追加してください"
     },
     "plot_cal_curve": {
         "en": "Calibration Curve",

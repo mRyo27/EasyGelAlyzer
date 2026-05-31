@@ -1,6 +1,6 @@
 # EasyGelAlyzer
 
-**EasyGelAlyzer** is a lightweight desktop application for quantitative analysis of gel electrophoresis images. It supports both protein (SDS-PAGE) and DNA gel modes, providing band position measurement, Rf value calculation, standard curve fitting, and molecular weight (or fragment size) estimation — all within a single GUI.
+**EasyGelAlyzer** is a lightweight desktop application for quantitative analysis of gel electrophoresis images. It supports both protein (SDS-PAGE) and DNA gel modes, providing band position measurement, Rf value calculation, standard curve fitting, and molecular weight (or bp size) estimation — all within a single GUI.
 
 ---
 
@@ -27,7 +27,7 @@
 
 ### Option A — Use a pre-built executable (recommended)
 
-Download the latest `EasyGelAlyzer_version.zip` from the [Releases](../../releases) page, extract it, and double-click `EasyGelAlyzer.exe` or the provided shortcut. No Python or additional library installation is required.
+Download the latest `EasyGelAlyzer_version.zip` from the [Releases](../../releases) page, extract it, and double-click `dirt/EasyGelAlyzer.exe` or the launcer.exe. No Python or additional library installation is required.
 
 ### Option B — Build from source
 
@@ -182,13 +182,13 @@ Three sheets are generated:
 
 ### Annotated Image
 
-Four layout options are available:
-1. Annotated gel image only
-2. Gel image + results table
-3. Gel image + standard curve graph
-4. Gel image + table + graph (combined)
+You can select and output from four different layouts.
 
-Grayscale mode and margin trimming options are also available.
+Black and white mode and margin trimming options are also available.
+
+Start lines, end lines, molecular weight markers, sample markers, and labels can be excluded from the output image by unchecking the checkboxes in the Layers tab.
+
+The eye icon in the Layers tab toggles the display on the operation screen and does not affect the output image.
 
 ---
 
