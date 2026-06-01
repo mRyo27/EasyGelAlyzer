@@ -150,8 +150,7 @@ Releases/
 # Build script for release(this file only for developer)
 =======
 >>>>>>> 57fd65b (Update: .gitignore を整理し、Launcher/launcher.py を追加)
-exe_build_for_Release
-exe_build_for_Release_Nuitka_UPX
+exe_build_for_Release.bat
 <<<<<<< HEAD
 launcher/
 launcher/launcher.py
@@ -170,4 +169,3 @@ launcher/
 
 tools/
 
-exe_build_for_Release.bat
