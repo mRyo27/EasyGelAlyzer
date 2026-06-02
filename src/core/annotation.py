@@ -873,18 +873,39 @@ class AnnotationMixin:
 
     def _toggle_item_visibility(self, item_id):
         """アイテムの表示/非表示をトグル"""
-        current = self.item_visibility.get(item_id, True)
-        self.item_visibility[item_id] = not current
-        # マーカーなら一括ボタンも同期
-        if any(m['id'] == item_id for m in self.markers):
-            self._sync_marker_bulk_button()
+        selected = self.layer_tree.selection()
+        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
+        
+        if item_id in selected:
+            current = self.item_visibility.get(item_id, True)
+            new_state = not current
+            for idx in selected:
+                if idx not in parent_nodes:
+                    self.item_visibility[idx] = new_state
+            if any(any(m['id'] == idx for m in self.markers) for idx in selected if idx not in parent_nodes):
+                self._sync_marker_bulk_button()
+        else:
+            current = self.item_visibility.get(item_id, True)
+            self.item_visibility[item_id] = not current
+            if any(m['id'] == item_id for m in self.markers):
+                self._sync_marker_bulk_button()
         self.update_layer_panel()
         self.redraw_canvas()
 
     def _toggle_item_export_visibility(self, item_id):
         """アイテムの画像出力時の表示/非表示をトグル"""
-        current = self.item_export_visibility.get(item_id, True)
-        self.item_export_visibility[item_id] = not current
+        selected = self.layer_tree.selection()
+        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
+        
+        if item_id in selected:
+            current = self.item_export_visibility.get(item_id, True)
+            new_state = not current
+            for idx in selected:
+                if idx not in parent_nodes:
+                    self.item_export_visibility[idx] = new_state
+        else:
+            current = self.item_export_visibility.get(item_id, True)
+            self.item_export_visibility[item_id] = not current
         self.update_layer_panel()
         self.redraw_canvas()
 
