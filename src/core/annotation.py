@@ -871,41 +871,36 @@ class AnnotationMixin:
         self.btn_toggle_marker.config(
             text=T('btn_show_marker') if not self.marker_visible else T('btn_toggle_marker'))
 
+
     def _toggle_item_visibility(self, item_id):
-        """アイテムの表示/非表示をトグル"""
-        selected = self.layer_tree.selection()
+        """アイテムの表示/非表示をトグルし、マルチ選択時は選択された全アイテムに同期"""
+        selected = set(self.layer_tree.selection())
+        # Ensure the clicked item is included in the selection set
+        selected.add(item_id)
         parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
-        
-        if item_id in selected:
-            current = self.item_visibility.get(item_id, True)
-            new_state = not current
-            for idx in selected:
-                if idx not in parent_nodes:
-                    self.item_visibility[idx] = new_state
-            if any(any(m['id'] == idx for m in self.markers) for idx in selected if idx not in parent_nodes):
-                self._sync_marker_bulk_button()
-        else:
-            current = self.item_visibility.get(item_id, True)
-            self.item_visibility[item_id] = not current
-            if any(m['id'] == item_id for m in self.markers):
-                self._sync_marker_bulk_button()
+        # Determine new visibility based on the clicked item
+        current = self.item_visibility.get(item_id, True)
+        new_state = not current
+        # Apply to all selected non-parent items
+        for iid in selected:
+            if iid not in parent_nodes:
+                self.item_visibility[iid] = new_state
+        # Sync marker bulk button if any marker affected
+        if any(m['id'] in selected for m in self.markers):
+            self._sync_marker_bulk_button()
         self.update_layer_panel()
         self.redraw_canvas()
 
     def _toggle_item_export_visibility(self, item_id):
-        """アイテムの画像出力時の表示/非表示をトグル"""
-        selected = self.layer_tree.selection()
+        """アイテムの画像出力時の表示/非表示をトグルし、マルチ選択時は選択された全アイテムに同期"""
+        selected = set(self.layer_tree.selection())
+        selected.add(item_id)
         parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
-        
-        if item_id in selected:
-            current = self.item_export_visibility.get(item_id, True)
-            new_state = not current
-            for idx in selected:
-                if idx not in parent_nodes:
-                    self.item_export_visibility[idx] = new_state
-        else:
-            current = self.item_export_visibility.get(item_id, True)
-            self.item_export_visibility[item_id] = not current
+        current = self.item_export_visibility.get(item_id, True)
+        new_state = not current
+        for iid in selected:
+            if iid not in parent_nodes:
+                self.item_export_visibility[iid] = new_state
         self.update_layer_panel()
         self.redraw_canvas()
 
