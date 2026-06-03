@@ -872,28 +872,39 @@ class AnnotationMixin:
             text=T('btn_show_marker') if not self.marker_visible else T('btn_toggle_marker'))
 
 
-    def _toggle_item_visibility(self, item_id):
-        """アイテムの表示/非表示をトグルし、マルチ選択時は選択された全アイテムに同期"""
-        selected = set(self.layer_tree.selection())
-        # Ensure the clicked item is included in the selection set
+    def _toggle_item_visibility(self, item_id, saved_sel=None):
+        """アイテムの表示/非表示をトグルし、マルチ選択時は選択された全アイテムに同期
+        saved_sel: ButtonPress-1 時点で保存した選択セット（Tkの自動選択変更前の状態）
+        """
+        # saved_sel が渡された場合はそれを使う。なければ現在の選択を参照
+        if saved_sel is not None:
+            selected = set(saved_sel)
+        else:
+            selected = set(self.layer_tree.selection())
+        # 必ずクリックしたアイテムも含める
         selected.add(item_id)
         parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
-        # Determine new visibility based on the clicked item
+        # クリックしたアイテムの現在状態を基準に new_state を決定
         current = self.item_visibility.get(item_id, True)
         new_state = not current
-        # Apply to all selected non-parent items
+        # 選択中の非親ノード全てに適用
         for iid in selected:
             if iid not in parent_nodes:
                 self.item_visibility[iid] = new_state
-        # Sync marker bulk button if any marker affected
+        # マーカーが含まれる場合は一括ボタンも同期
         if any(m['id'] in selected for m in self.markers):
             self._sync_marker_bulk_button()
         self.update_layer_panel()
         self.redraw_canvas()
 
-    def _toggle_item_export_visibility(self, item_id):
-        """アイテムの画像出力時の表示/非表示をトグルし、マルチ選択時は選択された全アイテムに同期"""
-        selected = set(self.layer_tree.selection())
+    def _toggle_item_export_visibility(self, item_id, saved_sel=None):
+        """アイテムの画像出力時の表示/非表示をトグルし、マルチ選択時は選択された全アイテムに同期
+        saved_sel: ButtonPress-1 時点で保存した選択セット
+        """
+        if saved_sel is not None:
+            selected = set(saved_sel)
+        else:
+            selected = set(self.layer_tree.selection())
         selected.add(item_id)
         parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
         current = self.item_export_visibility.get(item_id, True)

@@ -328,6 +328,14 @@ class MainWindowMixin:
     def _tree_drag_start(self, event):
         if self.layer_tree.identify_region(event.x, event.y) == "separator":
             return "break"
+        # チェックボックス列（#1 Vis, #2 Exp）のクリック前に選択状態を保存
+        # ButtonPress-1 の時点ではまだ Tk のデフォルト選択変更が走っていないので
+        # この時点の selection() が「ユーザーが選んでいた行」になる
+        col = self.layer_tree.identify_column(event.x)
+        if col in ("#1", "#2"):
+            self._pre_click_selection = set(self.layer_tree.selection())
+        else:
+            self._pre_click_selection = set()
         self._tree_drag_anchor = self.layer_tree.identify_row(event.y)
         self._tree_drag_start_x = event.x
         self._tree_drag_start_y = event.y
@@ -387,11 +395,14 @@ class MainWindowMixin:
             if col == "#1":
                 # Vis カラム（👁 / 🚫）クリックで表示トグル
                 if row not in (self.marker_node, self.sample_node, self.label_node, self.line_node):
-                    self._toggle_item_visibility(row)
+                    # ButtonPress-1 時に保存しておいた選択を渡す（Tkのデフォルト選択変更前の状態）
+                    saved_sel = getattr(self, '_pre_click_selection', set())
+                    self._toggle_item_visibility(row, saved_sel)
             elif col == "#2":
                 # Exp カラム（☑ / ☐）クリックで出力時の表示トグル
                 if row not in (self.marker_node, self.sample_node, self.label_node, self.line_node):
-                    self._toggle_item_export_visibility(row)
+                    saved_sel = getattr(self, '_pre_click_selection', set())
+                    self._toggle_item_export_visibility(row, saved_sel)
 
     def _all_tree_rows(self):
         """Treeview の全アイテムIDをツリー順で返す"""
