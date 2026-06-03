@@ -872,6 +872,52 @@ class AnnotationMixin:
             text=T('btn_show_marker') if not self.marker_visible else T('btn_toggle_marker'))
 
 
+    def _get_all_item_ids(self):
+        """全レイヤーアイテムのID一覧を返す（親ノードを除く）"""
+        ids = []
+        for m in self.markers:
+            ids.append(m['id'])
+        for s in self.samples:
+            ids.append(s['id'])
+        for lbl in self.lane_labels:
+            ids.append(lbl['id'])
+        if self.start_line_y is not None:
+            ids.append(self.start_line_id)
+        if self.end_line_y is not None:
+            ids.append(self.end_line_id)
+        return ids
+
+    def _toggle_all_visibility(self):
+        """👁 ヘッダークリック: 全レイヤーの表示/非表示を一括トグル
+        いずれか1つでも表示中なら全非表示、全非表示なら全表示。
+        """
+        all_ids = self._get_all_item_ids()
+        if not all_ids:
+            return
+        any_visible = any(self.item_visibility.get(iid, True) for iid in all_ids)
+        new_state = not any_visible
+        for iid in all_ids:
+            self.item_visibility[iid] = new_state
+        self.marker_visible = new_state
+        self.btn_toggle_marker.config(
+            text=T('btn_show_marker') if not self.marker_visible else T('btn_toggle_marker'))
+        self.update_layer_panel()
+        self.redraw_canvas()
+
+    def _toggle_all_export_visibility(self):
+        """📷 ヘッダークリック: 全レイヤーの画像出力時の表示/非表示を一括トグル
+        いずれか1つでも表示中なら全非表示、全非表示なら全表示。
+        """
+        all_ids = self._get_all_item_ids()
+        if not all_ids:
+            return
+        any_visible = any(self.item_export_visibility.get(iid, True) for iid in all_ids)
+        new_state = not any_visible
+        for iid in all_ids:
+            self.item_export_visibility[iid] = new_state
+        self.update_layer_panel()
+        self.redraw_canvas()
+
     def _toggle_item_visibility(self, item_id, saved_sel=None):
         """アイテムの表示/非表示をトグルし、マルチ選択時は選択された全アイテムに同期
         saved_sel: ButtonPress-1 時点で保存した選択セット（Tkの自動選択変更前の状態）

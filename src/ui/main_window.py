@@ -54,8 +54,8 @@ class MainWindowMixin:
         self.layer_tree = ttk.Treeview(self.left_frame, columns=("Vis", "Exp", "Rf", "Size"),
                                        show="tree headings", selectmode="extended")
         self.layer_tree.heading("#0", text=T('layer_name'))
-        self.layer_tree.heading("Vis", text="👁")
-        self.layer_tree.heading("Exp", text="📷")
+        self.layer_tree.heading("Vis", text="👁", command=self._toggle_all_visibility)
+        self.layer_tree.heading("Exp", text="📷", command=self._toggle_all_export_visibility)
         self.layer_tree.heading("Rf", text=T('layer_rf'))
         self.layer_tree.heading("Size", text=T('layer_size'))
         self.layer_tree.column("#0", width=110)
