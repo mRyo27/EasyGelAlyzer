@@ -1,2 +1,5 @@
 マイナーアップデート内容
 1.レイヤーを複数選択した状態で、表示・非表示のチェックボックをどれかひとつでも動作させたら、選択中の他のチェックボックも同期する（操作画面上のチェックボックスと画像出力用のチェックボックス両方に実装）。
+
+Minor Update Details
+1. When multiple layers are selected, activating any one of the show/hide checkboxes will synchronize the other selected checkboxes (implemented for both checkboxes on the operation screen and checkboxes for image output).

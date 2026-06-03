@@ -1,2 +1,5 @@
 マイナーアップデート内容
 1.レイヤー名、Rf、サイズなどの部分にある「表示・非表示」用のチェックボックスを使用すればすべてのレイヤーの表示・非表示を切り替えられるように変更。
+
+Minor update details:
+1. The "Show/Hide" checkboxes in the Layer Name, Rf, Size, etc. sections can now be used to toggle the visibility of all layers.
