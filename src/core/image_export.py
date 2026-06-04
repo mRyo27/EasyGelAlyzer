@@ -317,8 +317,33 @@ class ImageExportMixin:
                 )
                 right_margin = int(mw) + padding
 
+            # 左右のアイテムをそれぞれ統合してY座標を解決する
+            left_items = []
+            for m in left_markers:
+                left_items.append({'type': 'marker', 'orig_y': m['y'], 'draw_y': m['y'], 'obj': m})
+            for s in left_samples:
+                left_items.append({'type': 'sample', 'orig_y': s['y'], 'draw_y': s['y'], 'obj': s})
+            left_items = resolve_y(left_items)
+
+            right_items = []
+            for m in right_markers:
+                right_items.append({'type': 'marker', 'orig_y': m['y'], 'draw_y': m['y'], 'obj': m})
+            for s in right_samples:
+                right_items.append({'type': 'sample', 'orig_y': s['y'], 'draw_y': s['y'], 'obj': s})
+            right_items = resolve_y(right_items)
+
             top_margin = int(img_h * 0.05)
+
+            # Y座標衝突回避によって押し出された最大Y座標に基づいて bottom_margin を動的に拡張
+            max_y_needed = 0
+            for it in left_items + right_items:
+                y_end = it['draw_y'] + font_size // 2
+                if y_end > max_y_needed:
+                    max_y_needed = y_end
+
             bottom_margin = int(img_h * 0.05)
+            if max_y_needed > img_h:
+                bottom_margin = max(bottom_margin, int(max_y_needed - img_h) + 15)
 
             new_w = img_w + left_margin + right_margin
             new_h = img_h + top_margin + bottom_margin
@@ -358,74 +383,63 @@ class ImageExportMixin:
                 draw.line([(lx1, ly), (lx2, ly)], fill=e_color, width=3)
                 draw.text((lx1 + 10, ly + 3), T("out_end"), fill=e_color, font=line_font)
 
-            # ---- 左側マーカー ----
-            left_m_items = [{'orig_y': m['y'], 'draw_y': m['y'], 'obj': m}
-                           for m in left_markers]
-            left_m_items = resolve_y(left_m_items)
-            for it in left_m_items:
-                m = it['obj']
-                color = get_annot_color_for(MARKER_LINE_COLOR)
-                band_x, band_y = to_out(0, m['y'])
-                label_y = int(it['draw_y']) + top_margin
-                # ティック
-                draw.line([(band_x, band_y), (band_x + 15, band_y)], fill=color, width=2)
-                # 引き出し線（バンド端 → ラベル位置）
-                label_x = left_margin - 20
-                draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=1)
-                draw.text((label_x - 5, label_y - font_size // 2),
-                           make_marker_text(m), fill=color, font=font, anchor="rm")
+            # ---- 左側アイテムの描画 ----
+            for it in left_items:
+                color = get_annot_color_for(MARKER_LINE_COLOR if it['type'] == 'marker'
+                                            else (it['obj']['color'] if not self.grayscale else self._annot_bw_color()))
+                if it['type'] == 'marker':
+                    m = it['obj']
+                    band_x, band_y = to_out(0, m['y'])
+                    label_y = int(it['draw_y']) + top_margin
+                    # ティック
+                    draw.line([(band_x, band_y), (band_x + 15, band_y)], fill=color, width=2)
+                    # 引き出し線
+                    label_x = left_margin - 20
+                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=1)
+                    draw.text((label_x - 5, label_y - font_size // 2),
+                               make_marker_text(m), fill=color, font=font, anchor="rm")
+                else:
+                    s = it['obj']
+                    pt_x, pt_y = to_out(s['x'], s['y'])
+                    label_y = int(it['draw_y']) + top_margin
+                    # 点（塗りつぶし円）
+                    r = max(4, int(img_h * 0.005))
+                    draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
+                                 fill=color, outline="white")
+                    # 引き出し線
+                    label_x = left_margin - 20
+                    draw.line([(label_x, label_y), (pt_x, pt_y)], fill=color, width=1)
+                    draw.text((label_x - 5, label_y - font_size // 2),
+                               make_sample_text(s), fill=color, font=font, anchor="rm")
 
-            # ---- 右側マーカー ----
-            right_m_items = [{'orig_y': m['y'], 'draw_y': m['y'], 'obj': m}
-                             for m in right_markers]
-            right_m_items = resolve_y(right_m_items)
-            for it in right_m_items:
-                m = it['obj']
-                color = get_annot_color_for(MARKER_LINE_COLOR)
-                band_x, band_y = to_out(img_w, m['y'])
-                label_y = int(it['draw_y']) + top_margin
-                draw.line([(band_x - 15, band_y), (band_x, band_y)], fill=color, width=2)
-                label_x = left_margin + img_w + 20
-                draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=1)
-                draw.text((label_x + 5, label_y - font_size // 2),
-                           make_marker_text(m), fill=color, font=font, anchor="lm")
-
-            # ---- 左側試料（クリック点まで注釈線、点を超えない） ----
-            left_s_items = [{'orig_y': s['y'], 'draw_y': s['y'], 'obj': s}
-                            for s in left_samples]
-            left_s_items = resolve_y(left_s_items)
-            for it in left_s_items:
-                s = it['obj']
-                color = s['color'] if not self.grayscale else self._annot_bw_color()
-                # クリックした点の座標
-                pt_x, pt_y = to_out(s['x'], s['y'])
-                label_y = int(it['draw_y']) + top_margin
-                # 点（塗りつぶし円）
-                r = max(4, int(img_h * 0.005))
-                draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
-                             fill=color, outline="white")
-                # 余白ラベルからクリック点まで引き出し線（点を超えない）
-                label_x = left_margin - 20
-                draw.line([(label_x, label_y), (pt_x, pt_y)], fill=color, width=1)
-                draw.text((label_x - 5, label_y - font_size // 2),
-                           make_sample_text(s), fill=color, font=font, anchor="rm")
-
-            # ---- 右側試料 ----
-            right_s_items = [{'orig_y': s['y'], 'draw_y': s['y'], 'obj': s}
-                             for s in right_samples]
-            right_s_items = resolve_y(right_s_items)
-            for it in right_s_items:
-                s = it['obj']
-                color = s['color'] if not self.grayscale else self._annot_bw_color()
-                pt_x, pt_y = to_out(s['x'], s['y'])
-                label_y = int(it['draw_y']) + top_margin
-                r = max(4, int(img_h * 0.005))
-                draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
-                             fill=color, outline="white")
-                label_x = left_margin + img_w + 20
-                draw.line([(pt_x, pt_y), (label_x, label_y)], fill=color, width=1)
-                draw.text((label_x + 5, label_y - font_size // 2),
-                           make_sample_text(s), fill=color, font=font, anchor="lm")
+            # ---- 右側アイテムの描画 ----
+            for it in right_items:
+                color = get_annot_color_for(MARKER_LINE_COLOR if it['type'] == 'marker'
+                                            else (it['obj']['color'] if not self.grayscale else self._annot_bw_color()))
+                if it['type'] == 'marker':
+                    m = it['obj']
+                    band_x, band_y = to_out(img_w, m['y'])
+                    label_y = int(it['draw_y']) + top_margin
+                    # ティック
+                    draw.line([(band_x - 15, band_y), (band_x, band_y)], fill=color, width=2)
+                    # 引き出し線
+                    label_x = left_margin + img_w + 20
+                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=1)
+                    draw.text((label_x + 5, label_y - font_size // 2),
+                               make_marker_text(m), fill=color, font=font, anchor="lm")
+                else:
+                    s = it['obj']
+                    pt_x, pt_y = to_out(s['x'], s['y'])
+                    label_y = int(it['draw_y']) + top_margin
+                    # 点（塗りつぶし円）
+                    r = max(4, int(img_h * 0.005))
+                    draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
+                                 fill=color, outline="white")
+                    # 引き出し線
+                    label_x = left_margin + img_w + 20
+                    draw.line([(pt_x, pt_y), (label_x, label_y)], fill=color, width=1)
+                    draw.text((label_x + 5, label_y - font_size // 2),
+                               make_sample_text(s), fill=color, font=font, anchor="lm")
 
             # ---- レーンラベルを出力画像に描画 ----
             if label_list and self.start_line_y is not None:
