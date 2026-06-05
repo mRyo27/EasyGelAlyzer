@@ -1,0 +1,5 @@
+マイナーアップデート内容：
+1.レイヤーの位置調節を↑↓ボタンだけではなく、ドラッグアンドドロップでも対応。
+
+Minor update details:
+1. Layer position can now be adjusted not only with the up/down buttons, but also by drag and drop.

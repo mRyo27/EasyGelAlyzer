@@ -818,6 +818,7 @@ class AnnotationMixin:
         if m_idx is not None:
             new_idx = m_idx + direction
             if 0 <= new_idx < len(self.markers):
+                self.push_undo_state()
                 self.markers[m_idx], self.markers[new_idx] = \
                     self.markers[new_idx], self.markers[m_idx]
                 self.update_layer_panel()
@@ -828,6 +829,7 @@ class AnnotationMixin:
         if s_idx is not None:
             new_idx = s_idx + direction
             if 0 <= new_idx < len(self.samples):
+                self.push_undo_state()
                 self.samples[s_idx], self.samples[new_idx] = \
                     self.samples[new_idx], self.samples[s_idx]
                 self.update_sample_colors()

@@ -328,23 +328,51 @@ class MainWindowMixin:
     def _tree_drag_start(self, event):
         if self.layer_tree.identify_region(event.x, event.y) == "separator":
             return "break"
-        # チェックボックス列（#1 Vis, #2 Exp）のクリック前に選択状態を保存
-        # ButtonPress-1 の時点ではまだ Tk のデフォルト選択変更が走っていないので
-        # この時点の selection() が「ユーザーが選んでいた行」になる
+        
         col = self.layer_tree.identify_column(event.x)
-        if col in ("#1", "#2"):
-            self._pre_click_selection = set(self.layer_tree.selection())
+        row = self.layer_tree.identify_row(event.y)
+        
+        # ドラッグ＆ドロップ並び替えの対象か判定
+        is_marker = any(m['id'] == row for m in self.markers)
+        is_sample = any(s['id'] == row for s in self.samples)
+        
+        if col == "#0" and (is_marker or is_sample):
+            self._dnd_reorder_item = row
+            self._dnd_reorder_group = "marker" if is_marker else "sample"
+            self._dnd_parent_node = self.marker_node if is_marker else self.sample_node
+            self.layer_tree.config(cursor="sb_v_double_arrow")
+            self._tree_drag_anchor = None
+            self._tree_drag_box_borders = []
         else:
-            self._pre_click_selection = set()
-        self._tree_drag_anchor = self.layer_tree.identify_row(event.y)
-        self._tree_drag_start_x = event.x
-        self._tree_drag_start_y = event.y
-        self._tree_drag_box_borders = []
-        # 通常のクリック選択はTkに任せる
+            self._dnd_reorder_item = None
+            self._dnd_reorder_group = None
+            self._dnd_parent_node = None
+            
+            # 従来の範囲選択
+            if col in ("#1", "#2"):
+                self._pre_click_selection = set(self.layer_tree.selection())
+            else:
+                self._pre_click_selection = set()
+            self._tree_drag_anchor = row
+            self._tree_drag_start_x = event.x
+            self._tree_drag_start_y = event.y
+            self._tree_drag_box_borders = []
 
     def _tree_drag_motion(self, event):
         if self.layer_tree.identify_region(event.x, event.y) == "separator":
             return "break"
+            
+        if hasattr(self, '_dnd_reorder_item') and self._dnd_reorder_item:
+            target_row = self.layer_tree.identify_row(event.y)
+            if not target_row:
+                return
+            
+            parent = self.layer_tree.parent(target_row)
+            if parent == self._dnd_parent_node and target_row != self._dnd_reorder_item:
+                target_idx = self.layer_tree.index(target_row)
+                self.layer_tree.move(self._dnd_reorder_item, self._dnd_parent_node, target_idx)
+            return
+
         row = self.layer_tree.identify_row(event.y)
         if not row or not self._tree_drag_anchor:
             return
@@ -382,6 +410,48 @@ class MainWindowMixin:
             self._tree_drag_box_borders[3].place(x=x + w - bw, y=y, width=bw, height=h)
 
     def _tree_drag_end(self, event):
+        if hasattr(self, '_dnd_reorder_item') and self._dnd_reorder_item:
+            self.layer_tree.config(cursor="")
+            
+            children = self.layer_tree.get_children(self._dnd_parent_node)
+            
+            if self._dnd_reorder_group == "marker":
+                id_to_marker = {m['id']: m for m in self.markers}
+                new_markers = []
+                for child_id in children:
+                    if child_id in id_to_marker:
+                        new_markers.append(id_to_marker[child_id])
+                
+                if self.markers != new_markers:
+                    self.push_undo_state()
+                    self.markers = new_markers
+                    self.calculate_calibration_curve()
+                    self.update_sample_sizes()
+                    self.update_layer_panel()
+                    self.layer_tree.selection_set(self._dnd_reorder_item)
+                    self.redraw_canvas()
+                    
+            elif self._dnd_reorder_group == "sample":
+                id_to_sample = {s['id']: s for s in self.samples}
+                new_samples = []
+                for child_id in children:
+                    if child_id in id_to_sample:
+                        new_samples.append(id_to_sample[child_id])
+                
+                if self.samples != new_samples:
+                    self.push_undo_state()
+                    self.samples = new_samples
+                    self.update_sample_colors()
+                    self.update_layer_panel()
+                    self.update_result_table()
+                    self.layer_tree.selection_set(self._dnd_reorder_item)
+                    self.redraw_canvas()
+            
+            self._dnd_reorder_item = None
+            self._dnd_reorder_group = None
+            self._dnd_parent_node = None
+            return
+
         self._tree_drag_anchor = None
         if hasattr(self, '_tree_drag_box_borders') and self._tree_drag_box_borders:
             for border in self._tree_drag_box_borders:
