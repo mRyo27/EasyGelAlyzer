@@ -1,5 +1,32 @@
+v4.3.5 to v4.7.0
+
+パッチアップデート内容
+
+1.レイヤータブの系列幅をユーザーが変更できる状態を固定に変更（修正）
+2.レイヤーのカテゴリーの親ノードを選択できなくする（修正）
+3.測定データが多い場合に画像出力をすると、アノテーション画像のデータが見切れてしまうバグを修正
+
+
+
+
 マイナーアップデート内容：
-1.レイヤーの位置調節を↑↓ボタンだけではなく、ドラッグアンドドロップでも対応。
+
+1.レイヤーを複数選択する際に選択範囲を表示するボックスを追加
+2.レイヤーを複数選択した状態で、表示・非表示のチェックボックをどれかひとつでも動作させたら、選択中の他のチェックボックも同期する（操作画面上のチェックボックスと画像出力用のチェックボックス両方に実装）。
+3.レイヤー名、Rf、サイズなどの部分にある「表示・非表示」用のチェックボックスを使用すればすべてのレイヤーの表示・非表示を切り替えられるように変更。
+4.レイヤーの位置調節を↑↓ボタンだけではなく、ドラッグアンドドロップでも対応。
+
+
+Patch Update
+
+1. Changed the ability for users to change the series width in the Layers tab to a fixed state (correction).
+2. Fixed an issue where the parent node of a layer category could not be selected.
+3.Fixed a bug where, when outputting an image with a large amount of measurement data, the data in the annotation image would be cut off.
+
 
 Minor update details:
-1. Layer position can now be adjusted not only with the up/down buttons, but also by drag and drop.
+
+1. Added a box to display the selection area when multiple layers are selected.
+2.When multiple layers are selected, activating any one of the show/hide checkboxes will synchronize the other selected checkboxes (implemented for both checkboxes on the operation screen and checkboxes for image output).
+3.The "Show/Hide" checkboxes in the Layer Name, Rf, Size, etc. sections can now be used to toggle the visibility of all layers.
+4. Layer position can now be adjusted not only with the up/down buttons, but also by drag and drop.
