@@ -16,9 +16,9 @@ class MainWindowMixin:
         self._file_menu.add_command(label=T('menu_save'), command=self.save_project_quick)
         self._file_menu.add_command(label=T('menu_load_project'), command=self.load_project)
         self._file_menu.add_separator()
-        self._file_menu.add_command(label=T('menu_excel'), command=self.export_to_excel)
-        self._file_menu.add_command(label='Export CSV', command=self.export_to_csv)
-        self._file_menu.add_command(label=T('menu_image'), command=self.export_annotated_image)
+        self._file_menu.add_command(label=f"{T('menu_excel')} (Ctrl+E)", command=self.export_to_excel)
+        self._file_menu.add_command(label=f"{T('btn_csv')} (Ctrl+Shift+E)", command=self.export_to_csv)
+        self._file_menu.add_command(label=f"{T('menu_image')} (Ctrl+I)", command=self.export_annotated_image)
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_quit'), command=self.on_app_close)
 
@@ -218,18 +218,14 @@ class MainWindowMixin:
         self.btn_excel = ttk.Button(self._output_frame, text=T('btn_excel'),
                     command=self.export_to_excel, width=14)
         self.btn_excel.pack(side=tk.LEFT, padx=6)
-        # show shortcut on button label
-        self.btn_excel.config(text=f"{T('btn_excel')} (Ctrl+E)")
 
         self.btn_csv = ttk.Button(self._output_frame, text=T('btn_csv'),
                     command=self.export_to_csv, width=14)
         self.btn_csv.pack(side=tk.LEFT, padx=6)
-        self.btn_csv.config(text=f"{T('btn_csv')} (Ctrl+Shift+E)")
 
         self.btn_image = ttk.Button(self._output_frame, text=T('btn_image'),
                     command=self.export_annotated_image, width=14)
         self.btn_image.pack(side=tk.LEFT, padx=6)
-        self.btn_image.config(text=f"{T('btn_image')} (Ctrl+I)")
 
         self.lbl_status = ttk.Label(tb_row3,
                                     text=T('status_init'),
@@ -656,10 +652,11 @@ class MainWindowMixin:
             self._file_menu.entryconfig(3, label=T('menu_save'))
             self._file_menu.entryconfig(4, label=T('menu_load_project'))
             # index 5 = separator
-            self._file_menu.entryconfig(6, label=T('menu_excel'))
-            self._file_menu.entryconfig(7, label=T('menu_image'))
-            # index 8 = separator
-            self._file_menu.entryconfig(9, label=T('menu_quit'))
+            self._file_menu.entryconfig(6, label=f"{T('menu_excel')} (Ctrl+E)")
+            self._file_menu.entryconfig(7, label=f"{T('btn_csv')} (Ctrl+Shift+E)")
+            self._file_menu.entryconfig(8, label=f"{T('menu_image')} (Ctrl+I)")
+            # index 9 = separator
+            self._file_menu.entryconfig(10, label=T('menu_quit'))
         except Exception:
             pass
 
@@ -764,9 +761,9 @@ class MainWindowMixin:
         self.btn_color_bw_toggle.config(
             text=T('btn_bw') if self.grayscale else T('btn_color'))
         try:
-            self.btn_excel.config(text=f"{T('btn_excel')} (Ctrl+E)")
-            self.btn_csv.config(text=f"{T('btn_csv')} (Ctrl+Shift+E)")
-            self.btn_image.config(text=f"{T('btn_image')} (Ctrl+I)")
+            self.btn_excel.config(text=T('btn_excel'))
+            self.btn_csv.config(text=T('btn_csv'))
+            self.btn_image.config(text=T('btn_image'))
         except Exception:
             pass
 

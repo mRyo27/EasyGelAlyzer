@@ -1,0 +1,12 @@
+v4.8.6
+
+パッチアップデート内容
+
+1. ツールバーの「出力」セクションにある各ボタン（Excel、CSV、画像）からショートカットキーの表示を削除し、テキストの見切れを防止しました。
+2. その代わりとして、アプリ上部の「File」メニュー（タブ）にある各出力項目（Excelエクスポート、CSVエクスポート、画像エクスポート）のラベルに、ショートカットキーの案内（Ctrl+E、Ctrl+Shift+E、Ctrl+I）を表示するように修正しました。
+
+
+Patch Update
+
+1. Removed shortcut key displays from the output buttons on the toolbar (Excel, CSV, Image) to prevent text truncation on the UI.
+2. Instead, added shortcut key guides (Ctrl+E, Ctrl+Shift+E, Ctrl+I) to the labels of the corresponding output options in the top "File" menu.
