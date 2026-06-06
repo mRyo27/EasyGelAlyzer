@@ -1,0 +1,10 @@
+v4.10.0
+
+マイナーアップデート内容
+
+1.結果テーブルの上部または下部に「クリップボードにコピー」ボタンを追加。形式：タブ区切りテキスト（TSV）——Excel・Numbers・Google スプレッドシートと互換。ヘッダー行を含める
+
+
+Minor Update
+
+1. Add a "Copy to Clipboard" button to the top or bottom of the results table. Format: Tab-delimited Text (TSV) — Compatible with Excel, Numbers, and Google Sheets. Include a header row.

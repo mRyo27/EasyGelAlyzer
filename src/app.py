@@ -171,10 +171,9 @@ class EasyGelAlyzerApp(
         if self.original_image is not None and (
                 self.start_line_y is not None or self.end_line_y is not None
                 or self.markers or self.samples or self.lane_labels):
-            res = messagebox.askyesnocancel(
+            res = self.show_yesnocancel_dialog(
                 T('confirm_quit_title'),
-                T('confirm_quit_msg'),
-                parent=self.root
+                T('confirm_quit_msg')
             )
             if res is True:
                 # はい：保存を実行する。保存が成功（True）した場合のみ終了する。

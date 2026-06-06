@@ -2,6 +2,45 @@ from common import *
 
 
 class UIDialogMixin:
+    def show_yesnocancel_dialog(self, title, message):
+        """はい/いいえ/キャンセルを言語設定に応じて表示するダイアログ"""
+        result = [None]
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.geometry("400x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+        x = self.root.winfo_screenwidth() // 2 - 200
+        y = self.root.winfo_screenheight() // 2 - 75
+        dialog.geometry(f"+{x}+{y}")
+        
+        ttk.Label(dialog, text=message, wraplength=350, justify=tk.CENTER).pack(pady=20)
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(pady=10)
+        
+        def on_yes():
+            result[0] = True
+            dialog.destroy()
+        
+        def on_no():
+            result[0] = False
+            dialog.destroy()
+        
+        def on_cancel():
+            result[0] = None
+            dialog.destroy()
+        
+        ttk.Button(btn_frame, text=T('dlg_yes'), command=on_yes, width=12).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('dlg_no'), command=on_no, width=12).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('dlg_cancel'), command=on_cancel, width=12).pack(side=tk.LEFT, padx=5)
+        
+        dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+        self.root.wait_window(dialog)
+        return result[0]
+
     def show_mode_selection_dialog(self):
         dialog = tk.Toplevel(self.root)
         dialog.title(T("dlg_mode_title"))
