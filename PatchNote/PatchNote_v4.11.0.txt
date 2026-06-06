@@ -1,0 +1,10 @@
+v4.11.0
+
+マイナーアップデート内容
+
+1.分子量マーカーのプリセットを追加できるように。手動入力モードも継続して採用し、追加時に選択可能。
+
+
+Minor Update
+
+1. It will now be possible to add preset molecular weight markers. The manual input mode will also continue to be available and can be selected when adding presets.
