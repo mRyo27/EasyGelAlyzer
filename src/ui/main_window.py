@@ -27,6 +27,8 @@ class MainWindowMixin:
         edit_menu.add_command(label=T('menu_switch_mode'), command=self.switch_mode_via_menu)
         edit_menu.add_command(label=T('menu_undo'), command=self.undo)
         edit_menu.add_command(label=T('menu_redo'), command=self.redo)
+        edit_menu.add_separator()
+        edit_menu.add_command(label=T('menu_preset_manager'), command=self.open_preset_manager)
 
         edit_menu.add_separator()
         _lang_btn_label = 'Switch to English' if get_language() == 'ja' else 'Switch to Japanese'
@@ -215,6 +217,28 @@ class MainWindowMixin:
                         fg="#B044FF", font=("Helvetica", 11, "bold"), width=14,
                         command=self.start_marker_measurement)
         self.btn_add_marker.pack(side=tk.LEFT, padx=2)
+
+        self.preset_mode_var = tk.StringVar(value="manual")
+        self.radio_manual = ttk.Radiobutton(self._analysis_frame, text=T('lbl_manual_mode'),
+                                            variable=self.preset_mode_var, value="manual",
+                                            command=self._on_preset_mode_toggle)
+        self.radio_manual.pack(side=tk.LEFT, padx=3)
+        self.radio_preset = ttk.Radiobutton(self._analysis_frame, text=T('lbl_preset_mode'),
+                                            variable=self.preset_mode_var, value="preset",
+                                            command=self._on_preset_mode_toggle)
+        self.radio_preset.pack(side=tk.LEFT, padx=3)
+        
+        self.combo_presets = ttk.Combobox(self._analysis_frame, width=15, state="readonly")
+        self.combo_presets.pack(side=tk.LEFT, padx=3)
+        self.combo_presets.bind("<<ComboboxSelected>>", self._on_preset_selection_changed)
+        
+        self.btn_manage_presets = ttk.Button(self._analysis_frame, text=T('btn_manage_presets'),
+                                             command=self.open_preset_manager)
+        self.btn_manage_presets.pack(side=tk.LEFT, padx=3)
+        
+        self.update_preset_combobox()
+        self._update_preset_controls_state()
+
         self.btn_add_sample = tk.Button(self._analysis_frame, text=T('btn_add_sample'),
                         fg="#34C759", font=("Helvetica", 11, "bold"), width=14,
                         command=self.start_sample_measurement)
@@ -778,6 +802,12 @@ class MainWindowMixin:
         self.btn_add_sample.config(text=T('btn_add_sample'))
         self.btn_add_lane.config(text=T('btn_add_lane'))
         self.btn_end_mode.config(text=T('btn_end_mode'))
+        try:
+            self.radio_manual.config(text=T('lbl_manual_mode'))
+            self.radio_preset.config(text=T('lbl_preset_mode'))
+            self.btn_manage_presets.config(text=T('btn_manage_presets'))
+        except Exception:
+            pass
 
         # ---- ツールバー出力グループ ----
         try:
@@ -854,5 +884,65 @@ class MainWindowMixin:
             messagebox.showinfo(T("ok_title"), T("ok_clipboard_copy"))
         except Exception as e:
             messagebox.showerror(T("err_title"), f"Failed to copy to clipboard: {e}")
+
+    def open_preset_manager(self):
+        from ui.preset_manager import PresetManagerWindow
+        PresetManagerWindow.show(self.root, on_change_callback=self.update_preset_combobox)
+
+    def update_preset_combobox(self):
+        import core.marker_presets as mp
+        presets = mp.list_presets()
+        names = [p["name"] for p in presets]
+        self.combo_presets.config(values=names)
+        if names:
+            if self.combo_presets.get() not in names:
+                self.combo_presets.set(names[0])
+        else:
+            self.combo_presets.set("")
+
+    def _on_preset_mode_toggle(self):
+        self._update_preset_controls_state()
+        if getattr(self, 'active_mode', 'none') == 'add_marker':
+            self.start_marker_measurement()
+
+    def _on_preset_selection_changed(self, event):
+        if getattr(self, 'active_mode', 'none') == 'add_marker':
+            self.start_marker_measurement()
+
+    def _update_preset_controls_state(self):
+        is_add_marker = (getattr(self, 'active_mode', 'none') == 'add_marker')
+        state_mode = tk.NORMAL if is_add_marker else tk.DISABLED
+        
+        self.radio_manual.config(state=state_mode)
+        self.radio_preset.config(state=state_mode)
+        
+        is_preset = (self.preset_mode_var.get() == "preset")
+        self.combo_presets.config(state="readonly" if (is_add_marker and is_preset) else tk.DISABLED)
+
+    def show_preset_guide_overlay(self, text):
+        if getattr(self, 'guide_overlay', None):
+            self.guide_overlay.destroy()
+        
+        self.guide_overlay = tk.Frame(self.canvas, bg="#FFF3CD", bd=1, relief=tk.SOLID)
+        self.guide_overlay.place(relx=0.5, y=10, anchor="n", width=420, height=70)
+        
+        lbl = tk.Label(self.guide_overlay, text=text, bg="#FFF3CD", fg="#856404",
+                       font=("Helvetica", 11, "bold"))
+        lbl.pack(pady=(5, 2))
+        
+        btn_frame = tk.Frame(self.guide_overlay, bg="#FFF3CD")
+        btn_frame.pack(pady=2)
+        
+        btn_skip = ttk.Button(btn_frame, text=T("btn_skip"), command=self._skip_preset_marker)
+        btn_skip.pack(side=tk.LEFT, padx=5)
+        
+        btn_end = ttk.Button(btn_frame, text=T("btn_end"), command=self.end_measurement_mode)
+        btn_end.pack(side=tk.LEFT, padx=5)
+
+    def hide_preset_guide_overlay(self):
+        if getattr(self, 'guide_overlay', None):
+            self.guide_overlay.destroy()
+            self.guide_overlay = None
+
 
 

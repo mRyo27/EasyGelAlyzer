@@ -286,13 +286,57 @@ class AnnotationMixin:
             return
         self._switch_mode('add_marker')
         self.canvas.config(cursor="crosshair")
-        self.lbl_status.config(text=T('status_add_marker'))
+        
+        if getattr(self, 'preset_mode_var', None) and self.preset_mode_var.get() == "preset":
+            preset_name = self.combo_presets.get()
+            import core.marker_presets as mp
+            preset = mp.get_preset(preset_name)
+            if not preset or not preset.get("sizes"):
+                messagebox.showwarning(T("warn_title"), "Please select a valid preset.")
+                self.preset_mode_var.set("manual")
+                self._update_preset_controls_state()
+                self.lbl_status.config(text=T('status_add_marker'))
+                return
+            
+            self._active_preset_sizes = preset["sizes"]
+            self._preset_index = 0
+            self._preset_added_markers = []
+            self._update_preset_guide()
+        else:
+            self.lbl_status.config(text=T('status_add_marker'))
 
     def prompt_marker_size(self, iy):
         denom = self.end_line_y - self.start_line_y
         if denom == 0:
             return
         rf = (iy - self.start_line_y) / denom
+        
+        if getattr(self, 'preset_mode_var', None) and self.preset_mode_var.get() == "preset" and hasattr(self, '_preset_index'):
+            if self._preset_index < len(self._active_preset_sizes):
+                val = self._active_preset_sizes[self._preset_index]
+                name = f"Marker-{val}"
+                m_id = str(uuid.uuid4())
+                self.markers.append({
+                    'id': m_id,
+                    'name': name,
+                    'y': iy,
+                    'size': val,
+                    'rf': rf
+                })
+                self._preset_added_markers.append((self._preset_index, m_id))
+                self.markers.sort(key=lambda x: x['rf'])
+                self.calculate_calibration_curve()
+                self.update_sample_sizes()
+                self.update_layer_panel()
+                self.redraw_canvas()
+                
+                self._preset_index += 1
+                if self._preset_index < len(self._active_preset_sizes):
+                    self._update_preset_guide()
+                else:
+                    self.end_measurement_mode()
+            return
+
         unit = "kDa" if self.mode == "protein" else "bp"
         existing_sizes = [m['size'] for m in self.markers]
         index = len(self.markers) + 1
@@ -314,24 +358,64 @@ class AnnotationMixin:
             self.update_sample_sizes()
             self.update_layer_panel()
             self.redraw_canvas()
-        # 連続測定モード継続
 
     def end_measurement_mode(self):
         self.active_mode = 'none'
         self.canvas.config(cursor="")
         self.cancel_trimming()
         self.lbl_status.config(text=T('status_end_mode'))
+        if hasattr(self, 'hide_preset_guide_overlay'):
+            self.hide_preset_guide_overlay()
+        if hasattr(self, '_update_preset_controls_state'):
+            self._update_preset_controls_state()
 
     def _switch_mode(self, new_mode):
         """現在の測定モードを終了してから新しいモードに切り替える"""
         if self.active_mode not in ('none', new_mode):
             self.end_measurement_mode()
         self.active_mode = new_mode
-        # crosshair は add_marker/add_sample のみ、それ以外はデフォルトに戻す
+        if hasattr(self, '_update_preset_controls_state'):
+            self._update_preset_controls_state()
         if new_mode in ('add_marker', 'add_sample'):
             self.canvas.config(cursor="crosshair")
         else:
             self.canvas.config(cursor="")
+
+    def _update_preset_guide(self):
+        if hasattr(self, '_preset_index') and hasattr(self, '_active_preset_sizes'):
+            if self._preset_index < len(self._active_preset_sizes):
+                val = self._active_preset_sizes[self._preset_index]
+                unit = "kDa" if self.mode == "protein" else "bp"
+                val_str = f"{val:.2f}" if self.mode == "protein" else f"{int(val)}"
+                guide_text = T("lbl_preset_guide").format(
+                    size=val_str,
+                    unit=unit,
+                    index=self._preset_index + 1,
+                    total=len(self._active_preset_sizes)
+                )
+                if hasattr(self, 'show_preset_guide_overlay'):
+                    self.show_preset_guide_overlay(guide_text)
+                self.lbl_status.config(text=guide_text)
+
+    def _skip_preset_marker(self):
+        if hasattr(self, '_preset_index') and hasattr(self, '_active_preset_sizes'):
+            self._preset_index += 1
+            if self._preset_index < len(self._active_preset_sizes):
+                self._update_preset_guide()
+            else:
+                self.end_measurement_mode()
+
+    def _undo_preset_marker(self):
+        if hasattr(self, '_preset_index') and getattr(self, '_preset_added_markers', None):
+            if self._preset_index > 0:
+                last_idx, last_mid = self._preset_added_markers.pop()
+                self.markers = [m for m in self.markers if m['id'] != last_mid]
+                self._preset_index = last_idx
+                self.calculate_calibration_curve()
+                self.update_sample_sizes()
+                self.update_layer_panel()
+                self.redraw_canvas()
+                self._update_preset_guide()
 
     # ------------------------------------------------------------------ #
     #  泳動ラインラベル追加

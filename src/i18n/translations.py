@@ -1019,6 +1019,78 @@ TRANSLATIONS = {
     "warn_no_samples": {
         "en": "No sample data registered.",
         "ja": "試料データが登録されていません"
+    },
+    "menu_preset_manager": {
+        "en": "Marker Presets...",
+        "ja": "マーカープリセット管理..."
+    },
+    "btn_manage_presets": {
+        "en": "Manage...",
+        "ja": "管理..."
+    },
+    "lbl_preset_mode": {
+        "en": "Preset Mode",
+        "ja": "プリセットモード"
+    },
+    "lbl_manual_mode": {
+        "en": "Manual Mode",
+        "ja": "手動モード"
+    },
+    "btn_skip": {
+        "en": "Skip",
+        "ja": "スキップ"
+    },
+    "btn_end": {
+        "en": "End",
+        "ja": "終了"
+    },
+    "lbl_preset_guide": {
+        "en": "📍 Click the band for {size} {unit} ({index}/{total})",
+        "ja": "📍 {size} {unit} のバンドをクリック ({index}/{total})"
+    },
+    "dlg_preset_manager_title": {
+        "en": "Manage Marker Presets",
+        "ja": "マーカープリセット管理"
+    },
+    "lbl_preset_list": {
+        "en": "Presets",
+        "ja": "プリセット一覧"
+    },
+    "btn_new_preset": {
+        "en": "New",
+        "ja": "＋ 新規作成"
+    },
+    "btn_duplicate_preset": {
+        "en": "Duplicate",
+        "ja": "複製"
+    },
+    "btn_delete_preset": {
+        "en": "Delete",
+        "ja": "削除"
+    },
+    "lbl_edit_preset": {
+        "en": "Edit Panel",
+        "ja": "編集パネル"
+    },
+    "lbl_preset_name": {
+        "en": "Preset Name",
+        "ja": "プリセット名"
+    },
+    "lbl_band_sizes": {
+        "en": "Band Sizes (top to bottom)",
+        "ja": "バンドサイズ一覧（上から順）"
+    },
+    "btn_add_band": {
+        "en": "+ Add Band",
+        "ja": "＋ バンドを追加"
+    },
+    "btn_save": {
+        "en": "Save",
+        "ja": "保存"
+    },
+    "btn_cancel": {
+        "en": "Cancel",
+        "ja": "キャンセル"
     }
 }
 

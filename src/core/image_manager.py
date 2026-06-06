@@ -116,6 +116,9 @@ class ImageManagerMixin:
         self.redraw_canvas()
 
     def on_pan_start(self, event):
+        if getattr(self, 'active_mode', 'none') == 'add_marker' and getattr(self, 'preset_mode_var', None) and self.preset_mode_var.get() == "preset":
+            self._undo_preset_marker()
+            return "break"
         self._pan_start_x = event.x
         self._pan_start_y = event.y
         self._pan_orig_x = self.pan_x
