@@ -147,10 +147,12 @@ class MainWindowMixin:
 
         self._result_table_frame = ttk.LabelFrame(self.right_frame, text=T('result_table'), padding=5)
         self._result_table_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.result_table = ttk.Treeview(self._result_table_frame, columns=("Rf", "Size"), show="headings")
+        self.result_table = ttk.Treeview(self._result_table_frame, columns=("Name", "Rf", "Size"), show="headings")
+        self.result_table.heading("Name", text=T('xl_sample_name'))
         self.result_table.heading("Rf", text="Rf")
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')
         self.result_table.heading("Size", text=size_heading)
+        self.result_table.column("Name", width=100, anchor="center")
         self.result_table.column("Rf", width=80, anchor="center")
         self.result_table.column("Size", width=120, anchor="center")
         self.result_table.pack(fill=tk.BOTH, expand=True)
@@ -725,6 +727,7 @@ class MainWindowMixin:
             self._result_table_frame.config(text=T('result_table'))
         except Exception:
             pass
+        self.result_table.heading("Name", text=T('xl_sample_name'))
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')
         self.result_table.heading("Size", text=size_heading)
         try:

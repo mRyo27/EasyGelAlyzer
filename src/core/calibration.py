@@ -9,7 +9,7 @@ class CalibrationMixin:
         for s in self.samples:
             size_str = (f"{s['size']:.2f} {unit}" if (self.mode == "protein" and s['size'] > 0)
                         else (f"{int(s['size'])} {unit}" if s['size'] > 0 else "N/A"))
-            self.result_table.insert("", "end", values=(f"{s['rf']:.4f}", size_str))
+            self.result_table.insert("", "end", values=(s['name'], f"{s['rf']:.4f}", size_str))
 
     # ------------------------------------------------------------------ #
     #  検量線計算・グラフ
