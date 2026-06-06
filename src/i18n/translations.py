@@ -540,6 +540,14 @@ TRANSLATIONS = {
         "en": "OK",
         "ja": "OK"
     },
+    "dlg_yes": {
+        "en": "Yes",
+        "ja": "はい"
+    },
+    "dlg_no": {
+        "en": "No",
+        "ja": "いいえ"
+    },
     "dlg_add": {
         "en": "Add",
         "ja": "追加"
