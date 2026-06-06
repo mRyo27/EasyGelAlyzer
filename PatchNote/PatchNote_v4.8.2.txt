@@ -1,0 +1,10 @@
+v4.8.2
+
+パッチアップデート内容
+
+1. EXEビルド後にアプリケーションを起動した際に発生する `ModuleNotFoundError: No module named 'ui.main_window'` のエラーを、相対インポートへの変更と `src/__init__.py` の追加により修正しました。
+
+
+Patch Update
+
+1. Fixed a `ModuleNotFoundError: No module named 'ui.main_window'` error that occurred when launching the application after EXE packaging, by switching to relative imports and adding `src/__init__.py`.
