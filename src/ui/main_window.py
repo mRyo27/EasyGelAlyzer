@@ -150,16 +150,15 @@ class MainWindowMixin:
 
         tb_row1 = ttk.Frame(toolbar_container)
         tb_row1.pack(fill=tk.X, pady=2)
-        self.btn_load = ttk.Button(tb_row1, text=T('tb_load'), command=self.load_image)
+        self.btn_load = ttk.Button(tb_row1, text=T('tb_load'), command=self.load_image, width=14)
         self.btn_load.pack(side=tk.LEFT, padx=3)
-        self.btn_trim = ttk.Button(tb_row1, text=T('tb_trim'), command=self.start_trimming)
+        self.btn_trim = ttk.Button(tb_row1, text=T('tb_trim'), command=self.start_trimming, width=14)
         self.btn_trim.pack(side=tk.LEFT, padx=3)
-        self.btn_adjust = ttk.Button(tb_row1, text=T('tb_adjust'),
-                   command=self.show_adjustment_panel)
+        self.btn_adjust = ttk.Button(tb_row1, text=T('tb_adjust'), command=self.show_adjustment_panel, width=14)
         self.btn_adjust.pack(side=tk.LEFT, padx=3)
-        self.btn_undo = ttk.Button(tb_row1, text=T('tb_undo'), command=self.undo)
+        self.btn_undo = ttk.Button(tb_row1, text=T('tb_undo'), command=self.undo, width=14)
         self.btn_undo.pack(side=tk.LEFT, padx=3)
-        self.btn_redo = ttk.Button(tb_row1, text=T('tb_redo'), command=self.redo)
+        self.btn_redo = ttk.Button(tb_row1, text=T('tb_redo'), command=self.redo, width=14)
         self.btn_redo.pack(side=tk.LEFT, padx=3)
 
         tb_row2 = ttk.Frame(toolbar_container)
@@ -214,16 +213,21 @@ class MainWindowMixin:
         # === 右グループ: 出力 ===
         self._output_frame = ttk.LabelFrame(tb_row3, text=T('tb_output'), padding=2)
         self._output_frame.pack(side=tk.RIGHT, padx=4)
-        self.btn_color_bw_toggle = ttk.Button(self._output_frame, text=T('btn_color'),
-                              command=self.toggle_color_grayscale, width=12)
+        self.btn_color_bw_toggle = ttk.Button(self._output_frame, text=T('btn_color'), command=self.toggle_color_grayscale, width=14)
         self.btn_color_bw_toggle.pack(side=tk.LEFT, padx=6)
-        self.btn_excel = ttk.Button(self._output_frame, text=T('btn_excel'),
-                   command=self.export_to_excel, width=14)
+                self.btn_excel = ttk.Button(self._output_frame, text=T('btn_excel'),
+                    command=self.export_to_excel, width=14)
         self.btn_excel.pack(side=tk.LEFT, padx=6)
         # show shortcut on button label
         self.btn_excel.config(text=f"{T('btn_excel')} (Ctrl+E)")
+
+        self.btn_csv = ttk.Button(self._output_frame, text=T('btn_csv'),
+                    command=self.export_to_csv, width=14)
+        self.btn_csv.pack(side=tk.LEFT, padx=6)
+        self.btn_csv.config(text=f"{T('btn_csv')} (Ctrl+Shift+E)")
+
         self.btn_image = ttk.Button(self._output_frame, text=T('btn_image'),
-                   command=self.export_annotated_image, width=14)
+                    command=self.export_annotated_image, width=14)
         self.btn_image.pack(side=tk.LEFT, padx=6)
         self.btn_image.config(text=f"{T('btn_image')} (Ctrl+I)")
 
@@ -302,6 +306,7 @@ class MainWindowMixin:
         self.root.bind("<Control-s>", lambda e: self.save_project_quick())
         self.root.bind("<Control-Shift-S>", lambda e: self.save_project())
         self.root.bind("<Control-e>", lambda e: self.export_to_excel())
+        self.root.bind("<Control-Shift-E>", lambda e: self.export_to_csv())
         self.root.bind("<Control-i>", lambda e: self.export_annotated_image())
         self.root.bind("<Control-m>", lambda e: self.start_marker_measurement())
         self.root.bind("<Escape>", self._on_escape)

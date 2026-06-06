@@ -1,0 +1,20 @@
+v4.8.1
+
+パッチアップデート内容
+
+1. CSV 出力ボタンを UI に追加し、ショートカット (Ctrl+Shift+E) を実装しました。
+2. ツールバーの Load、Trim、Adjust、Undo、Redo ボタン、および出力パネルのカラー切替ボタンの幅を 14 に統一し、文字が切れないようにしました。
+3. Excel ボタンのショートカット表示を保持しつつ、CSV ボタンのショートカット表示も追加しました。
+4. `Ctrl+Shift+E` キーバインディングを追加し、CSV エクスポートがキーボード操作で可能になりました。
+5. `src/version.py` のバージョン番号を "4.8.1" に更新しました。
+
+Patch Update
+
+1. Added CSV export button with shortcut (Ctrl+Shift+E) in the UI.
+2. Unified button widths (width=14) for Load, Trim, Adjust, Undo, Redo, and color toggle to prevent text truncation.
+3. Preserved Excel button shortcut display and added CSV button shortcut display.
+4. Added keybinding `<Control-Shift-E>` for CSV export.
+5. Updated version number to "4.8.1" in `src/version.py`.
+
+Minor update details:
+- UI consistency improvements enhance visual clarity and user experience.
