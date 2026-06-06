@@ -1,4 +1,5 @@
 from common import *
+import csv
 from openpyxl.chart import ScatterChart, Reference, Series
 
 
@@ -127,6 +128,37 @@ class ExcelExportMixin:
             messagebox.showinfo(T("ok_title"), T("ok_excel"))
         except Exception as e:
             messagebox.showerror(T("err_title"), T("err_excel").format(e=e))
+
+    def export_to_csv(self):
+        """Export marker and sample data to CSV file."""
+        if not self.markers:
+            messagebox.showwarning(T("warn_title"), T("warn_no_markers") if get_language()=="en" else "マーカーデータが登録されていません")
+            return
+        path = filedialog.asksaveasfilename(
+            title=T("dlg_save_csv") if 'dlg_save_csv' in globals() else "CSV保存",
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv")]
+        )
+        if not path:
+            return
+        try:
+            with open(path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                size_header = T('xl_size_kda') if self.mode == "protein" else T('xl_size_bp')
+                log_header = T('xl_log') if self.mode == "protein" else T('xl_log_size')
+                # Marker data
+                writer.writerow([T('xl_marker_name'), T('xl_rf'), size_header, log_header])
+                for m in self.markers:
+                    writer.writerow([m['name'], m['rf'], m['size'], float(np.log10(m['size']))])
+                writer.writerow([])
+                # Sample data
+                writer.writerow([T('xl_sample_no'), T('xl_sample_name'), T('xl_rf'), size_header])
+                for i, s in enumerate(self.samples, 1):
+                    writer.writerow([i, s['name'], s['rf'], s['size'] if s['size'] > 0 else "N/A"]) 
+            messagebox.showinfo(T("ok_title"), T("ok_csv") if 'ok_csv' in globals() else "CSVエクスポート完了")
+        except Exception as e:
+            messagebox.showerror(T("err_title"), T("err_csv").format(e=e) if 'err_csv' in globals() else f"CSV出力エラー: {e}")
+
 
 
     # ------------------------------------------------------------------ #

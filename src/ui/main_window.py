@@ -17,6 +17,7 @@ class MainWindowMixin:
         self._file_menu.add_command(label=T('menu_load_project'), command=self.load_project)
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_excel'), command=self.export_to_excel)
+        self._file_menu.add_command(label='Export CSV', command=self.export_to_csv)
         self._file_menu.add_command(label=T('menu_image'), command=self.export_annotated_image)
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_quit'), command=self.on_app_close)
