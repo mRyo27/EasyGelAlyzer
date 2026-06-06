@@ -208,6 +208,10 @@ TRANSLATIONS = {
         "en": "Export Excel",
         "ja": "Excelエクスポート"
     },
+    "btn_csv": {
+        "en": "Export CSV",
+        "ja": "CSVエクスポート"
+    },
     "btn_image": {
         "en": "Export Image",
         "ja": "画像を出力"
@@ -764,6 +768,10 @@ TRANSLATIONS = {
         "en": "Save Excel File",
         "ja": "Excelエクスポート先の選択"
     },
+    "dlg_save_csv": {
+        "en": "Save CSV File",
+        "ja": "CSVエクスポート先の選択"
+    },
     "dlg_sample_hint_color": {
         "en": "e.g. Sample1  (Sample1-1, Sample1-2 → same color)",
         "ja": "例 Sample1  ※ Sample1-1, Sample1-2 は同じ色でグループ化されます"
@@ -796,6 +804,10 @@ TRANSLATIONS = {
         "en": "Excel export completed.",
         "ja": "Excelエクスポートが完了しました"
     },
+    "ok_csv": {
+        "en": "CSV export completed.",
+        "ja": "CSVエクスポートが完了しました"
+    },
     "err_title": {
         "en": "Error",
         "ja": "エラー"
@@ -805,8 +817,12 @@ TRANSLATIONS = {
         "ja": "画像出力中にエラーが発生しましたn{e}"
     },
     "err_excel": {
-        "en": "Error during Excel exportn{e}",
-        "ja": "Excelエクスポート中にエラーが発生しましたn{e}"
+        "en": "Error during Excel export\n{e}",
+        "ja": "Excelエクスポート中にエラーが発生しました\n{e}"
+    },
+    "err_csv": {
+        "en": "Error during CSV export\n{e}",
+        "ja": "CSVエクスポート中にエラーが発生しました\n{e}"
     },
     "help_title": {
         "en": "Help",

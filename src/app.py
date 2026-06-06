@@ -1,12 +1,12 @@
-from .common import *
-from .ui.dialogs import UIDialogMixin
-from .ui.main_window import MainWindowMixin
-from .core.image_manager import ImageManagerMixin
-from .core.annotation import AnnotationMixin
-from .core.calibration import CalibrationMixin
-from .core.project_io import ProjectIOMixin
-from .core.excel_export import ExcelExportMixin
-from .core.image_export import ImageExportMixin
+from common import *
+from ui.dialogs import UIDialogMixin
+from ui.main_window import MainWindowMixin
+from core.image_manager import ImageManagerMixin
+from core.annotation import AnnotationMixin
+from core.calibration import CalibrationMixin
+from core.project_io import ProjectIOMixin
+from core.excel_export import ExcelExportMixin
+from core.image_export import ImageExportMixin
 
 
 class EasyGelAlyzerApp(

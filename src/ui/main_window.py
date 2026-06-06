@@ -215,7 +215,7 @@ class MainWindowMixin:
         self._output_frame.pack(side=tk.RIGHT, padx=4)
         self.btn_color_bw_toggle = ttk.Button(self._output_frame, text=T('btn_color'), command=self.toggle_color_grayscale, width=14)
         self.btn_color_bw_toggle.pack(side=tk.LEFT, padx=6)
-                self.btn_excel = ttk.Button(self._output_frame, text=T('btn_excel'),
+        self.btn_excel = ttk.Button(self._output_frame, text=T('btn_excel'),
                     command=self.export_to_excel, width=14)
         self.btn_excel.pack(side=tk.LEFT, padx=6)
         # show shortcut on button label
@@ -764,8 +764,9 @@ class MainWindowMixin:
         self.btn_color_bw_toggle.config(
             text=T('btn_bw') if self.grayscale else T('btn_color'))
         try:
-            self.btn_excel.config(text=T('btn_excel'))
-            self.btn_image.config(text=T('btn_image'))
+            self.btn_excel.config(text=f"{T('btn_excel')} (Ctrl+E)")
+            self.btn_csv.config(text=f"{T('btn_csv')} (Ctrl+Shift+E)")
+            self.btn_image.config(text=f"{T('btn_image')} (Ctrl+I)")
         except Exception:
             pass
 

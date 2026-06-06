@@ -6,7 +6,7 @@ from openpyxl.chart import ScatterChart, Reference, Series
 class ExcelExportMixin:
     def export_to_excel(self):
         if not self.markers:
-            messagebox.showwarning(T("warn_title"), T("warn_no_markers") if get_language()=="en" else "マーカーデータが登録されていません")
+            messagebox.showwarning(T("warn_title"), T("warn_no_markers"))
             return
         path = filedialog.asksaveasfilename(
             title=T("dlg_save_excel"),
@@ -132,10 +132,10 @@ class ExcelExportMixin:
     def export_to_csv(self):
         """Export marker and sample data to CSV file."""
         if not self.markers:
-            messagebox.showwarning(T("warn_title"), T("warn_no_markers") if get_language()=="en" else "マーカーデータが登録されていません")
+            messagebox.showwarning(T("warn_title"), T("warn_no_markers"))
             return
         path = filedialog.asksaveasfilename(
-            title=T("dlg_save_csv") if 'dlg_save_csv' in globals() else "CSV保存",
+            title=T("dlg_save_csv"),
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv")]
         )
@@ -155,9 +155,9 @@ class ExcelExportMixin:
                 writer.writerow([T('xl_sample_no'), T('xl_sample_name'), T('xl_rf'), size_header])
                 for i, s in enumerate(self.samples, 1):
                     writer.writerow([i, s['name'], s['rf'], s['size'] if s['size'] > 0 else "N/A"]) 
-            messagebox.showinfo(T("ok_title"), T("ok_csv") if 'ok_csv' in globals() else "CSVエクスポート完了")
+            messagebox.showinfo(T("ok_title"), T("ok_csv"))
         except Exception as e:
-            messagebox.showerror(T("err_title"), T("err_csv").format(e=e) if 'err_csv' in globals() else f"CSV出力エラー: {e}")
+            messagebox.showerror(T("err_title"), T("err_csv").format(e=e))
 
 
 

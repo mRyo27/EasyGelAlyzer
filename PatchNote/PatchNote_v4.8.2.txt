@@ -2,9 +2,9 @@ v4.8.2
 
 パッチアップデート内容
 
-1. EXEビルド後にアプリケーションを起動した際に発生する `ModuleNotFoundError: No module named 'ui.main_window'` のエラーを、相対インポートへの変更と `src/__init__.py` の追加により修正しました。
+1. EXEビルド後の起動時に発生していた `ModuleNotFoundError: No module named 'ui.main_window'` および `ImportError: attempted relative import with no known parent package` の起動エラーを、絶対インポートの維持とPyInstallerビルド時のパス指定により修正しました。
 
 
 Patch Update
 
-1. Fixed a `ModuleNotFoundError: No module named 'ui.main_window'` error that occurred when launching the application after EXE packaging, by switching to relative imports and adding `src/__init__.py`.
+1. Fixed launch errors including `ModuleNotFoundError: No module named 'ui.main_window'` and `ImportError: attempted relative import with no known parent package` after EXE packaging, by maintaining absolute imports and configuring the build search paths in PyInstaller.
