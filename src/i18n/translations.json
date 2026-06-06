@@ -1015,5 +1015,25 @@
   confirm_quit_msg {
     en Do you want to save the project before closing?,
     ja 閉じる前にプロジェクトファイルを保存しますか？
+  },
+  lbl_memo {
+    en Experiment Memo,
+    ja 実験メモ
+  },
+  dlg_include_memo {
+    en Include Experiment Memo in footer,
+    ja 実験メモを画像フッターに含む
+  },
+  btn_clipboard_copy {
+    en Copy to Clipboard,
+    ja クリップボードにコピー
+  },
+  ok_clipboard_copy {
+    en Results copied to clipboard.,
+    ja 結果をクリップボードにコピーしました
+  },
+  warn_no_samples {
+    en No sample data registered.,
+    ja 試料データが登録されていません
   }
 }

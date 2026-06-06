@@ -20,6 +20,7 @@ class ProjectIOMixin:
             'marker_visible': self.marker_visible,
             'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
             'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
+            'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
         }
         saved = getattr(self, '_saved_state', {})
         return current != saved
@@ -69,6 +70,7 @@ class ProjectIOMixin:
                 'marker_visible': self.marker_visible,
                 'item_visibility': self.item_visibility,
                 'item_export_visibility': self.item_export_visibility,
+                'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
             }
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(project, f, ensure_ascii=False, indent=2)
@@ -94,6 +96,7 @@ class ProjectIOMixin:
                 'marker_visible': self.marker_visible,
                 'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
                 'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
+                'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
             }
             return True
         except Exception as e:
@@ -130,6 +133,7 @@ class ProjectIOMixin:
                     'marker_visible': self.marker_visible,
                     'item_visibility': self.item_visibility,
                     'item_export_visibility': self.item_export_visibility,
+                    'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
                 }
                 with open(path, 'w', encoding='utf-8') as f:
                     json.dump(project, f, ensure_ascii=False, indent=2)
@@ -152,6 +156,7 @@ class ProjectIOMixin:
                     'marker_visible': self.marker_visible,
                     'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
                     'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
+                    'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
                 }
                 return True
             except Exception as e:
@@ -234,6 +239,7 @@ class ProjectIOMixin:
             self.marker_visible = project.get('marker_visible', True)
             self.item_visibility = project.get('item_visibility', {})
             self.item_export_visibility = project.get('item_export_visibility', {})
+            memo_val = project.get('memo', '')
 
             # 各オブジェクトにIDが無い場合は付与
             for obj in self.markers + self.samples + self.lane_labels:
@@ -255,6 +261,10 @@ class ProjectIOMixin:
             self.undo_stack.clear()
             self.redo_stack.clear()
             self.active_mode = 'none'
+
+            if hasattr(self, 'memo_text'):
+                self.memo_text.delete("1.0", tk.END)
+                self.memo_text.insert("1.0", memo_val)
 
             self.fit_image_to_canvas()
             self.recalculate_rf_and_sizes()
@@ -278,6 +288,7 @@ class ProjectIOMixin:
                 'marker_visible': self.marker_visible,
                 'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
                 'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
+                'memo': memo_val,
             }
             # Clear initial status message after a project is loaded
             self.lbl_status.config(text="")

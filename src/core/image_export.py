@@ -12,12 +12,12 @@ class ImageExportMixin:
         # レイアウト選択
         layout_win = tk.Toplevel(self.root)
         layout_win.title(T('dlg_layout_title'))
-        layout_win.geometry("340x300")
+        layout_win.geometry("340x330")
         layout_win.resizable(False, False)
         layout_win.transient(self.root)
         layout_win.grab_set()
         x = self.root.winfo_screenwidth() // 2 - 160
-        y = self.root.winfo_screenheight() // 2 - 110
+        y = self.root.winfo_screenheight() // 2 - 125
         layout_win.geometry(f"+{x}+{y}")
         ttk.Label(layout_win, text=T('dlg_layout_prompt'),
                   font=("Helvetica", 10, "bold")).pack(pady=10)
@@ -40,13 +40,19 @@ class ImageExportMixin:
         ttk.Radiobutton(layout_win, text=T('dlg_margin_no'),
                         variable=no_margin_var, value=True).pack(anchor=tk.W, padx=20, pady=2)
 
+        include_memo_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(layout_win, text=T('dlg_include_memo'),
+                        variable=include_memo_var).pack(anchor=tk.W, padx=20, pady=5)
+
         selected = [1]
         no_margin_selected = [False]
+        include_memo_selected = [False]
         layout_cancelled = [False]
 
         def on_ok():
             selected[0] = layout_var.get()
             no_margin_selected[0] = no_margin_var.get()
+            include_memo_selected[0] = include_memo_var.get()
             layout_win.destroy()
 
         def on_layout_cancel():
@@ -63,6 +69,7 @@ class ImageExportMixin:
 
         layout = selected[0]
         no_margin_mode = no_margin_selected[0]
+        include_memo_mode = include_memo_selected[0]
 
         # 白黒モード時: 注釈線色を確認するダイアログ
         if self.grayscale:
@@ -160,6 +167,27 @@ class ImageExportMixin:
             temp_img = Image.new("RGB", (10, 10))
             temp_draw = ImageDraw.Draw(temp_img)
             unit = "kDa" if self.mode == "protein" else "bp"
+
+            memo_str = self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else ""
+
+            def wrap_text(text, font, max_width):
+                lines = []
+                for paragraph in text.splitlines():
+                    if not paragraph:
+                        lines.append("")
+                        continue
+                    current_line = ""
+                    for char in paragraph:
+                        test_line = current_line + char
+                        w = temp_draw.textlength(test_line, font=font)
+                        if w <= max_width:
+                            current_line = test_line
+                        else:
+                            lines.append(current_line)
+                            current_line = char
+                    if current_line:
+                        lines.append(current_line)
+                return lines
 
             def make_marker_text(m):
                 val = f"{m['size']:.2f}" if self.mode == "protein" else f"{int(m['size'])}"
@@ -286,6 +314,40 @@ class ImageExportMixin:
                         draw.text((lx2, ll_y), lbl_display,
                                   fill=lc, font=lane_label_font, anchor="mt")
 
+                # メモ描画処理
+                if include_memo_mode and memo_str:
+                    memo_font = font
+                    memo_pad_x = 20
+                    memo_pad_y = 15
+                    max_w = img_w - memo_pad_x * 2
+                    
+                    wrapped_lines = wrap_text(memo_str, memo_font, max_w)
+                    line_spacing = 4
+                    line_h = font_size + line_spacing
+                    memo_h = len(wrapped_lines) * line_h + memo_pad_y * 2
+                    
+                    if self.grayscale and self._annot_bw_white:
+                        memo_bg = "#404040"
+                        memo_fg = "white"
+                    else:
+                        memo_bg = "white"
+                        memo_fg = "black"
+                        
+                    final_w = img_w
+                    final_h = img_h + memo_h
+                    final_img = Image.new("RGB", (final_w, final_h), color=memo_bg)
+                    final_img.paste(out_img, (0, 0))
+                    
+                    draw_final = ImageDraw.Draw(final_img)
+                    draw_final.line([(0, img_h), (final_w, img_h)], fill="#CCCCCC", width=1)
+                    
+                    cur_y = img_h + memo_pad_y
+                    for line in wrapped_lines:
+                        draw_final.text((memo_pad_x, cur_y), line, fill=memo_fg, font=memo_font)
+                        cur_y += line_h
+                        
+                    out_img = final_img
+
                 out_img.save(path)
                 messagebox.showinfo(T("ok_title"), T("ok_image"))
                 return
@@ -344,6 +406,20 @@ class ImageExportMixin:
             bottom_margin = int(img_h * 0.05)
             if max_y_needed > img_h:
                 bottom_margin = max(bottom_margin, int(max_y_needed - img_h) + 15)
+
+            # メモ領域の計算
+            memo_lines = []
+            memo_h = 0
+            memo_pad_x = 20
+            memo_pad_y = 15
+            if include_memo_mode and memo_str:
+                temp_new_w = img_w + left_margin + right_margin
+                max_w = temp_new_w - memo_pad_x * 2
+                memo_lines = wrap_text(memo_str, font, max_w)
+                line_spacing = 4
+                line_h = font_size + line_spacing
+                memo_h = len(memo_lines) * line_h + memo_pad_y * 2
+                bottom_margin += memo_h
 
             new_w = img_w + left_margin + right_margin
             new_h = img_h + top_margin + bottom_margin
@@ -459,6 +535,25 @@ class ImageExportMixin:
                     lane_font_local = get_japanese_font(size=max(6, int(font_size * (fs / 9.0))))
                     draw.text((lx, lane_label_y), lbl_display,
                               fill=lbl_color, font=lane_font_local, anchor="mt")
+
+            # 実験メモを描画
+            if include_memo_mode and memo_str and memo_lines:
+                if self.grayscale and self._annot_bw_white:
+                    memo_fg = "white"
+                    border_color = "#666666"
+                else:
+                    memo_fg = "black"
+                    border_color = "#CCCCCC"
+                    
+                border_y = top_margin + img_h + 10
+                draw.line([(memo_pad_x, border_y), (new_w - memo_pad_x, border_y)], fill=border_color, width=1)
+                
+                cur_y = border_y + memo_pad_y
+                line_spacing = 4
+                line_h = font_size + line_spacing
+                for line in memo_lines:
+                    draw.text((memo_pad_x, cur_y), line, fill=memo_fg, font=font)
+                    cur_y += line_h
 
             out_img.save(path)
             messagebox.showinfo(T("ok_title"), T("ok_image"))

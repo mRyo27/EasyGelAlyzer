@@ -1,0 +1,12 @@
+v4.9.0
+
+マイナーアップデート内容
+
+1. 実験メモ機能を追加しました。左パネル下部に実験メモ入力エリアを追加し、プロジェクトの保存（.gelproj）・読み込み時に自動保存・復元されます。また、アノテーション画像エクスポートのレイアウト選択画面に「実験メモを画像フッターに含む」チェックボックスを追加し、オンにすると出力画像の下部に実験メモを自動折り返しで描画するフッターが追加されます。
+2. 測定結果テーブルの下部に「クリップボードにコピー」ボタンを追加しました。試料番号・試料名・Rf・サイズ（分子量）のデータをタブ区切り形式でクリップボードにコピーできます。
+
+
+Minor Update
+
+1. Added an "Experiment Memo" feature. A text input area for experiment notes now appears at the bottom of the left panel. Memos are automatically saved to and restored from the project file (.gelproj). In the image export layout dialog, a new "Include Experiment Memo in footer" checkbox has been added — when checked, the memo is rendered with auto word-wrap in a footer area below the exported image.
+2. Added a "Copy to Clipboard" button below the results table. Measurement data (Sample No., Name, Rf, Size/MW) can now be copied to the clipboard in tab-separated format.

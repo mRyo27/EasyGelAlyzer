@@ -98,6 +98,17 @@ class MainWindowMixin:
                                             command=self.toggle_marker_visibility)
         self.btn_toggle_marker.pack(fill=tk.X, pady=2)
 
+        # 実験メモ
+        self.memo_frame = ttk.LabelFrame(self.left_frame, text=T('lbl_memo'), padding=3)
+        self.memo_frame.pack(fill=tk.BOTH, expand=False, pady=4)
+        
+        self.memo_text = tk.Text(self.memo_frame, height=4, wrap=tk.WORD, font=("Helvetica", 9))
+        self.memo_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        memo_scroll = ttk.Scrollbar(self.memo_frame, orient=tk.VERTICAL, command=self.memo_text.yview)
+        memo_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.memo_text.config(yscrollcommand=memo_scroll.set)
+
         # 中央パネル
         self.center_frame = ttk.Frame(self.main_pane)
         self.main_pane.add(self.center_frame, weight=3)
@@ -143,6 +154,10 @@ class MainWindowMixin:
         self.result_table.column("Rf", width=80, anchor="center")
         self.result_table.column("Size", width=120, anchor="center")
         self.result_table.pack(fill=tk.BOTH, expand=True)
+
+        self.btn_copy_clipboard = ttk.Button(self._result_table_frame, text=T('btn_clipboard_copy'),
+                                             command=self.copy_results_to_clipboard)
+        self.btn_copy_clipboard.pack(fill=tk.X, pady=2)
 
         # ツールバー
         toolbar_container = ttk.Frame(self.root, padding=5)
@@ -696,6 +711,10 @@ class MainWindowMixin:
         self.btn_delete.config(text=T('btn_delete'))
         self.btn_toggle_marker.config(
             text=T('btn_show_marker') if not self.marker_visible else T('btn_toggle_marker'))
+        try:
+            self.memo_frame.config(text=T('lbl_memo'))
+        except Exception:
+            pass
 
         # ---- 右パネル ----
         try:
@@ -708,6 +727,10 @@ class MainWindowMixin:
             pass
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')
         self.result_table.heading("Size", text=size_heading)
+        try:
+            self.btn_copy_clipboard.config(text=T('btn_clipboard_copy'))
+        except Exception:
+            pass
         try:
             self._coeff_frame.config(text=T('coeff_frame'))
         except Exception:
@@ -806,5 +829,27 @@ class MainWindowMixin:
             "Size", text=T('col_size_kda') if self.mode == 'protein' else T('col_size_bp'))
         self.update_layer_panel()
         self.calculate_calibration_curve()
+
+    def copy_results_to_clipboard(self):
+        """結果テーブルのデータをクリップボードにコピーする"""
+        if not self.samples:
+            messagebox.showwarning(T("warn_title"), T("warn_no_samples"))
+            return
+        
+        try:
+            size_header = T('xl_size_kda') if self.mode == "protein" else T('xl_size_bp')
+            lines = [f"{T('xl_sample_no')}\t{T('xl_sample_name')}\t{T('xl_rf')}\t{size_header}"]
+            for i, s in enumerate(self.samples, 1):
+                val = f"{s['size']:.2f}" if self.mode == "protein" else f"{int(s['size'])}" if s['size'] > 0 else "N/A"
+                lines.append(f"{i}\t{s['name']}\t{s['rf']:.4f}\t{val}")
+            
+            text_to_copy = "\n".join(lines)
+            self.root.clipboard_clear()
+            self.root.clipboard_append(text_to_copy)
+            self.root.update()
+            
+            messagebox.showinfo(T("ok_title"), T("ok_clipboard_copy"))
+        except Exception as e:
+            messagebox.showerror(T("err_title"), f"Failed to copy to clipboard: {e}")
 
 
