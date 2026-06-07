@@ -448,6 +448,10 @@ TRANSLATIONS = {
         "en": "{n} item(s) will be deleted. Continue",
         "ja": "{n}件のアイテムを削除しますか？"
     },
+    "dlg_delete_message": {
+        "en": "Delete preset '{name}'?",
+        "ja": "プリセット '{name}' を削除しますか？"
+    },
     "dlg_marker_input_title": {
         "en": "Marker Input",
         "ja": "マーカーの入力"

@@ -98,9 +98,11 @@ class PresetManagerWindow:
         
         # イベントバインド
         self.size_tree.bind("<Double-1>", self._on_size_double_click)
-        self.size_tree.bind("<ButtonPress-1>", self._size_drag_start)
-        self.size_tree.bind("<B1-Motion>", self._size_drag_motion)
-        self.size_tree.bind("<ButtonRelease-1>", self._size_drag_end)
+        self.size_tree.bind("<ButtonPress-1>", self._size_drag_start, add="+")
+        self.size_tree.bind("<B1-Motion>", self._size_drag_motion, add="+")
+        self.size_tree.bind("<ButtonRelease-1>", self._size_drag_end, add="+")
+        self.size_tree.bind("<Delete>", lambda e: self._remove_size_row())
+        self.size_tree.bind("<BackSpace>", lambda e: self._remove_size_row())
         
         # 操作ボタン
         btn_frame_sizes = ttk.Frame(self.right_frame)
@@ -220,7 +222,7 @@ class PresetManagerWindow:
         if not selected:
             return
         name = self.preset_tree.item(selected[0], "text")
-        if messagebox.askyesno(T("dlg_delete_title"), f"Delete preset '{name}'?"):
+        if messagebox.askyesno(T("dlg_delete_title"), T("dlg_delete_message").format(name=name)):
             mp.delete_preset(name)
             self._load_presets()
             if self.on_change_callback:

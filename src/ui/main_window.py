@@ -31,7 +31,7 @@ class MainWindowMixin:
         edit_menu.add_command(label=T('menu_preset_manager'), command=self.open_preset_manager)
 
         edit_menu.add_separator()
-        _lang_btn_label = 'Switch to English' if get_language() == 'ja' else 'Switch to Japanese'
+        _lang_btn_label = T('menu_lang_en') if get_language() == 'ja' else T('menu_lang_ja')
         edit_menu.add_command(label=_lang_btn_label, command=self.switch_language)
         self._edit_menu = edit_menu  # 動的ラベル更新用
 
@@ -406,6 +406,9 @@ class MainWindowMixin:
             return "break"
             
         if hasattr(self, '_dnd_reorder_item') and self._dnd_reorder_item:
+            # Prevent reorder if multiple items are selected
+            if len(self.layer_tree.selection()) > 1:
+                return
             target_row = self.layer_tree.identify_row(event.y)
             if not target_row:
                 return
@@ -706,10 +709,11 @@ class MainWindowMixin:
             self._edit_menu.entryconfig(0, label=T('menu_switch_mode'))
             self._edit_menu.entryconfig(1, label=T('menu_undo'))
             self._edit_menu.entryconfig(2, label=T('menu_redo'))
-            # index 3 = separator (no need to set)
-            # 言語切替ボタンは常に英語表記のみ
-            lang_label = 'Switch to English' if get_language() == 'ja' else 'Switch to Japanese'
-            self._edit_menu.entryconfig(4, label=lang_label)
+            # index 3 = separator, index 4 = preset manager, index 5 = separator
+            self._edit_menu.entryconfig(4, label=T('menu_preset_manager'))
+            # index 6 = 言語切替
+            lang_label = T('menu_lang_en') if get_language() == 'ja' else T('menu_lang_ja')
+            self._edit_menu.entryconfig(6, label=lang_label)
         except Exception:
             pass
 
