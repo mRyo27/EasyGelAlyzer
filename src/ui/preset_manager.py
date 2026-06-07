@@ -312,6 +312,7 @@ class PresetManagerWindow:
             row = self.size_tree.identify_row(event.y)
             if row:
                 self._drag_item = row
+                self._drag_moved = False
                 self.size_tree.config(cursor="sb_v_double_arrow")
 
     def _size_drag_motion(self, event):
@@ -320,18 +321,23 @@ class PresetManagerWindow:
             if target_row and target_row != self._drag_item:
                 idx_drag = self.size_tree.index(self._drag_item)
                 idx_target = self.size_tree.index(target_row)
-                
+
                 self.size_tree.move(self._drag_item, "", idx_target)
-                
+
                 item = self.temp_sizes.pop(idx_drag)
                 self.temp_sizes.insert(idx_target, item)
-                
+
                 self._reindex_rows()
+                self._drag_moved = True
 
     def _size_drag_end(self, event):
+        moved = getattr(self, '_drag_moved', False)
         self._drag_item = None
+        self._drag_moved = False
         self.size_tree.config(cursor="")
-        self._update_size_tree()
+        # ドラッグ移動があった場合のみ番号を再構築（クリックだけの場合は選択を維持）
+        if moved:
+            self._update_size_tree()
 
     def _reindex_rows(self):
         for idx, child in enumerate(self.size_tree.get_children()):

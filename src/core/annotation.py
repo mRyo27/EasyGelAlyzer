@@ -1074,12 +1074,9 @@ class AnnotationMixin:
             entry.bind("<Escape>", lambda e: entry.destroy())
             return
 
-        # マーカーのダブルクリック → bp/kDa値を編集
+        # マーカーのダブルクリック → 何もしない（名前変更機能は不要）
         marker = next((m for m in self.markers if m['id'] == item), None)
         if marker:
-            # どのカラムをダブルクリックしてもサイズ編集ダイアログを開く
-            unit = "kDa" if self.mode == "protein" else "bp"
-            self._edit_marker_size_dialog(marker, unit)
             return
 
         # サンプルのダブルクリック → 名前をインライン編集
