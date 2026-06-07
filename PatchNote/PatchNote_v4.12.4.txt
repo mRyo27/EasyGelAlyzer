@@ -1,0 +1,15 @@
+v4.12.4
+
+パッチアップデート内容
+以下のバグを修正
+1.Editタブからマーカープリセットを追加する際に、日本語モードだとマーカープリセットを追加ではなくSwitch to Englishと表示される。
+2.マカーのプリセットを削除する際のダイアログが英語のみ
+3.マカープリセットのマーカーを削除しようとクリックしても選択できない
+4.レイヤータブの分子量マーカーをダブルクリックすると空白のダイアログが表示されるバグを修正。
+
+マイナーアップデート内容
+１．レイヤーの上下位置のドラッグ移動とレイヤーのドラッグ複数選択が共存できないため、ドラッグ移動の機能を削除。従来通り↑↓ボタンからレイヤーの上下位置を変更可能。
+
+Patch Update
+
+1. Fixed a bug where the "Yes," "No," and "Cancel" options in the dialog box that appears when trying to close the app were displayed in Japanese even in English mode.
