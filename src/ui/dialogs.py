@@ -225,7 +225,8 @@ class UIDialogMixin:
         frame.pack(fill=tk.X, padx=15)
         # 初期値を計算してStringVarに設定
         init_val = f"{marker['size']:.2f}" if self.mode == "protein" else f"{int(marker['size'])}"
-        val_var = tk.StringVar(master=dialog, value=init_val)
+        val_var = tk.StringVar(master=dialog)
+        val_var.set(init_val)
         ttk.Label(frame, text=T("dlg_new_val").format(unit=unit)).grid(row=0, column=0, padx=3, pady=4, sticky="w")
         val_entry = ttk.Entry(frame, textvariable=val_var, width=12)
         val_entry.grid(row=0, column=1, padx=3, pady=4)
