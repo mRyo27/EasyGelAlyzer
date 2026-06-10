@@ -660,15 +660,13 @@ class MainWindowMixin:
         from core.image_proc import rolling_ball_background
         panel = tk.Toplevel(self.root)
         panel.title('背景補正')
-        panel.geometry('460x450')
-        panel.transient(self.root)
         panel.resizable(False, False)
-
         # 画面中央に配置
         panel.update_idletasks()
         x = self.root.winfo_screenwidth() // 2 - 230
         y = self.root.winfo_screenheight() // 2 - 225
-        panel.geometry(f"+{x}+{y}")
+        panel.geometry(f'460x450+{x}+{y}')
+        panel.transient(self.root)
 
         panel.wait_visibility()
         panel.grab_set()
