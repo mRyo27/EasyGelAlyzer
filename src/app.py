@@ -24,7 +24,7 @@ class EasyGelAlyzerApp(
         # メインウィンドウを画面中央に配置
         self.root.update_idletasks()
         win_w = 1280
-        win_h = 720
+        win_h = 1024
         x = (self.root.winfo_screenwidth() - win_w) // 2
         y = (self.root.winfo_screenheight() - win_h) // 2
         self.root.geometry(f"{win_w}x{win_h}+{x}+{y}")

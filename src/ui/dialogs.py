@@ -83,10 +83,6 @@ class UIDialogMixin:
         y = self.root.winfo_screenheight() // 2 - 75
         dialog.geometry(f"+{x}+{y}")
 
-        dialog.lift()
-        dialog.focus_force()
-        dialog.grab_set()
-
         result_val = [None]
 
         ttk.Label(dialog, text=T('dlg_marker_rf').format(rf=rf),
@@ -96,12 +92,12 @@ class UIDialogMixin:
         frame.pack(fill=tk.X, padx=15)
 
         ttk.Label(frame, text=T('dlg_marker_size_label').format(unit=unit)).grid(row=0, column=0, padx=3, pady=6, sticky="w")
-        size_var = tk.StringVar(master=dialog)
-        size_entry = ttk.Entry(frame, textvariable=size_var, width=14)
+        self.marker_size_var = tk.StringVar(master=dialog)
+        size_entry = ttk.Entry(frame, textvariable=self.marker_size_var, width=14)
         size_entry.grid(row=0, column=1, padx=3, pady=6)
 
         def on_ok(event=None):
-            val_str = size_var.get().strip()
+            val_str = self.marker_size_var.get().strip()
             try:
                 v = float(val_str) if self.mode == "protein" else int(val_str)
                 if v <= 0:
@@ -124,9 +120,17 @@ class UIDialogMixin:
         btn_frame.pack(pady=10)
         ttk.Button(btn_frame, text=T('dlg_ok'), command=on_ok).pack(side=tk.LEFT, padx=8)
         ttk.Button(btn_frame, text=T('dlg_cancel'), command=on_cancel).pack(side=tk.LEFT, padx=8)
+        
         size_entry.bind("<Return>", on_ok)
         dialog.protocol("WM_DELETE_WINDOW", on_cancel)
-        size_entry.focus_force()
+        
+        # ウィジェット作成後にgrabとフォーカスを設定
+        dialog.lift()
+        dialog.focus_force()
+        dialog.grab_set()
+        
+        size_entry.focus_set()
+        
         self.root.wait_window(dialog)
         return result_val[0], None
 
@@ -141,10 +145,6 @@ class UIDialogMixin:
         y = self.root.winfo_screenheight() // 2 - 100
         dialog.geometry(f"+{x}+{y}")
 
-        dialog.lift()
-        dialog.focus_force()
-        dialog.grab_set()
-
         result = [None]
 
         ttk.Label(dialog, text=T('dlg_sample_name_prompt')).pack(pady=6)
@@ -157,7 +157,7 @@ class UIDialogMixin:
         frame = ttk.Frame(dialog)
         frame.pack(fill=tk.X, padx=15)
 
-        name_var = tk.StringVar(master=dialog, value=default_name)
+        self.sample_name_var = tk.StringVar(master=dialog, value=default_name)
 
         if existing_groups:
             # プルダウン＋テキスト入力
@@ -166,24 +166,21 @@ class UIDialogMixin:
             combo.grid(row=0, column=1, padx=3, pady=3)
 
             ttk.Label(frame, text=T("lbl_name")).grid(row=1, column=0, padx=3, pady=3, sticky="w")
-            entry = ttk.Entry(frame, textvariable=name_var, width=20)
+            entry = ttk.Entry(frame, textvariable=self.sample_name_var, width=20)
             entry.grid(row=1, column=1, padx=3, pady=3)
 
             def on_combo_select(event=None):
                 sel = combo.get()
                 if sel:
-                    name_var.set(sel)
+                    self.sample_name_var.set(sel)
             combo.bind("<<ComboboxSelected>>", on_combo_select)
         else:
             ttk.Label(frame, text=T("lbl_name")).grid(row=0, column=0, padx=3, pady=3, sticky="w")
-            entry = ttk.Entry(frame, textvariable=name_var, width=20)
+            entry = ttk.Entry(frame, textvariable=self.sample_name_var, width=20)
             entry.grid(row=0, column=1, padx=3, pady=3)
 
-        entry.focus_force()
-        entry.select_range(0, tk.END)
-
         def on_ok(event=None):
-            result[0] = name_var.get().strip() or default_name
+            result[0] = self.sample_name_var.get().strip() or default_name
             dialog.destroy()
 
         def on_cancel():
@@ -196,6 +193,15 @@ class UIDialogMixin:
         ttk.Button(btn_frame, text=T('dlg_cancel'), command=on_cancel).pack(side=tk.LEFT, padx=8)
         entry.bind("<Return>", on_ok)
         dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+
+        # grabとフォーカスを設定
+        dialog.lift()
+        dialog.focus_force()
+        dialog.grab_set()
+
+        entry.focus_set()
+        entry.select_range(0, tk.END)
+
         self.root.wait_window(dialog)
         return result[0]
 
@@ -205,36 +211,33 @@ class UIDialogMixin:
     def _edit_marker_size_dialog(self, marker, unit):
         """マーカーのbp/kDa値を編集するダイアログ"""
         dialog = tk.Toplevel(self.root)
-        dialog.title(T("dlg_marker_edit_title").format(unit=unit))
+        dialog.title(T("dlg_edit_marker_title").format(unit=unit))
         dialog.geometry("280x140")
         dialog.transient(self.root)
         dialog.resizable(False, False)
+        
         # ダイアログをメインウィンドウの中心に配置
+        dialog.update_idletasks()
         x = self.root.winfo_x() + self.root.winfo_width() // 2 - 140
         y = self.root.winfo_y() + self.root.winfo_height() // 2 - 70
         dialog.geometry(f"+{x}+{y}")
 
-        dialog.lift()
-        dialog.focus_force()
-        dialog.grab_set()
-
         _cur_v = f"{marker['size']:.2f}" if self.mode == 'protein' else f"{int(marker['size'])}"
-        ttk.Label(dialog, text=T('dlg_marker_current').format(v=_cur_v, unit=unit)).pack(pady=8)
+        ttk.Label(dialog, text=T('dlg_edit_marker_current').format(val=_cur_v, unit=unit)).pack(pady=8)
 
         frame = ttk.Frame(dialog)
         frame.pack(fill=tk.X, padx=15)
-        # 初期値を計算してStringVarに設定
+        
         init_val = f"{marker['size']:.2f}" if self.mode == "protein" else f"{int(marker['size'])}"
-        val_var = tk.StringVar(master=dialog)
-        val_var.set(init_val)
-        ttk.Label(frame, text=T("dlg_new_val").format(unit=unit)).grid(row=0, column=0, padx=3, pady=4, sticky="w")
-        val_entry = ttk.Entry(frame, textvariable=val_var, width=12)
+        self.val_var = tk.StringVar(master=dialog)
+        self.val_var.set(init_val)
+        
+        ttk.Label(frame, text=T("dlg_edit_marker_new").format(unit=unit)).grid(row=0, column=0, padx=3, pady=4, sticky="w")
+        val_entry = ttk.Entry(frame, textvariable=self.val_var, width=12)
         val_entry.grid(row=0, column=1, padx=3, pady=4)
-        val_entry.select_range(0, tk.END)
-        val_entry.focus_force()
 
         def on_ok(event=None):
-            val_str = val_var.get().strip()
+            val_str = self.val_var.get().strip()
             try:
                 new_val = float(val_str) if self.mode == "protein" else int(val_str)
                 if new_val <= 0:
@@ -260,8 +263,18 @@ class UIDialogMixin:
         ttk.Button(btn_frame, text="OK", command=on_ok).pack(side=tk.LEFT, padx=8)
         ttk.Button(btn_frame, text=T('dlg_cancel'),
                    command=dialog.destroy).pack(side=tk.LEFT, padx=8)
+        
         val_entry.bind("<Return>", on_ok)
         dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
+        
+        # grab_set と focus_force はウィジェット作成後に設定
+        dialog.lift()
+        dialog.focus_force()
+        dialog.grab_set()
+        
+        val_entry.focus_set()
+        val_entry.select_range(0, tk.END)
+        
         self.root.wait_window(dialog)
 
     def show_version_info(self):
