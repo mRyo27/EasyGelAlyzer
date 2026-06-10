@@ -716,8 +716,9 @@ class MainWindowMixin:
             self.lbl_status.config(text='背景補正適用完了')
 
         def on_reset():
-            # リセットボタンはスライダーの値を初期値（50）に戻すだけ（ダイアログは閉じない）
+            # スライダー位置を初期値（50）に戻すだけ
             radius_slider.set(50)
+            self.lbl_status.config(text='背景補正をリセットしました')
 
         def on_remove():
             # 背景補正を削除（無効化）して閉じる
