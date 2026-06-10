@@ -21,9 +21,9 @@ class EasyGelAlyzerApp(
 ):
     def __init__(self, root):
         self.root = root
-        self.root.title("EasyGelAlyzer")
-        self.root.geometry("1920x1080")
-        self.root.after(0, lambda: self.root.state("zoomed") if self.root.tk.call("tk", "windowingsystem") == "win32" else self.root.attributes("-zoomed", True))
+        self.root.geometry("1024x768")
+        # Removed forced fullscreen to improve compatibility with older PCs
+
 
         # ---- アイコン設定 ----
         _here = os.path.dirname(os.path.abspath(__file__))

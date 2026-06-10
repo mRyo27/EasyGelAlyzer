@@ -67,8 +67,8 @@ class CalibrationMixin:
         self.ax.plot(x_line, y_line, color='red', linestyle='--', label=T('xl_cal_curve'))
         eqn = (f"y = {self.calibration_a:.3f}x + {self.calibration_b:.3f}\n"
                f"R² = {self.calibration_r2:.4f}")
-        self.ax.text(0.05, 0.05, eqn, transform=self.ax.transAxes,
-                     bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+        self.ax.text(0.05, 0.95, eqn, transform=self.ax.transAxes,
+                     verticalalignment='top', bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
         self.ax.set_xlim(-0.05, 1.05)
         self.ax.set_xlabel(T('xl_xlabel'))
         self.ax.set_ylabel(T('xl_ylabel_kda') if self.mode == "protein" else T('xl_ylabel_bp'))
