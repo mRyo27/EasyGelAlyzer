@@ -131,6 +131,16 @@ class EasyGelAlyzerApp(
         self.show_mode_selection_dialog()
         self.create_widgets()
 
+        # ウィンドウ初期配置時にペイン比率を1:2:1にする
+        self.root.update_idletasks()
+        try:
+            total_w = self.main_pane.winfo_width()
+            if total_w > 10:
+                self.main_pane.sashpos(0, int(total_w * 0.25))
+                self.main_pane.sashpos(1, int(total_w * 0.75))
+        except Exception:
+            pass
+
         # --- バージョン表示ラベル（ステータスバー） ---
         version_label = ttk.Label(self.root, text=f"EasyGelAlyzer v{VERSION}", anchor="e")
         version_label.pack(fill=tk.X, side=tk.BOTTOM)

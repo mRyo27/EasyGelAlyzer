@@ -113,7 +113,7 @@ class MainWindowMixin:
 
         # 中央パネル
         self.center_frame = ttk.Frame(self.main_pane)
-        self.main_pane.add(self.center_frame, weight=3)
+        self.main_pane.add(self.center_frame, weight=2)
         self.canvas = tk.Canvas(self.center_frame, bg="#1E1E1E", highlightthickness=0)
         self.canvas.pack(fill=tk.BOTH, expand=True)
         # Drag & drop support will be initialized after the window is fully realized
@@ -121,7 +121,7 @@ class MainWindowMixin:
 
         # 右パネル
         self.right_frame = ttk.LabelFrame(self.main_pane, text=T('analysis_panel'), padding=5)
-        self.main_pane.add(self.right_frame, weight=2)
+        self.main_pane.add(self.right_frame, weight=1)
 
         self.fig = Figure(figsize=(4, 3), dpi=100, facecolor="#F0F0F0")
         self.ax = self.fig.add_subplot(111)
