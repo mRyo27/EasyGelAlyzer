@@ -1,19 +1,107 @@
-v4.14.4
+## v4.7.0 → v4.14.4
 
-マイナーデート内容
-1.背景補正（ローリングボール法）機能を追加
+### ■ マイナーアップデート内容
 
-パッチアップデート内容
-1,画像調節機能のプリセットタブの”なし”ボタンを廃止、リセットボタンを追加。
-2.背景補正機能のスライダーを動かした際にリアルタイムで変更が反映されるように変更
-3.背景補正機能のリセットボタンを追加（背景補正のスライダー位置のリセット）。
-4.背景補正機能の背景補正削除ボタンを追加。
+1. UIに「CSV」エクスポートボタンを追加し、ショートカットキー（Ctrl+Shift+E）によるCSV出力機能を新規実装しました。
+2. 実験メモ機能を追加しました。
+   * 左パネル下部に実験メモ入力エリアを追加
+   * プロジェクトの保存（.gelproj）および読み込み時に自動保存・復元
+   * アノテーション画像エクスポートのレイアウト選択画面に「実験メモを画像フッターに含む」チェックボックスを追加
+   * 有効時、出力画像下部に実験メモを自動折り返しで描画
+3. 測定結果テーブル下部に「クリップボードにコピー」ボタンを追加しました。
+   * 試料番号・試料名・Rf・サイズ（分子量）をタブ区切り形式でコピー可能
+4. 結果テーブルの上部および下部に「クリップボードにコピー」ボタンを追加しました。
+   * 形式：タブ区切りテキスト（TSV、Excel・Numbers・Google スプレッドシート互換）
+   * ヘッダー行を含む
+5. 分子量マーカーにプリセット機能を追加しました。手動入力モードとの切り替えが可能です。
+6. レイヤーのドラッグ移動と複数選択が競合していたため、ドラッグによる位置移動機能を削除しました。
+   * 上下位置の変更は従来通り「↑」「↓」ボタンで対応
+7. `src/core/image_proc.py` を追加し、染色方法ごとに画像の輝度・コントラストを自動調整する機能を追加しました。
+8. 背景補正（ローリングボール法）機能を追加しました。
 
-Minor Update Details
-1. Added background correction (rolling ball method) function.
+### ■ パッチアップデート内容
 
-Patch Update Details
-1. Removed the "None" button from the preset tab of the image adjustment function and added a reset button.
-2. Changed the background correction function so that changes are reflected in real time when the slider is moved.
-3. Added a reset button for the background correction function (resets the position of the background correction slider).
-4. Added a background correction delete button for the background correction function.
+1. ツールバーの各ボタン（Load / Trim / Adjust / Undo / Redo）および出力パネルのカラー切替ボタンの幅を14に統一し、テキストの切れを修正しました。
+2. ExcelボタンおよびCSVボタンでショートカットキー案内が正しく表示されるよう調整しました。
+3. EXE起動時に発生していた以下のエラーを修正しました：
+   * `ModuleNotFoundError: No module named 'ui.main_window'`
+   * `ImportError: attempted relative import with no known parent package`  
+     ※絶対インポートの維持およびPyInstallerビルド時のパス指定により対応
+4. CSVエクスポートボタンのラベルが言語設定や画面更新時に消える不具合を修正しました。
+5. 画像・Excel・CSVのエクスポート完了およびエラーダイアログにおける多言語対応の不具合を修正しました（英語モードでも日本語表示になる問題）。
+6. ツールバー「出力」セクションの各ボタン（Excel／CSV／画像）からショートカットキー表示を削除し、テキストの見切れを防止しました。
+7. 上記変更に伴い、アプリ上部「File」メニュー内の各出力項目にショートカットキー（Ctrl+E／Ctrl+Shift+E／Ctrl+I）を表示するように変更しました。
+8. 終了確認ダイアログの「はい／いいえ／キャンセル」が英語モードでも日本語表示される不具合を修正しました。
+9. Editタブからマーカープリセットを追加する際、日本語モードで「Switch to English」と表示される不具合を修正しました。
+10. マーカープリセット削除時のダイアログが英語のみだった問題を修正しました。
+11. マーカープリセット内のマーカーがクリックしても選択できない不具合を修正しました。
+12. レイヤータブの分子量マーカーをダブルクリックした際に空白ダイアログが表示される不具合を修正しました。
+13. 分子量変更ダイアログが空白で編集できない問題を修正しました。
+14. 解析タブのグラフで、横軸ラベルと回帰式表示が重なりテキストが見切れる不具合を修正しました。
+15. 起動時に自動的にフルスクリーンになる挙動を廃止しました。
+16. 起動解像度を変更しました：
+
+* 従来：Full HD固定
+* 変更後：1280×1024（3:4）
+* 低解像度PCへの対応を強化
+
+17. 画像調整機能のプリセットタブから「なし」ボタンを削除し、「リセット」ボタンを追加しました。
+18. 背景補正スライダーの操作時にリアルタイムでプレビューが反映されるよう改善しました。
+19. 背景補正機能にスライダー位置リセットボタンを追加しました。
+20. 背景補正削除ボタンを追加しました。
+
+### ■ Minor Update Details
+
+1. Added a "CSV" export button to the UI and implemented a new CSV output function using a shortcut key (Ctrl+Shift+E).
+
+2. Added an experimental memo function.
+* Added an experimental memo input area to the bottom of the left panel.
+* Automatically saves and restores when saving (.gelproj) and loading projects.
+* Added a "Include experimental memo in image footer" checkbox to the layout selection screen for annotation image export.
+* When enabled, experimental memos are automatically drawn with wrapping at the bottom of the output image.
+3. Added a "Copy to Clipboard" button to the bottom of the measurement results table.
+* Sample number, sample name, Rf, and size (molecular weight) can be copied in tab-separated format.
+4. Added "Copy to Clipboard" buttons to the top and bottom of the results table.
+* Format: Tab-separated text (TSV, compatible with Excel, Numbers, and Google Sheets)
+* Includes header row.
+5. Added a preset function to molecular weight markers. Switching between manual input mode and preset mode is possible.
+
+6. The drag-and-drop functionality for moving layers was removed due to a conflict between dragging layers and multiple selections.
+* Vertical position changes are still handled using the "↑" and "↓" buttons.
+7. Added `src/core/image_proc.py` to automatically adjust image brightness and contrast for each staining method.
+8. Added background correction (rolling ball method) functionality.
+
+### ■ Patch Update Details
+
+1. The width of each button on the toolbar (Load / Trim / Adjust / Undo / Redo) and the color switching button on the output panel have been standardized to 14, and text breakage has been corrected.
+2. Adjusted the shortcut key guidance to display correctly for the Excel and CSV buttons.
+
+3. Fixed the following errors that occurred when launching the EXE:
+* `ModuleNotFoundError: No module named 'ui.main_window'`
+* `ImportError: attempted relative import with no known parent package`
+* This was resolved by maintaining absolute imports and specifying the path during PyInstaller build.
+4. Fixed a bug where the label of the CSV export button disappeared when changing language settings or refreshing the screen.
+5. Fixed a bug in multilingual support in the image, Excel, and CSV export completion and error dialogs (the issue where Japanese was displayed even in English mode).
+6. Removed the shortcut key display from each button (Excel/CSV/Image) in the toolbar's "Output" section to prevent text from being cut off.
+7. Following the above changes, the shortcut keys (Ctrl+E/Ctrl+Shift+E/Ctrl+I) are now displayed for each output item in the "File" menu at the top of the application.
+8. Fixed a bug where the "Yes/No/Cancel" options in the completion confirmation dialog were displayed in Japanese even in English mode.
+
+9. Fixed an issue where "Switch to English" was displayed when adding a marker preset from the Edit tab in Japanese mode.
+10. Fixed an issue where the dialog box for deleting a marker preset was only in English.
+11. Fixed an issue where markers within a marker preset could not be selected by clicking.
+12. Fixed an issue where a blank dialog box was displayed when double-clicking a molecular weight marker in the Layers tab.
+13. Fixed an issue where the molecular weight change dialog box was blank and could not be edited.
+14. Fixed an issue in the Analysis tab where the horizontal axis label and regression equation display overlapped, causing the text to be cut off.
+15. Removed the behavior of automatically switching to full screen on startup.
+16. Changed the startup resolution:
+
+* Previously: Fixed to Full HD
+* Changed: 1280×1024 (3:4)
+* Improved support for low-resolution PCs
+
+17. Removed the "None" button from the preset tab of the image adjustment function and added a "Reset" button.
+18. Improved the background correction slider so that the preview is reflected in real time when operating it.
+
+19. Added a slider position reset button to the background correction function.
+
+20. Added a background correction delete button.
