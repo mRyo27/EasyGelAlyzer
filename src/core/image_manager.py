@@ -517,25 +517,31 @@ class ImageManagerMixin:
         self.redraw_canvas()
 
     def apply_image_adjustments(self):
-        """現在の brightness_val, contrast_val と image_preset_mode を original_image に適用して processed_image にキャッシュする"""
+        """現在の brightness_val, contrast_val と image_preset_mode, bg_corr_radius を original_image に適用して processed_image にキャッシュする"""
         if self.original_image is None:
             return
         
-        # 1. プリセット処理の適用
-        preset = getattr(self, 'image_preset_mode', 'none')
+        # 1. 背景補正の適用
         base_img = self.original_image
+        bg_radius = getattr(self, 'bg_corr_radius', None)
+        if bg_radius is not None:
+            from core.image_proc import rolling_ball_background
+            base_img = rolling_ball_background(base_img, radius=bg_radius)
+        
+        # 2. プリセット処理の適用
+        preset = getattr(self, 'image_preset_mode', 'none')
         if preset == 'etbr':
             from core.image_proc import preset_etbr
-            base_img = preset_etbr(self.original_image)
+            base_img = preset_etbr(base_img)
         elif preset == 'coomassie':
             from core.image_proc import preset_coomassie
-            base_img = preset_coomassie(self.original_image)
+            base_img = preset_coomassie(base_img)
         elif preset == 'silver':
             from core.image_proc import preset_silver
-            base_img = preset_silver(self.original_image)
+            base_img = preset_silver(base_img)
             
-        # 2. スライダーによる輝度・コントラストの微調整
-        if self.brightness_val == 0 and self.contrast_val == 0 and preset == 'none':
+        # 3. スライダーによる輝度・コントラストの微調整
+        if self.brightness_val == 0 and self.contrast_val == 0 and preset == 'none' and bg_radius is None:
             self.processed_image = None
         else:
             b_factor = (self.brightness_val + 100) / 100

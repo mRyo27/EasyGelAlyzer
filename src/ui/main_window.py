@@ -538,12 +538,11 @@ class MainWindowMixin:
             return
         panel = tk.Toplevel(self.root)
         panel.title(T('dlg_adjust_title'))
-        # プリセットボタンを追加するので、ウィンドウの高さと幅を少し広げる
-        panel.geometry("380x300")
+        panel.geometry("380x280")
         panel.resizable(False, False)
         panel.transient(self.root)
         x = self.root.winfo_screenwidth() // 2 - 190
-        y = self.root.winfo_screenheight() // 2 - 150
+        y = self.root.winfo_screenheight() // 2 - 140
         panel.geometry(f"+{x}+{y}")
 
         panel.wait_visibility()
@@ -558,9 +557,8 @@ class MainWindowMixin:
         preset_frame = ttk.LabelFrame(panel, text=T('lbl_presets'), padding=5)
         preset_frame.pack(fill=tk.X, padx=15, pady=8)
 
-        # プリセットボタン群
+        # プリセットボタン群（「なし」はリセットボタンで代用するため除外）
         presets = [
-            ('none', T('preset_none')),
             ('etbr', T('preset_etbr')),
             ('coomassie', T('preset_coomassie')),
             ('silver', T('preset_silver'))
@@ -579,7 +577,7 @@ class MainWindowMixin:
             elif mode == 'silver':
                 bright_slider.set(0)
                 contrast_slider.set(0)
-            else: # none
+            else: # none (reset)
                 bright_slider.set(0)
                 contrast_slider.set(0)
             
@@ -592,14 +590,12 @@ class MainWindowMixin:
 
             update_adjustments()
 
-        # 2行2列のグリッドでボタンを配置
+        # 横一列で配置
         for idx, (mode, label) in enumerate(presets):
-            r = idx // 2
-            c = idx % 2
             btn = ttk.Button(preset_frame, text=label, command=lambda m=mode: apply_preset(m))
-            btn.grid(row=r, column=c, padx=5, pady=3, sticky="ew")
+            btn.grid(row=0, column=idx, padx=5, pady=3, sticky="ew")
             preset_buttons[mode] = btn
-            preset_frame.columnconfigure(c, weight=1)
+            preset_frame.columnconfigure(idx, weight=1)
 
         # 初期状態のアクティブプリセットボタンを設定
         if orig_preset in preset_buttons:
@@ -617,30 +613,15 @@ class MainWindowMixin:
         contrast_slider.pack(fill=tk.X, padx=20)
 
         def update_adjustments(*args):
-            b_factor = (bright_slider.get() + 100) / 100
-            c_factor = (contrast_slider.get() + 100) / 100
-            
-            # プリセットを適用
-            preset = getattr(self, 'image_preset_mode', 'none')
-            base_img = self.original_image
-            if preset == 'etbr':
-                from core.image_proc import preset_etbr
-                base_img = preset_etbr(self.original_image)
-            elif preset == 'coomassie':
-                from core.image_proc import preset_coomassie
-                base_img = preset_coomassie(self.original_image)
-            elif preset == 'silver':
-                from core.image_proc import preset_silver
-                base_img = preset_silver(self.original_image)
-                
-            enhanced = ImageEnhance.Brightness(base_img).enhance(b_factor)
-            self.processed_image = ImageEnhance.Contrast(enhanced).enhance(c_factor)
-            self.redraw_canvas()
+            self.brightness_val = bright_slider.get()
+            self.contrast_val = contrast_slider.get()
+            self.apply_image_adjustments()
 
         bright_slider.config(command=update_adjustments)
         contrast_slider.config(command=update_adjustments)
 
         def on_confirm():
+            # 現在のスライダーの最終値を記録して確定
             self.push_undo_state()
             self.brightness_val = bright_slider.get()
             self.contrast_val = contrast_slider.get()
@@ -660,8 +641,8 @@ class MainWindowMixin:
 
         btn_frame = ttk.Frame(panel)
         btn_frame.pack(pady=12)
-        ttk.Button(btn_frame, text=T('dlg_confirm'), command=on_confirm).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text='適用', command=on_confirm).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text='リセット', command=on_reset).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
         panel.protocol('WM_DELETE_WINDOW', on_cancel)
 
@@ -674,11 +655,25 @@ class MainWindowMixin:
         panel.title('背景補正')
         panel.geometry('420x450')
         panel.transient(self.root)
+        panel.resizable(False, False)
 
-        orig_radius = getattr(self, '_bg_corr_radius', 50)
+        # 画面中央に配置
+        panel.update_idletasks()
+        x = self.root.winfo_screenwidth() // 2 - 210
+        y = self.root.winfo_screenheight() // 2 - 225
+        panel.geometry(f"+{x}+{y}")
+
+        panel.wait_visibility()
+        panel.grab_set()
+
+        # 開始時の状態を保持（キャンセル時の復元用）
+        orig_radius = getattr(self, 'bg_corr_radius', None)
+        slider_init = orig_radius if orig_radius is not None else 50
 
         preview_label = ttk.Label(panel)
         preview_label.pack(pady=5)
+
+        self._bg_corr_timer = None
 
         def update_preview(*args):
             radius = int(radius_slider.get())
@@ -689,26 +684,50 @@ class MainWindowMixin:
             preview_label.configure(image=tk_img)
             preview_label.image = tk_img
 
+            # メイン画面へのリアルタイム反映（デバウンス処理）
+            if self._bg_corr_timer:
+                self.root.after_cancel(self._bg_corr_timer)
+            self._bg_corr_timer = self.root.after(100, apply_bg_corr_realtime, radius)
+
+        def apply_bg_corr_realtime(radius):
+            self.bg_corr_radius = radius
+            self.apply_image_adjustments()
+
         radius_slider = ttk.Scale(panel, from_=5, to=200, orient=tk.HORIZONTAL)
-        radius_slider.set(orig_radius)
+        radius_slider.set(slider_init)
         radius_slider.pack(fill=tk.X, padx=20, pady=5)
         radius_slider.config(command=update_preview)
         update_preview()
 
         def on_confirm():
+            if self._bg_corr_timer:
+                self.root.after_cancel(self._bg_corr_timer)
             self.push_undo_state()
-            radius = int(radius_slider.get())
-            self.processed_image = rolling_ball_background(self.original_image, radius=radius)
-            self.redraw_canvas()
+            self.bg_corr_radius = int(radius_slider.get())
+            self.apply_image_adjustments()
             panel.destroy()
             self.lbl_status.config(text='背景補正適用完了')
 
+        def on_reset():
+            if self._bg_corr_timer:
+                self.root.after_cancel(self._bg_corr_timer)
+            self.push_undo_state()
+            self.bg_corr_radius = None
+            self.apply_image_adjustments()
+            panel.destroy()
+            self.lbl_status.config(text='背景補正をリセットしました')
+
         def on_cancel():
+            if self._bg_corr_timer:
+                self.root.after_cancel(self._bg_corr_timer)
+            self.bg_corr_radius = orig_radius
+            self.apply_image_adjustments()
             panel.destroy()
 
         btn_frame = ttk.Frame(panel)
         btn_frame.pack(pady=12)
         ttk.Button(btn_frame, text='適用', command=on_confirm).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text='リセット', command=on_reset).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
         panel.protocol('WM_DELETE_WINDOW', on_cancel)
 

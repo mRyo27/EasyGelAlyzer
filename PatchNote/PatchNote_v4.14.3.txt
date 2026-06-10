@@ -1,0 +1,7 @@
+v4.13.0
+
+マイナーデート内容
+1.src/core/image_proc.pyを追加し、染色方法ごとに画像の輝度やコントラストを自動設定する機能を追加
+
+Major Update Details
+1. Added src/core/image_proc.py and added a function to automatically set the brightness and contrast of the image for each staining method.

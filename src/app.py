@@ -99,6 +99,7 @@ class EasyGelAlyzerApp(
 
         self.brightness_val = 0
         self.contrast_val = 0
+        self.bg_corr_radius = None
 
         # サンプルカラー: マーカー色(#FF9F00)・開始ライン色(#007AFF)・終了ライン色(#FF3B30)と被らない色
         self.color_palette = ['#34C759', '#AF52DE', '#A2561F', '#00C7BE', '#5856D6', '#FF6B9D', '#00B894', '#6C5CE7']

@@ -17,6 +17,7 @@ class ProjectIOMixin:
             'brightness_val': self.brightness_val,
             'contrast_val': self.contrast_val,
             'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
+            'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
             'grayscale': self.grayscale,
             'marker_visible': self.marker_visible,
             'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
@@ -68,6 +69,7 @@ class ProjectIOMixin:
                 'brightness_val': self.brightness_val,
                 'contrast_val': self.contrast_val,
                 'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
+                'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
                 'grayscale': self.grayscale,
                 'marker_visible': self.marker_visible,
                 'item_visibility': self.item_visibility,
@@ -95,6 +97,7 @@ class ProjectIOMixin:
                 'brightness_val': self.brightness_val,
                 'contrast_val': self.contrast_val,
                 'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
+                'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
                 'grayscale': self.grayscale,
                 'marker_visible': self.marker_visible,
                 'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
@@ -133,6 +136,7 @@ class ProjectIOMixin:
                     'brightness_val': self.brightness_val,
                     'contrast_val': self.contrast_val,
                     'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
+                    'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
                     'grayscale': self.grayscale,
                     'marker_visible': self.marker_visible,
                     'item_visibility': self.item_visibility,
@@ -157,6 +161,7 @@ class ProjectIOMixin:
                     'brightness_val': self.brightness_val,
                     'contrast_val': self.contrast_val,
                     'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
+                    'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
                     'grayscale': self.grayscale,
                     'marker_visible': self.marker_visible,
                     'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
@@ -241,6 +246,7 @@ class ProjectIOMixin:
             self.brightness_val = project.get('brightness_val', 0)
             self.contrast_val = project.get('contrast_val', 0)
             self.image_preset_mode = project.get('image_preset_mode', 'none')
+            self.bg_corr_radius = project.get('bg_corr_radius', None)
             self.grayscale = project.get('grayscale', False)
             self.marker_visible = project.get('marker_visible', True)
             self.item_visibility = project.get('item_visibility', {})
@@ -291,6 +297,7 @@ class ProjectIOMixin:
                 'brightness_val': self.brightness_val,
                 'contrast_val': self.contrast_val,
                 'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
+                'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
                 'grayscale': self.grayscale,
                 'marker_visible': self.marker_visible,
                 'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,

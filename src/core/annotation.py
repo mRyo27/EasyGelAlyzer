@@ -6,7 +6,7 @@ class AnnotationMixin:
         if self.original_image is None:
             return
         state = (self.original_image.copy(), self.start_line_y, self.end_line_y,
-                 self.brightness_val, self.contrast_val)
+                 self.brightness_val, self.contrast_val, getattr(self, 'bg_corr_radius', None))
         self.undo_stack.append(state)
         if len(self.undo_stack) > 20:
             self.undo_stack.pop(0)
@@ -19,7 +19,7 @@ class AnnotationMixin:
 
         current = (self.original_image.copy() if self.original_image else None,
                    self.start_line_y, self.end_line_y,
-                   self.brightness_val, self.contrast_val)
+                   self.brightness_val, self.contrast_val, getattr(self, 'bg_corr_radius', None))
         self.redo_stack.append(current)
         state = self.undo_stack.pop()
 
@@ -28,6 +28,7 @@ class AnnotationMixin:
         self.end_line_y = state[2]
         self.brightness_val = state[3]
         self.contrast_val = state[4]
+        self.bg_corr_radius = state[5]
 
         # 回転プレビュー抑制
         self.suppress_rotation_preview = True
@@ -47,7 +48,7 @@ class AnnotationMixin:
             return
         current = (self.original_image.copy() if self.original_image else None,
                    self.start_line_y, self.end_line_y,
-                   self.brightness_val, self.contrast_val)
+                   self.brightness_val, self.contrast_val, getattr(self, 'bg_corr_radius', None))
         self.undo_stack.append(current)
         state = self.redo_stack.pop()
         self.original_image = state[0]
@@ -55,6 +56,7 @@ class AnnotationMixin:
         self.end_line_y = state[2]
         self.brightness_val = state[3]
         self.contrast_val = state[4]
+        self.bg_corr_radius = state[5]
         self.recalculate_rf_and_sizes()
         self.apply_image_adjustments()
         self.lbl_status.config(text=T('status_redo'))
