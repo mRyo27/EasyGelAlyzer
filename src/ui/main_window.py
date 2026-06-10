@@ -666,51 +666,51 @@ class MainWindowMixin:
         panel.protocol('WM_DELETE_WINDOW', on_cancel)
 
     def show_background_correction_panel(self):
-    """Background correction using rolling‑ball algorithm."""
-    if self.original_image is None:
-        return
-    from core.image_proc import rolling_ball_background
-    panel = tk.Toplevel(self.root)
-    panel.title('背景補正')
-    panel.geometry('420x450')
-    panel.transient(self.root)
+        """Background correction using rolling‑ball algorithm."""
+        if self.original_image is None:
+            return
+        from core.image_proc import rolling_ball_background
+        panel = tk.Toplevel(self.root)
+        panel.title('背景補正')
+        panel.geometry('420x450')
+        panel.transient(self.root)
 
-    orig_radius = getattr(self, '_bg_corr_radius', 50)
+        orig_radius = getattr(self, '_bg_corr_radius', 50)
 
-    preview_label = ttk.Label(panel)
-    preview_label.pack(pady=5)
+        preview_label = ttk.Label(panel)
+        preview_label.pack(pady=5)
 
-    def update_preview(*args):
-        radius = int(radius_slider.get())
-        thumb = self.original_image.copy()
-        thumb.thumbnail((200, 200))
-        corrected = rolling_ball_background(thumb, radius=radius)
-        tk_img = ImageTk.PhotoImage(corrected)
-        preview_label.configure(image=tk_img)
-        preview_label.image = tk_img
+        def update_preview(*args):
+            radius = int(radius_slider.get())
+            thumb = self.original_image.copy()
+            thumb.thumbnail((200, 200))
+            corrected = rolling_ball_background(thumb, radius=radius)
+            tk_img = ImageTk.PhotoImage(corrected)
+            preview_label.configure(image=tk_img)
+            preview_label.image = tk_img
 
-    radius_slider = ttk.Scale(panel, from_=5, to=200, orient=tk.HORIZONTAL)
-    radius_slider.set(orig_radius)
-    radius_slider.pack(fill=tk.X, padx=20, pady=5)
-    radius_slider.config(command=update_preview)
-    update_preview()
+        radius_slider = ttk.Scale(panel, from_=5, to=200, orient=tk.HORIZONTAL)
+        radius_slider.set(orig_radius)
+        radius_slider.pack(fill=tk.X, padx=20, pady=5)
+        radius_slider.config(command=update_preview)
+        update_preview()
 
-    def on_confirm():
-        self.push_undo_state()
-        radius = int(radius_slider.get())
-        self.processed_image = rolling_ball_background(self.original_image, radius=radius)
-        self.redraw_canvas()
-        panel.destroy()
-        self.lbl_status.config(text='背景補正適用完了')
+        def on_confirm():
+            self.push_undo_state()
+            radius = int(radius_slider.get())
+            self.processed_image = rolling_ball_background(self.original_image, radius=radius)
+            self.redraw_canvas()
+            panel.destroy()
+            self.lbl_status.config(text='背景補正適用完了')
 
-    def on_cancel():
-        panel.destroy()
+        def on_cancel():
+            panel.destroy()
 
-    btn_frame = ttk.Frame(panel)
-    btn_frame.pack(pady=12)
-    ttk.Button(btn_frame, text='適用', command=on_confirm).pack(side=tk.LEFT, padx=5)
-    ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
-    panel.protocol('WM_DELETE_WINDOW', on_cancel)
+        btn_frame = ttk.Frame(panel)
+        btn_frame.pack(pady=12)
+        ttk.Button(btn_frame, text='適用', command=on_confirm).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
+        panel.protocol('WM_DELETE_WINDOW', on_cancel)
 
 def switch_language(self):
         """言語切替 (英語 ↔ 日本語) → 動的更新（再起動なし）"""
