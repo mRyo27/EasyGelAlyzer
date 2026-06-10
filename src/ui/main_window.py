@@ -712,7 +712,7 @@ class MainWindowMixin:
         ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
         panel.protocol('WM_DELETE_WINDOW', on_cancel)
 
-        def switch_language(self):
+    def switch_language(self):
         """言語切替 (英語 ↔ 日本語) → 動的更新（再起動なし）"""
         new_lang = 'ja' if get_language() == 'en' else 'en'
         set_language(new_lang)
