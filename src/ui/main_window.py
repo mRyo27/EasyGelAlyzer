@@ -630,7 +630,14 @@ class MainWindowMixin:
             self.lbl_status.config(text=T('status_adjust_done'))
 
         def on_reset():
-            apply_preset('none')
+            self.image_preset_mode = 'none'
+            bright_slider.set(0)
+            contrast_slider.set(0)
+            self.brightness_val = 0.0
+            self.contrast_val = 0.0
+            for m, btn in preset_buttons.items():
+                btn.state(['!pressed'])
+            self.apply_image_adjustments()
 
         def on_cancel():
             self.image_preset_mode = orig_preset
@@ -653,13 +660,13 @@ class MainWindowMixin:
         from core.image_proc import rolling_ball_background
         panel = tk.Toplevel(self.root)
         panel.title('背景補正')
-        panel.geometry('420x450')
+        panel.geometry('460x450')
         panel.transient(self.root)
         panel.resizable(False, False)
 
         # 画面中央に配置
         panel.update_idletasks()
-        x = self.root.winfo_screenwidth() // 2 - 210
+        x = self.root.winfo_screenwidth() // 2 - 230
         y = self.root.winfo_screenheight() // 2 - 225
         panel.geometry(f"+{x}+{y}")
 
@@ -709,13 +716,18 @@ class MainWindowMixin:
             self.lbl_status.config(text='背景補正適用完了')
 
         def on_reset():
+            # リセットボタンはスライダーの値を初期値（50）に戻すだけ（ダイアログは閉じない）
+            radius_slider.set(50)
+
+        def on_remove():
+            # 背景補正を削除（無効化）して閉じる
             if self._bg_corr_timer:
                 self.root.after_cancel(self._bg_corr_timer)
             self.push_undo_state()
             self.bg_corr_radius = None
             self.apply_image_adjustments()
             panel.destroy()
-            self.lbl_status.config(text='背景補正をリセットしました')
+            self.lbl_status.config(text='背景補正を削除しました')
 
         def on_cancel():
             if self._bg_corr_timer:
@@ -727,6 +739,7 @@ class MainWindowMixin:
         btn_frame = ttk.Frame(panel)
         btn_frame.pack(pady=12)
         ttk.Button(btn_frame, text='適用', command=on_confirm).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text='背景補正を削除', command=on_remove).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text='リセット', command=on_reset).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
         panel.protocol('WM_DELETE_WINDOW', on_cancel)
