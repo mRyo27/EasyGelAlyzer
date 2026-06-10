@@ -21,8 +21,13 @@ class EasyGelAlyzerApp(
 ):
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1280x720")
-        # Removed forced fullscreen to improve compatibility with older PCs
+        # メインウィンドウを画面中央に配置
+        self.root.update_idletasks()
+        win_w = 1280
+        win_h = 720
+        x = (self.root.winfo_screenwidth() - win_w) // 2
+        y = (self.root.winfo_screenheight() - win_h) // 2
+        self.root.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
 
         # ---- アイコン設定 ----

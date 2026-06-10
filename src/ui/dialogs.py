@@ -208,8 +208,9 @@ class UIDialogMixin:
         dialog.geometry("280x140")
         dialog.transient(self.root)
         dialog.resizable(False, False)
-        x = self.root.winfo_screenwidth() // 2 - 140
-        y = self.root.winfo_screenheight() // 2 - 70
+        # ダイアログをメインウィンドウの中心に配置
+        x = self.root.winfo_x() + self.root.winfo_width() // 2 - 140
+        y = self.root.winfo_y() + self.root.winfo_height() // 2 - 70
         dialog.geometry(f"+{x}+{y}")
 
         dialog.lift()
