@@ -57,3 +57,46 @@ def preset_silver(image):
     inv = ImageOps.invert(image.convert("RGB"))
     # Dark signal enhancement
     return apply_gamma_correction(inv, gamma=0.6)
+
+
+def rolling_ball_background(image, radius=50):
+    """Apply rolling‑ball background subtraction.
+
+    Parameters
+    ----------
+    image : PIL.Image.Image
+        Input image (RGB or L mode).
+    radius : int, optional
+        Radius of the structuring element in pixels. Larger values smooth
+        larger background variations. Default is 50.
+
+    Returns
+    -------
+    PIL.Image.Image
+        Image with the estimated background removed (original minus background).
+    """
+    if not isinstance(radius, int) or radius < 1:
+        raise ValueError("radius must be a positive integer")
+
+    # Convert to appropriate mode for OpenCV processing
+    if image.mode != "RGB":
+        img = image.convert("RGB")
+    else:
+        img = image
+
+    if HAS_OPENCV:
+        # Use OpenCV morphological opening with a circular kernel
+        import numpy as np
+        import cv2
+        img_np = np.array(img)
+        # Create circular structuring element
+        ksize = radius * 2 + 1
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ksize, ksize))
+        # Perform opening (erosion followed by dilation) to estimate background
+        background = cv2.morphologyEx(img_np, cv2.MORPH_OPEN, kernel)
+        # Subtract background
+        corrected = cv2.subtract(img_np, background)
+        return Image.fromarray(corrected)
+    else:
+        # Fallback: return original (no OpenCV) – callers can still use other preprocessing
+        return img
