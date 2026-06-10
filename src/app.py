@@ -21,7 +21,7 @@ class EasyGelAlyzerApp(
 ):
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1024x768")
+        self.root.geometry("1280x720")
         # Removed forced fullscreen to improve compatibility with older PCs
 
 

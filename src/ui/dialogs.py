@@ -48,8 +48,9 @@ class UIDialogMixin:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(False, False)
-        x = self.root.winfo_screenwidth() // 2 - 190
-        y = self.root.winfo_screenheight() // 2 - 90
+        # アプリウィンドウの中心にダイアログを配置
+        x = self.root.winfo_x() + self.root.winfo_width() // 2 - 190
+        y = self.root.winfo_y() + self.root.winfo_height() // 2 - 90
         dialog.geometry(f"+{x}+{y}")
 
         ttk.Label(dialog, text=T('dlg_mode_prompt'),
