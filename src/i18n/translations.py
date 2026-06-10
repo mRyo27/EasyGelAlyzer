@@ -1095,6 +1095,26 @@ TRANSLATIONS = {
     "btn_cancel": {
         "en": "Cancel",
         "ja": "キャンセル"
+    },
+    "preset_etbr": {
+        "en": "EtBr Gel",
+        "ja": "EtBr 蛍光ゲル"
+    },
+    "preset_coomassie": {
+        "en": "Coomassie",
+        "ja": "クーマシー染色"
+    },
+    "preset_silver": {
+        "en": "Silver",
+        "ja": "銀染色"
+    },
+    "preset_none": {
+        "en": "None",
+        "ja": "なし"
+    },
+    "lbl_presets": {
+        "en": "Presets",
+        "ja": "プリセット"
     }
 }
 

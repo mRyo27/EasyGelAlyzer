@@ -535,21 +535,80 @@ class MainWindowMixin:
             return
         panel = tk.Toplevel(self.root)
         panel.title(T('dlg_adjust_title'))
-        panel.geometry("300x200")
+        # プリセットボタンを追加するので、ウィンドウの高さと幅を少し広げる
+        panel.geometry("380x300")
         panel.resizable(False, False)
         panel.transient(self.root)
-        x = self.root.winfo_screenwidth() // 2 - 150
-        y = self.root.winfo_screenheight() // 2 - 100
+        x = self.root.winfo_screenwidth() // 2 - 190
+        y = self.root.winfo_screenheight() // 2 - 150
         panel.geometry(f"+{x}+{y}")
 
         panel.wait_visibility()
         panel.grab_set()
 
-        ttk.Label(panel, text=T('dlg_brightness')).pack(pady=5)
+        # 開始時の状態を保持（キャンセル時の復元用）
+        orig_preset = getattr(self, 'image_preset_mode', 'none')
+        orig_bright = self.brightness_val
+        orig_contrast = self.contrast_val
+
+        # --- プリセットセクション ---
+        preset_frame = ttk.LabelFrame(panel, text=T('lbl_presets'), padding=5)
+        preset_frame.pack(fill=tk.X, padx=15, pady=8)
+
+        # プリセットボタン群
+        presets = [
+            ('none', T('preset_none')),
+            ('etbr', T('preset_etbr')),
+            ('coomassie', T('preset_coomassie')),
+            ('silver', T('preset_silver'))
+        ]
+
+        preset_buttons = {}
+
+        def apply_preset(mode):
+            self.image_preset_mode = mode
+            if mode == 'etbr':
+                bright_slider.set(0)
+                contrast_slider.set(20)
+            elif mode == 'coomassie':
+                bright_slider.set(10)
+                contrast_slider.set(30)
+            elif mode == 'silver':
+                bright_slider.set(0)
+                contrast_slider.set(0)
+            else: # none
+                bright_slider.set(0)
+                contrast_slider.set(0)
+            
+            # アクティブなボタンの見た目を視覚的にフィードバック
+            for m, btn in preset_buttons.items():
+                if m == mode:
+                    btn.state(['pressed'])
+                else:
+                    btn.state(['!pressed'])
+
+            update_adjustments()
+
+        # 2行2列のグリッドでボタンを配置
+        for idx, (mode, label) in enumerate(presets):
+            r = idx // 2
+            c = idx % 2
+            btn = ttk.Button(preset_frame, text=label, command=lambda m=mode: apply_preset(m))
+            btn.grid(row=r, column=c, padx=5, pady=3, sticky="ew")
+            preset_buttons[mode] = btn
+            preset_frame.columnconfigure(c, weight=1)
+
+        # 初期状態のアクティブプリセットボタンを設定
+        if orig_preset in preset_buttons:
+            preset_buttons[orig_preset].state(['pressed'])
+
+        # --- スライダーセクション ---
+        ttk.Label(panel, text=T('dlg_brightness')).pack(pady=3)
         bright_slider = ttk.Scale(panel, from_=-100, to=100, orient=tk.HORIZONTAL)
         bright_slider.set(self.brightness_val)
         bright_slider.pack(fill=tk.X, padx=20)
-        ttk.Label(panel, text=T('dlg_contrast')).pack(pady=5)
+        
+        ttk.Label(panel, text=T('dlg_contrast')).pack(pady=3)
         contrast_slider = ttk.Scale(panel, from_=-100, to=100, orient=tk.HORIZONTAL)
         contrast_slider.set(self.contrast_val)
         contrast_slider.pack(fill=tk.X, padx=20)
@@ -557,7 +616,21 @@ class MainWindowMixin:
         def update_adjustments(*args):
             b_factor = (bright_slider.get() + 100) / 100
             c_factor = (contrast_slider.get() + 100) / 100
-            enhanced = ImageEnhance.Brightness(self.original_image).enhance(b_factor)
+            
+            # プリセットを適用
+            preset = getattr(self, 'image_preset_mode', 'none')
+            base_img = self.original_image
+            if preset == 'etbr':
+                from core.image_proc import preset_etbr
+                base_img = preset_etbr(self.original_image)
+            elif preset == 'coomassie':
+                from core.image_proc import preset_coomassie
+                base_img = preset_coomassie(self.original_image)
+            elif preset == 'silver':
+                from core.image_proc import preset_silver
+                base_img = preset_silver(self.original_image)
+                
+            enhanced = ImageEnhance.Brightness(base_img).enhance(b_factor)
             self.processed_image = ImageEnhance.Contrast(enhanced).enhance(c_factor)
             self.redraw_canvas()
 
@@ -573,16 +646,17 @@ class MainWindowMixin:
             self.lbl_status.config(text=T('status_adjust_done'))
 
         def on_reset():
-            bright_slider.set(0)
-            contrast_slider.set(0)
-            update_adjustments()
+            apply_preset('none')
 
         def on_cancel():
+            self.image_preset_mode = orig_preset
+            self.brightness_val = orig_bright
+            self.contrast_val = orig_contrast
             self.apply_image_adjustments()
             panel.destroy()
 
         btn_frame = ttk.Frame(panel)
-        btn_frame.pack(pady=15)
+        btn_frame.pack(pady=12)
         ttk.Button(btn_frame, text=T('dlg_confirm'), command=on_confirm).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text=T('dlg_reset'), command=on_reset).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text=T('dlg_cancel'), command=on_cancel).pack(side=tk.LEFT, padx=5)

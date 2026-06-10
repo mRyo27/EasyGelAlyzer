@@ -204,6 +204,7 @@ class ImageManagerMixin:
                 self.source_image = self.source_image.convert('RGB')
             self.original_image = self.source_image.copy()
             self.processed_image = None
+            self.image_preset_mode = 'none'
             self.start_line_y = None
             self.end_line_y = None
             self.markers = []
@@ -516,16 +517,32 @@ class ImageManagerMixin:
         self.redraw_canvas()
 
     def apply_image_adjustments(self):
-        """現在の brightness_val, contrast_val を original_image に適用して processed_image にキャッシュする"""
+        """現在の brightness_val, contrast_val と image_preset_mode を original_image に適用して processed_image にキャッシュする"""
         if self.original_image is None:
             return
-        if self.brightness_val == 0 and self.contrast_val == 0:
+        
+        # 1. プリセット処理の適用
+        preset = getattr(self, 'image_preset_mode', 'none')
+        base_img = self.original_image
+        if preset == 'etbr':
+            from core.image_proc import preset_etbr
+            base_img = preset_etbr(self.original_image)
+        elif preset == 'coomassie':
+            from core.image_proc import preset_coomassie
+            base_img = preset_coomassie(self.original_image)
+        elif preset == 'silver':
+            from core.image_proc import preset_silver
+            base_img = preset_silver(self.original_image)
+            
+        # 2. スライダーによる輝度・コントラストの微調整
+        if self.brightness_val == 0 and self.contrast_val == 0 and preset == 'none':
             self.processed_image = None
         else:
             b_factor = (self.brightness_val + 100) / 100
             c_factor = (self.contrast_val + 100) / 100
-            enhanced = ImageEnhance.Brightness(self.original_image).enhance(b_factor)
+            enhanced = ImageEnhance.Brightness(base_img).enhance(b_factor)
             self.processed_image = ImageEnhance.Contrast(enhanced).enhance(c_factor)
+            
         self.redraw_canvas()
 
     def redraw_canvas(self):

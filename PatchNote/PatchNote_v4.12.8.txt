@@ -1,0 +1,14 @@
+v4.12.8
+
+パッチアップデート内容
+1.レイヤータブの分子量マーカーをダブルクリックすれば分子量を変更するためダイアログが表示されるが、ダイアログが空白で変更できないバグを修正
+2.解析タブのグラフの横軸の軸名と回帰式のエリアと被って文字が見切れてしまうバグを修正
+3.起動時に自動的にフルスクリーンになる動作を廃止
+4.FHDで起動するのを廃止、代わりに1280×1024の3：4の比率で起動し、古い解像度の低いパソコンでも対応できるように変更。
+
+Patch Update
+
+1. Fixed a bug where double-clicking the molecular weight marker in the Layers tab would display a dialog box to change the molecular weight, but the dialog box would be blank and the change could not be made.
+2. Fixed a bug in the Analysis tab where the axis name on the horizontal axis of the graph overlapped with the regression equation area, causing the text to be cut off.
+3. Removed the behavior of automatically switching to full screen on startup.
+4. Removed the FHD startup setting and instead started in a 1280x1024 3:4 aspect ratio to make it compatible with older computers with lower resolutions.

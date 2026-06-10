@@ -107,6 +107,7 @@ class EasyGelAlyzerApp(
         # x: 横位置(元画像系), y_above_start: 開始ラインより上に表示(固定値, キャンバスオフセット)
         self.lane_labels = []
         self.lane_label_font_size = 11  # ラベルフォントサイズ（スライダーで変更可）
+        self.image_preset_mode = 'none'
 
         # アイテムごとの表示/非表示 (id -> bool)
         self.item_visibility = {}
