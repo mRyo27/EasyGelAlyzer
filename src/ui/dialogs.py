@@ -48,7 +48,8 @@ class UIDialogMixin:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(False, False)
-        # アプリウィンドウの中心にダイアログを配置
+        # ウィンドウ配置を正しく計算するために更新
+        self.root.update_idletasks()
         x = self.root.winfo_x() + self.root.winfo_width() // 2 - 190
         y = self.root.winfo_y() + self.root.winfo_height() // 2 - 90
         dialog.geometry(f"+{x}+{y}")
@@ -222,9 +223,10 @@ class UIDialogMixin:
 
         frame = ttk.Frame(dialog)
         frame.pack(fill=tk.X, padx=15)
+        # 初期値を計算してStringVarに設定
+        init_val = f"{marker['size']:.2f}" if self.mode == "protein" else f"{int(marker['size'])}"
+        val_var = tk.StringVar(master=dialog, value=init_val)
         ttk.Label(frame, text=T("dlg_new_val").format(unit=unit)).grid(row=0, column=0, padx=3, pady=4, sticky="w")
-        val_var = tk.StringVar(master=dialog, value=f"{marker['size']:.2f}" if self.mode == "protein"
-                               else f"{int(marker['size'])}")
         val_entry = ttk.Entry(frame, textvariable=val_var, width=12)
         val_entry.grid(row=0, column=1, padx=3, pady=4)
         val_entry.select_range(0, tk.END)
