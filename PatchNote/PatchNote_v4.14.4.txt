@@ -1,0 +1,19 @@
+v4.14.4
+
+マイナーデート内容
+1.背景補正（ローリングボール法）機能を追加
+
+パッチアップデート内容
+1,画像調節機能のプリセットタブの”なし”ボタンを廃止、リセットボタンを追加。
+2.背景補正機能のスライダーを動かした際にリアルタイムで変更が反映されるように変更
+3.背景補正機能のリセットボタンを追加（背景補正のスライダー位置のリセット）。
+4.背景補正機能の背景補正削除ボタンを追加。
+
+Minor Update Details
+1. Added background correction (rolling ball method) function.
+
+Patch Update Details
+1. Removed the "None" button from the preset tab of the image adjustment function and added a reset button.
+2. Changed the background correction function so that changes are reflected in real time when the slider is moved.
+3. Added a reset button for the background correction function (resets the position of the background correction slider).
+4. Added a background correction delete button for the background correction function.
