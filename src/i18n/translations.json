@@ -283,6 +283,10 @@
     en DNA mode (Agarose gel  bp),
     ja DNAモード (アガロースゲル  bp)
   },
+  dlg_mode_load_project {
+    en Load project file,
+    ja プロジェクトファイルを読み込み
+  },
   title_protein {
     en EasyGelAlyzer - Protein mode (SDS-PAGE - kDa),
     ja EasyGelAlyzer - タンパク質モード (SDS-PAGE - kDa)

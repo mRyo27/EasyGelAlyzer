@@ -169,6 +169,7 @@ class ProjectIOMixin:
             filetypes=[("EasyGelAlyzer Project", "*.gelproj"), ("All files", "*.*")]
         )
         if not path:
+            self._load_project_on_startup = False
             return
 
         try:
@@ -187,11 +188,12 @@ class ProjectIOMixin:
             # モード切替が必要な場合
             proj_mode = project.get('mode', 'protein')
             if self.mode != proj_mode:
-                mode_name = ('Protein' if proj_mode == 'protein' else 'DNA') if get_language() == 'en' \
-                    else (T('mode_protein_short') if proj_mode == 'protein' else T('mode_dna_short'))
-                messagebox.showinfo(
-                    T('info_title'),
-                    T('warn_project_mode').format(mode=mode_name))
+                if not getattr(self, '_load_project_on_startup', False):
+                    mode_name = ('Protein' if proj_mode == 'protein' else 'DNA') if get_language() == 'en' \
+                        else (T('mode_protein_short') if proj_mode == 'protein' else T('mode_dna_short'))
+                    messagebox.showinfo(
+                        T('info_title'),
+                        T('warn_project_mode').format(mode=mode_name))
                 self.mode = proj_mode
                 self.update_ui_units()
 
@@ -264,6 +266,7 @@ class ProjectIOMixin:
             self._record_saved_state()
             # Clear initial status message after a project is loaded
             self.lbl_status.config(text="")
+            self._load_project_on_startup = False
 
         except Exception as e:
             messagebox.showerror(T('err_title'), T('err_project_load') + str(e))

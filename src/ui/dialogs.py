@@ -44,14 +44,14 @@ class UIDialogMixin:
     def show_mode_selection_dialog(self):
         dialog = tk.Toplevel(self.root)
         dialog.title(T("dlg_mode_title"))
-        dialog.geometry("380x180")
+        dialog.geometry("380x230")
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(False, False)
         # ウィンドウ配置を正しく計算するために更新
         self.root.update_idletasks()
         x = self.root.winfo_x() + self.root.winfo_width() // 2 - 190
-        y = self.root.winfo_y() + self.root.winfo_height() // 2 - 90
+        y = self.root.winfo_y() + self.root.winfo_height() // 2 - 115
         dialog.geometry(f"+{x}+{y}")
 
         ttk.Label(dialog, text=T('dlg_mode_prompt'),
@@ -59,18 +59,28 @@ class UIDialogMixin:
         btn_frame = ttk.Frame(dialog)
         btn_frame.pack(pady=10)
         mode_var = tk.StringVar(value="protein")
+        load_project_var = tk.BooleanVar(value=False)
 
         def select_mode(m):
             mode_var.set(m)
+            load_project_var.set(False)
+            dialog.destroy()
+
+        def select_project():
+            mode_var.set("protein")
+            load_project_var.set(True)
             dialog.destroy()
 
         ttk.Button(btn_frame, text=T('dlg_mode_protein'), width=32,
                    command=lambda: select_mode("protein")).pack(pady=5)
         ttk.Button(btn_frame, text=T('dlg_mode_dna'), width=32,
                    command=lambda: select_mode("dna")).pack(pady=5)
+        ttk.Button(btn_frame, text=T('dlg_mode_load_project'), width=32,
+                   command=select_project).pack(pady=5)
 
         self.root.wait_window(dialog)
         self.mode = mode_var.get()
+        self._load_project_on_startup = load_project_var.get()
 
     def _show_marker_input_dialog(self, rf, unit, existing_sizes, default_name, index):
         """マーカーサイズ入力ダイアログ（サイズのみ）"""

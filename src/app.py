@@ -152,6 +152,8 @@ class EasyGelAlyzerApp(
         self.root.protocol("WM_DELETE_WINDOW", self.on_app_close)
         # Drag & drop must be initialized after the window handle is available
         self.root.after(100, self._init_dnd)
+        if getattr(self, "_load_project_on_startup", False):
+            self.root.after(150, self.load_project)
 
     # ------------------------------------------------------------------ #
     #  モード選択ダイアログ

@@ -1189,6 +1189,7 @@ class AnnotationMixin:
                 cx, label_cy, text=display_name,
                 fill=color, anchor="n",
                 font=("Helvetica", fs_scaled, "bold"),
+                justify=tk.CENTER,
                 tags=(tag,)
             )
 
@@ -1213,7 +1214,8 @@ class AnnotationMixin:
                 0, 0,
                 text=self._lane_label_display_text(lbl),
                 anchor="n",
-                font=("Helvetica", fs_scaled, "bold")
+                font=("Helvetica", fs_scaled, "bold"),
+                justify=tk.CENTER
             )
             bbox = self.canvas.bbox(item)
             if bbox:
