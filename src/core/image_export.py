@@ -150,7 +150,7 @@ class ImageExportMixin:
             return
 
         try:
-            base_img = self.original_image.copy()
+            base_img = (self.processed_image if self.processed_image else self.original_image).copy()
             if self.grayscale:
                 base_img = base_img.convert("L").convert("RGB")
 

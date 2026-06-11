@@ -2,9 +2,16 @@ from common import *
 
 
 class ProjectIOMixin:
-    def _has_unsaved_changes(self):
-        """Return True if current project state differs from last saved state."""
-        current = {
+    def _get_image_signature(self):
+        if self.original_image is None:
+            return None
+        h = __import__('hashlib').md5(self.original_image.tobytes()).hexdigest()
+        return (self.original_image.mode, self.original_image.size, h)
+
+    def _get_project_state(self):
+        """Return project fields used for saved/dirty comparisons."""
+        return {
+            'image_signature': self._get_image_signature(),
             'start_line_y': self.start_line_y,
             'end_line_y': self.end_line_y,
             'markers': [m.copy() for m in self.markers],
@@ -24,8 +31,18 @@ class ProjectIOMixin:
             'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
             'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
         }
-        saved = getattr(self, '_saved_state', {})
-        return current != saved
+
+    def _record_saved_state(self):
+        self._project_saved = True
+        self._saved_state = self._get_project_state()
+
+    def _has_unsaved_changes(self):
+        """Return True if current project state differs from last saved state."""
+        if self.original_image is None:
+            return False
+        if not getattr(self, "_project_saved", False) or not hasattr(self, "_saved_state"):
+            return True
+        return self._get_project_state() != getattr(self, '_saved_state', {})
 
     def save_project(self):
         """Save project with dialog only when needed.
@@ -83,27 +100,7 @@ class ProjectIOMixin:
             self.lbl_status.config(text=T('status_project_saved').format(path=fname))
             # Record saved path and state for quick save
             self.project_path = path
-            self._project_saved = True
-            self._saved_state = {
-                'start_line_y': self.start_line_y,
-                'end_line_y': self.end_line_y,
-                'markers': [m.copy() for m in self.markers],
-                'samples': [s.copy() for s in self.samples],
-                'lane_labels': [l.copy() for l in self.lane_labels],
-                'lane_label_font_size': self.lane_label_font_size,
-                'calibration_a': self.calibration_a,
-                'calibration_b': self.calibration_b,
-                'calibration_r2': self.calibration_r2,
-                'brightness_val': self.brightness_val,
-                'contrast_val': self.contrast_val,
-                'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
-                'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
-                'grayscale': self.grayscale,
-                'marker_visible': self.marker_visible,
-                'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
-                'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
-                'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
-            }
+            self._record_saved_state()
             return True
         except Exception as e:
             messagebox.showerror(T('err_title'), T('err_project_save') + str(e))
@@ -147,27 +144,7 @@ class ProjectIOMixin:
                     json.dump(project, f, ensure_ascii=False, indent=2)
                 fname = os.path.basename(path)
                 self.lbl_status.config(text=T('status_project_saved').format(path=fname))
-                self._project_saved = True
-                self._saved_state = {
-                    'start_line_y': self.start_line_y,
-                    'end_line_y': self.end_line_y,
-                    'markers': [m.copy() for m in self.markers],
-                    'samples': [s.copy() for s in self.samples],
-                    'lane_labels': [l.copy() for l in self.lane_labels],
-                    'lane_label_font_size': self.lane_label_font_size,
-                    'calibration_a': self.calibration_a,
-                    'calibration_b': self.calibration_b,
-                    'calibration_r2': self.calibration_r2,
-                    'brightness_val': self.brightness_val,
-                    'contrast_val': self.contrast_val,
-                    'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
-                    'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
-                    'grayscale': self.grayscale,
-                    'marker_visible': self.marker_visible,
-                    'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
-                    'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
-                    'memo': self.memo_text.get("1.0", tk.END).strip() if hasattr(self, 'memo_text') else '',
-                }
+                self._record_saved_state()
                 return True
             except Exception as e:
                 messagebox.showerror(T('err_title'), T('err_project_save') + str(e))
@@ -278,32 +255,13 @@ class ProjectIOMixin:
                 self.memo_text.delete("1.0", tk.END)
                 self.memo_text.insert("1.0", memo_val)
 
+            self.apply_image_adjustments()
             self.fit_image_to_canvas()
             self.recalculate_rf_and_sizes()
             self.update_layer_panel()
             self.project_path = path  # Store path for quick save
             # Save successful: record saved state for future change detection
-            self._project_saved = True
-            self._saved_state = {
-                'start_line_y': self.start_line_y,
-                'end_line_y': self.end_line_y,
-                'markers': [m.copy() for m in self.markers],
-                'samples': [s.copy() for s in self.samples],
-                'lane_labels': [l.copy() for l in self.lane_labels],
-                'lane_label_font_size': self.lane_label_font_size,
-                'calibration_a': self.calibration_a,
-                'calibration_b': self.calibration_b,
-                'calibration_r2': self.calibration_r2,
-                'brightness_val': self.brightness_val,
-                'contrast_val': self.contrast_val,
-                'image_preset_mode': getattr(self, 'image_preset_mode', 'none'),
-                'bg_corr_radius': getattr(self, 'bg_corr_radius', None),
-                'grayscale': self.grayscale,
-                'marker_visible': self.marker_visible,
-                'item_visibility': self.item_visibility.copy() if isinstance(self.item_visibility, dict) else self.item_visibility,
-                'item_export_visibility': self.item_export_visibility.copy() if isinstance(self.item_export_visibility, dict) else self.item_export_visibility,
-                'memo': memo_val,
-            }
+            self._record_saved_state()
             # Clear initial status message after a project is loaded
             self.lbl_status.config(text="")
 

@@ -501,6 +501,7 @@ class ImageManagerMixin:
                 keep_samples.append(s)
         self.samples = keep_samples
         self.cancel_trimming()
+        self.apply_image_adjustments()
         self.fit_image_to_canvas()
         self.recalculate_rf_and_sizes()
         self.lbl_status.config(text=T('status_trim_done'))
@@ -602,19 +603,21 @@ class ImageManagerMixin:
 
         # マーカー（ライン）
         unit = "kDa" if self.mode == "protein" else "bp"
+        image_left = self.pan_x
+        image_right = self.pan_x + w * self.zoom_scale
         for m in self.markers:
             if not self.item_visibility.get(m['id'], True):
                 continue
             _, cy = self.image_to_canvas_coords(0, m['y'])
             mk_color = MARKER_LINE_COLOR  # プレビューでは常にカラー
-            self.canvas.create_line(0, cy, self.canvas.winfo_width(), cy,
+            self.canvas.create_line(image_left, cy, image_right, cy,
                                     fill=mk_color, dash=(3, 3), width=1)
             val_str = (f"{m['size']:.2f}" if self.mode == "protein"
                        else f"{int(m['size'])}")
             lbl = f"{m['name']} ({val_str} {unit})"
-            _mk_fs = max(6, int(8 * self.zoom_scale))
-            self.canvas.create_text(self.canvas.winfo_width() - 10, cy - 8,
-                                    text=lbl, fill=mk_color, anchor="e",
+            _mk_fs = 8
+            self.canvas.create_text(image_right + 8, cy - 8,
+                                    text=lbl, fill=mk_color, anchor="w",
                                     font=("Helvetica", _mk_fs))
 
         # 試料（点として描画）
