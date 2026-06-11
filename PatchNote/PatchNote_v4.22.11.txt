@@ -37,3 +37,40 @@ v4.14.4 → v4.22.11
 視覚的なずれを修正し、より正確な位置調整が可能に
 7画像出力時のエラー修正
 nanchor not supported for multiline text エラーを解消
+
+Minor Update:
+
+1. Improved Zoom and Position Reset Function
+Automatically adjusts reset position according to image size
+Sets the default position to display the image full screen
+Modified reset to match cropped size after cropping
+2. Improved Molecular Weight Marker Display
+Displays labels outside the image to prevent interference with operations
+Changed label format to:
+Molecular Weight
+Marker
+3. Standardized Text Alignment to Center
+Optimized label center position (adjusted to center between "Molecular Weight" and "Marker")
+4. Improved Label Placement Operation
+5. Added a slight snapping behavior near the center
+6. Displays guidelines when the center line is close to assist with alignment
+7. Added "Load Project File" to the Mode Selection Dialog at Startup
+Smoother access to existing projects.
+8. Added Scroll Bar to Layer Panel
+Comfortable operation even when the number of layers increases.
+
+Patch Update:
+
+1. Fixed display conditions for the save confirmation dialog.
+2. Improved so that it is only displayed if changes have been made before or after saving.
+If an existing project exists, saving at the end will be processed as "overwrite save".
+3. Fixed a bug in background correction during image output.
+Fixed the issue where the color after background correction was not reflected correctly.
+4. Fixed a bug in zoom and position reset.
+Resolved the issue where the resolution would revert to the resolution before cropping.
+5. Fixed a position bug in molecular weight marker display.
+Resolved the issue where labels and lines overlapped in the center of the screen when zooming.
+6. Fixed misalignment of label centerlines.
+Corrected visual misalignment, allowing for more accurate position adjustment.
+7. Fixed errors during image output.
+Resolved the error "nanchor not supported for multiline text".
