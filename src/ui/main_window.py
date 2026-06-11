@@ -55,8 +55,14 @@ class MainWindowMixin:
         self.left_frame = ttk.LabelFrame(self.main_pane, text=T('layer_panel'), padding=5)
         self.main_pane.add(self.left_frame, weight=1)
 
-        self.layer_tree = ttk.Treeview(self.left_frame, columns=("Vis", "Exp", "Rf", "Size"),
+        layer_tree_frame = ttk.Frame(self.left_frame)
+        layer_tree_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.layer_tree = ttk.Treeview(layer_tree_frame, columns=("Vis", "Exp", "Rf", "Size"),
                                        show="tree headings", selectmode="extended")
+        layer_scroll_y = ttk.Scrollbar(layer_tree_frame, orient=tk.VERTICAL, command=self.layer_tree.yview)
+        layer_scroll_x = ttk.Scrollbar(layer_tree_frame, orient=tk.HORIZONTAL, command=self.layer_tree.xview)
+        self.layer_tree.configure(yscrollcommand=layer_scroll_y.set, xscrollcommand=layer_scroll_x.set)
         self.layer_tree.heading("#0", text=T('layer_name'))
         self.layer_tree.heading("Vis", text="👁", command=self._toggle_all_visibility)
         self.layer_tree.heading("Exp", text="📷", command=self._toggle_all_export_visibility)
@@ -67,7 +73,11 @@ class MainWindowMixin:
         self.layer_tree.column("Exp", width=28, anchor="center", stretch=False)
         self.layer_tree.column("Rf", width=50, anchor="center")
         self.layer_tree.column("Size", width=80, anchor="center")
-        self.layer_tree.pack(fill=tk.BOTH, expand=True)
+        self.layer_tree.grid(row=0, column=0, sticky="nsew")
+        layer_scroll_y.grid(row=0, column=1, sticky="ns")
+        layer_scroll_x.grid(row=1, column=0, sticky="ew")
+        layer_tree_frame.rowconfigure(0, weight=1)
+        layer_tree_frame.columnconfigure(0, weight=1)
 
         self.marker_node = self.layer_tree.insert("", "end", text=T('marker_node'), open=True)
         self.sample_node = self.layer_tree.insert("", "end", text=T('sample_node'), open=True)

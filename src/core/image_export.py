@@ -150,7 +150,7 @@ class ImageExportMixin:
             return
 
         try:
-            base_img = self.original_image.copy()
+            base_img = (self.processed_image if self.processed_image else self.original_image).copy()
             if self.grayscale:
                 base_img = base_img.convert("L").convert("RGB")
 
@@ -246,6 +246,20 @@ class ImageExportMixin:
                     return self._annot_bw_color()
                 return color_hex
 
+            def draw_centered_multiline(draw_obj, xy, text, fill, font):
+                x, y = xy
+                lines = text.splitlines() or [text]
+                line_heights = []
+                for line in lines:
+                    bbox = draw_obj.textbbox((0, 0), line, font=font)
+                    line_heights.append(bbox[3] - bbox[1])
+                line_gap = 4
+                cur_y = y
+                for idx, line in enumerate(lines):
+                    line_w = draw_obj.textlength(line, font=font)
+                    draw_obj.text((x - line_w / 2, cur_y), line, fill=fill, font=font)
+                    cur_y += line_heights[idx] + line_gap
+
             # ---- 余白なしCADスタイル ----
             if no_margin_mode:
                 out_img = base_img.copy()
@@ -310,9 +324,10 @@ class ImageExportMixin:
                         ll_y = int(self.start_line_y + lbl_item.get('drag_offset_y', -30))
                         lc = get_annot_color_for(MARKER_LABEL_COLOR if lbl_item['type'] == 'marker'
                               else self._get_label_color(lbl_item['name']))
-                        lbl_display = T('marker_node') if lbl_item['type'] == 'marker' else lbl_item['name']
-                        draw.text((lx2, ll_y), lbl_display,
-                                  fill=lc, font=lane_label_font, anchor="mt")
+                        lbl_display = (self._lane_label_display_text(lbl_item)
+                                       if hasattr(self, '_lane_label_display_text')
+                                       else (T('marker_node') if lbl_item['type'] == 'marker' else lbl_item['name']))
+                        draw_centered_multiline(draw, (lx2, ll_y), lbl_display, lc, lane_label_font)
 
                 # メモ描画処理
                 if include_memo_mode and memo_str:
@@ -525,16 +540,16 @@ class ImageExportMixin:
                     lane_label_y = int(self.start_line_y + lbl.get('drag_offset_y', -30)) + top_margin
                     if lbl['type'] == 'marker':
                         lbl_color = MARKER_LABEL_COLOR if not self.grayscale else self._annot_bw_color()
-                        lbl_display = T('marker_node')
                     else:
                         lbl_color = (self._get_label_color(lbl['name'])
                                      if not self.grayscale else self._annot_bw_color())
-                        lbl_display = lbl['name']
+                    lbl_display = (self._lane_label_display_text(lbl)
+                                   if hasattr(self, '_lane_label_display_text')
+                                   else (T('marker_node') if lbl['type'] == 'marker' else lbl['name']))
                     fs = int(lbl.get('font_size', self.lane_label_font_size))
                     # マーカー・サンプルのフォントサイズ (font_size) を基準に、ラベルごとの設定比率 (fs / 9.0) でスケーリング
                     lane_font_local = get_japanese_font(size=max(6, int(font_size * (fs / 9.0))))
-                    draw.text((lx, lane_label_y), lbl_display,
-                              fill=lbl_color, font=lane_font_local, anchor="mt")
+                    draw_centered_multiline(draw, (lx, lane_label_y), lbl_display, lbl_color, lane_font_local)
 
             # 実験メモを描画
             if include_memo_mode and memo_str and memo_lines:
