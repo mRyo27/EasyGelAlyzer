@@ -616,8 +616,8 @@ class ImageManagerMixin:
                        else f"{int(m['size'])}")
             lbl = f"{m['name']} ({val_str} {unit})"
             _mk_fs = 8
-            self.canvas.create_text(image_right + 8, cy - 8,
-                                    text=lbl, fill=mk_color, anchor="w",
+            self.canvas.create_text(image_left - 8, cy - 8,
+                                    text=lbl, fill=mk_color, anchor="e",
                                     font=("Helvetica", _mk_fs))
 
         # 試料（点として描画）
