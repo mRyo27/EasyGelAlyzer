@@ -246,6 +246,20 @@ class ImageExportMixin:
                     return self._annot_bw_color()
                 return color_hex
 
+            def draw_centered_multiline(draw_obj, xy, text, fill, font):
+                x, y = xy
+                lines = text.splitlines() or [text]
+                line_heights = []
+                for line in lines:
+                    bbox = draw_obj.textbbox((0, 0), line, font=font)
+                    line_heights.append(bbox[3] - bbox[1])
+                line_gap = 4
+                cur_y = y
+                for idx, line in enumerate(lines):
+                    line_w = draw_obj.textlength(line, font=font)
+                    draw_obj.text((x - line_w / 2, cur_y), line, fill=fill, font=font)
+                    cur_y += line_heights[idx] + line_gap
+
             # ---- 余白なしCADスタイル ----
             if no_margin_mode:
                 out_img = base_img.copy()
@@ -313,9 +327,7 @@ class ImageExportMixin:
                         lbl_display = (self._lane_label_display_text(lbl_item)
                                        if hasattr(self, '_lane_label_display_text')
                                        else (T('marker_node') if lbl_item['type'] == 'marker' else lbl_item['name']))
-                        draw.multiline_text((lx2, ll_y), lbl_display,
-                                            fill=lc, font=lane_label_font,
-                                            anchor="mt", align="center")
+                        draw_centered_multiline(draw, (lx2, ll_y), lbl_display, lc, lane_label_font)
 
                 # メモ描画処理
                 if include_memo_mode and memo_str:
@@ -537,9 +549,7 @@ class ImageExportMixin:
                     fs = int(lbl.get('font_size', self.lane_label_font_size))
                     # マーカー・サンプルのフォントサイズ (font_size) を基準に、ラベルごとの設定比率 (fs / 9.0) でスケーリング
                     lane_font_local = get_japanese_font(size=max(6, int(font_size * (fs / 9.0))))
-                    draw.multiline_text((lx, lane_label_y), lbl_display,
-                                        fill=lbl_color, font=lane_font_local,
-                                        anchor="mt", align="center")
+                    draw_centered_multiline(draw, (lx, lane_label_y), lbl_display, lbl_color, lane_font_local)
 
             # 実験メモを描画
             if include_memo_mode and memo_str and memo_lines:
