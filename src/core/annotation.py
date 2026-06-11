@@ -234,19 +234,17 @@ class AnnotationMixin:
                     target_x = float(ix) - getattr(self, '_lane_label_drag_dx', 0.0)
                     target_y = float(iy) - getattr(self, '_lane_label_drag_dy', 0.0)
                     target_x, target_y = self._snap_lane_label_position(lbl, target_x, target_y)
-                    lbl['x'] = max(0.0, min(target_x, float(w)))
+                    final_x = max(0.0, min(target_x, float(w)))
                     if self.start_line_y is not None:
                         # ラベルテキストの高さ分（フォントサイズ + 余裕）を画像座標に換算して上限を設定
                         # anchor="n" なのでテキスト上端が label_cy になる
                         # → テキスト下端が開始ラインを超えないよう、フォント高さ + 余白(4px)を引く
-                        line_count = len(self._lane_label_display_text(lbl).splitlines())
-                        font_margin_img = (
-                            int(lbl.get('font_size', self.lane_label_font_size)) * line_count
-                            + 4 / max(self.zoom_scale, 0.01)
-                        )
+                        font_margin_img = self._lane_label_height_img(lbl) + 4 / max(self.zoom_scale, 0.01)
                         limit_y = float(self.start_line_y) - font_margin_img
-                        label_y = min(target_y, limit_y)
-                        lbl['drag_offset_y'] = label_y - float(self.start_line_y)
+                        final_y = min(target_y, limit_y)
+                        lbl['x'] = final_x
+                        lbl['drag_offset_y'] = final_y - float(self.start_line_y)
+                        self._update_lane_label_snap_guides(lbl)
                     break
             self.redraw_canvas()
             self._draw_lane_label_snap_guides()
@@ -1204,9 +1202,48 @@ class AnnotationMixin:
     def _lane_label_center_y(self, lbl):
         top_y = (self.start_line_y + lbl.get('drag_offset_y', -30)
                  if self.start_line_y is not None else 40)
+        return float(top_y) + self._lane_label_center_offset_img(lbl)
+
+    def _lane_label_text_bbox_img(self, lbl):
         fs = int(lbl.get('font_size', self.lane_label_font_size))
+        fs_scaled = max(6, int(fs * self.zoom_scale))
+        item = None
+        try:
+            item = self.canvas.create_text(
+                0, 0,
+                text=self._lane_label_display_text(lbl),
+                anchor="n",
+                font=("Helvetica", fs_scaled, "bold")
+            )
+            bbox = self.canvas.bbox(item)
+            if bbox:
+                left, top, right, bottom = bbox
+                z = max(self.zoom_scale, 0.01)
+                return {
+                    'width': (right - left) / z,
+                    'height': (bottom - top) / z,
+                    'center_offset': ((top + bottom) / 2) / z,
+                }
+        except Exception:
+            pass
+        finally:
+            if item is not None:
+                try:
+                    self.canvas.delete(item)
+                except Exception:
+                    pass
         line_count = len(self._lane_label_display_text(lbl).splitlines())
-        return float(top_y) + (fs * line_count) / 2
+        return {
+            'width': 0,
+            'height': fs * line_count,
+            'center_offset': (fs * line_count) / 2,
+        }
+
+    def _lane_label_height_img(self, lbl):
+        return self._lane_label_text_bbox_img(lbl)['height']
+
+    def _lane_label_center_offset_img(self, lbl):
+        return self._lane_label_text_bbox_img(lbl)['center_offset']
 
     def _snap_lane_label_position(self, lbl, target_x, target_y):
         if self.original_image is None:
@@ -1214,8 +1251,6 @@ class AnnotationMixin:
         w, h = self.original_image.size
         snap_px = 10
         snap_img = snap_px / max(self.zoom_scale, 0.01)
-        guides = []
-
         x_candidates = [w / 2]
         for other in self.lane_labels:
             if other['id'] != lbl['id']:
@@ -1223,13 +1258,9 @@ class AnnotationMixin:
         for x_candidate in x_candidates:
             if abs(target_x - x_candidate) <= snap_img:
                 target_x = x_candidate
-                guide_cx, _ = self.image_to_canvas_coords(x_candidate, 0)
-                guides.append(('v', guide_cx))
                 break
 
-        fs = int(lbl.get('font_size', self.lane_label_font_size))
-        line_count = len(self._lane_label_display_text(lbl).splitlines())
-        center_offset = (fs * line_count) / 2
+        center_offset = self._lane_label_center_offset_img(lbl)
         target_center_y = target_y + center_offset
         y_candidates = [h / 2]
         for other in self.lane_labels:
@@ -1238,12 +1269,40 @@ class AnnotationMixin:
         for y_candidate in y_candidates:
             if abs(target_center_y - y_candidate) <= snap_img:
                 target_y = y_candidate - center_offset
+                break
+
+        return target_x, target_y
+
+    def _update_lane_label_snap_guides(self, lbl):
+        if self.original_image is None:
+            self._lane_label_snap_guides = []
+            return
+        w, h = self.original_image.size
+        snap_img = 10 / max(self.zoom_scale, 0.01)
+        guides = []
+
+        x_candidates = [w / 2]
+        for other in self.lane_labels:
+            if other['id'] != lbl['id']:
+                x_candidates.append(float(other.get('x', 0.0)))
+        for x_candidate in x_candidates:
+            if abs(float(lbl.get('x', 0.0)) - x_candidate) <= snap_img:
+                guide_cx, _ = self.image_to_canvas_coords(x_candidate, 0)
+                guides.append(('v', guide_cx))
+                break
+
+        center_y = self._lane_label_center_y(lbl)
+        y_candidates = [h / 2]
+        for other in self.lane_labels:
+            if other['id'] != lbl['id']:
+                y_candidates.append(self._lane_label_center_y(other))
+        for y_candidate in y_candidates:
+            if abs(center_y - y_candidate) <= snap_img:
                 _, guide_cy = self.image_to_canvas_coords(0, y_candidate)
                 guides.append(('h', guide_cy))
                 break
 
         self._lane_label_snap_guides = guides
-        return target_x, target_y
 
     def _draw_lane_label_snap_guides(self):
         guides = getattr(self, '_lane_label_snap_guides', [])
