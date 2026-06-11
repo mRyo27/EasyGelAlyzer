@@ -169,8 +169,9 @@ class EasyGelAlyzerApp(
                 T('confirm_quit_msg')
             )
             if res is True:
-                # はい：保存を実行する。保存が成功（True）した場合のみ終了する。
-                if self.save_project():
+                # はい：保存済みプロジェクトは上書き保存、未保存なら名前を付けて保存する。
+                save_ok = self.save_project_quick() if getattr(self, "project_path", None) else self.save_project()
+                if save_ok:
                     self.root.destroy()
             elif res is False:
                 # いいえ：保存せずに終了
