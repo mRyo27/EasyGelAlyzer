@@ -310,7 +310,9 @@ class ImageExportMixin:
                         ll_y = int(self.start_line_y + lbl_item.get('drag_offset_y', -30))
                         lc = get_annot_color_for(MARKER_LABEL_COLOR if lbl_item['type'] == 'marker'
                               else self._get_label_color(lbl_item['name']))
-                        lbl_display = T('marker_node') if lbl_item['type'] == 'marker' else lbl_item['name']
+                        lbl_display = (self._lane_label_display_text(lbl_item)
+                                       if hasattr(self, '_lane_label_display_text')
+                                       else (T('marker_node') if lbl_item['type'] == 'marker' else lbl_item['name']))
                         draw.text((lx2, ll_y), lbl_display,
                                   fill=lc, font=lane_label_font, anchor="mt")
 
@@ -525,11 +527,12 @@ class ImageExportMixin:
                     lane_label_y = int(self.start_line_y + lbl.get('drag_offset_y', -30)) + top_margin
                     if lbl['type'] == 'marker':
                         lbl_color = MARKER_LABEL_COLOR if not self.grayscale else self._annot_bw_color()
-                        lbl_display = T('marker_node')
                     else:
                         lbl_color = (self._get_label_color(lbl['name'])
                                      if not self.grayscale else self._annot_bw_color())
-                        lbl_display = lbl['name']
+                    lbl_display = (self._lane_label_display_text(lbl)
+                                   if hasattr(self, '_lane_label_display_text')
+                                   else (T('marker_node') if lbl['type'] == 'marker' else lbl['name']))
                     fs = int(lbl.get('font_size', self.lane_label_font_size))
                     # マーカー・サンプルのフォントサイズ (font_size) を基準に、ラベルごとの設定比率 (fs / 9.0) でスケーリング
                     lane_font_local = get_japanese_font(size=max(6, int(font_size * (fs / 9.0))))

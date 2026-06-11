@@ -28,7 +28,7 @@ class ImageManagerMixin:
         iw, ih = self.original_image.size
         scale_w = cw / iw
         scale_h = ch / ih
-        self.zoom_scale = min(scale_w, scale_h, 1.0)
+        self.zoom_scale = min(scale_w, scale_h)
         self.pan_x = (cw - iw * self.zoom_scale) / 2
         self.pan_y = (ch - ih * self.zoom_scale) / 2
         self.redraw_canvas()
