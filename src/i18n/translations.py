@@ -517,8 +517,8 @@ TRANSLATIONS = {
         "ja": "名前"
     },
     "dlg_sample_name_err": {
-        "en": "'{name}' is not allowed.nSample1-1 or Sample-1 style names are prohibited.nUse Sample1, Sample2, geneX1, etc.",
-        "ja": "'{name}' は使用できません。nSample1-1 や Sample-1 のような名前は禁止されています。n例 Sample1, Sample2, geneX1 などを使用してください。"
+        "en": "'{name}' is not allowed.nUse names such as Sample1, Sample1-1, Sample1-2, or geneX1.",
+        "ja": "'{name}' は使用できません。n例 Sample1, Sample1-1, Sample1-2, geneX1 などを使用してください。"
     },
     "dlg_sample_name_err2": {
         "en": "'{name}' is not allowed.nSample-1 style names are prohibited.",

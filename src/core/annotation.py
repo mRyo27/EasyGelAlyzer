@@ -647,9 +647,10 @@ class AnnotationMixin:
         # 前回追加した試料名を基にデフォルト名を決める
         if self.samples:
             last_name = self.samples[-1]['name']
-            # "-数字" サフィックスが付いている場合はそのままをデフォルトにする（インクリメントしない）
-            if re.search(r'-\d+$', last_name):
-                default_name = last_name
+            # "-数字" サフィックスが付いている場合は測定番号をインクリメントする
+            m_rep = re.match(r'^(.*?)-(\d+)$', last_name)
+            if m_rep:
+                default_name = f"{m_rep.group(1)}-{int(m_rep.group(2)) + 1}"
             else:
                 # 末尾の数字があればインクリメント
                 m_trail = re.match(r'^(.*?)(\d+)$', last_name)
@@ -703,13 +704,33 @@ class AnnotationMixin:
 
     def _get_sample_base_names(self):
         """既存試料のベース名リスト（末尾の-数字を除いたもの）"""
-        import re
         groups = []
         for s in self.samples:
-            base = re.sub(r'-\d+$', '', s['name'])
+            base = self._get_sample_group_name(s['name'])
             if base not in groups:
                 groups.append(base)
         return groups
+
+    def _get_sample_group_name(self, sample_name):
+        """Sample1-1 のような測定名から Sample1 のグループ名を返す"""
+        import re
+        return re.sub(r'-\d+$', '', sample_name)
+
+    def _get_sample_group_node_id(self, group_name):
+        return f"sample_group::{group_name}"
+
+    def _is_sample_group_node(self, iid):
+        return isinstance(iid, str) and iid.startswith("sample_group::")
+
+    def _is_layer_parent_node(self, iid):
+        return iid in (self.marker_node, self.sample_node, self.label_node, self.line_node) or self._is_sample_group_node(iid)
+
+    def _get_sample_ids_in_group_node(self, group_iid):
+        if not self._is_sample_group_node(group_iid):
+            return []
+        group_name = group_iid.split("::", 1)[1]
+        return [s['id'] for s in self.samples
+                if self._get_sample_group_name(s['name']) == group_name]
 
     def _get_lane_label_sample_names(self):
         """泳動ラインラベルのsampleタイプの名前リスト"""
@@ -720,12 +741,8 @@ class AnnotationMixin:
         return names
 
     def _validate_sample_name(self, name):
-        """試料名のバリデーション。禁止パターン: Sample1-1, Sample-1 などを検出"""
+        """試料名のバリデーション。Sample1-1 のような測定名は許可する"""
         import re
-        if re.match(r'^Sample\d+-\d+$', name):
-            messagebox.showwarning(T("warn_sample_name"),
-                T('dlg_sample_name_err').format(name=name))
-            return False
         if re.match(r'^Sample-\d+$', name):
             messagebox.showwarning(T("warn_sample_name"),
                 T('dlg_sample_name_err2').format(name=name))
@@ -816,19 +833,39 @@ class AnnotationMixin:
             self.layer_tree.insert(self.marker_node, "end", iid=m['id'],
                                    text=m['name'],
                                    values=(vis_icon, exp_icon, f"{m['rf']:.2f}", size_str))
+        sample_groups = []
+        grouped_samples = {}
         for s in self.samples:
-            if s['size'] > 0:
-                size_str = (f"{s['size']:.2f} {unit}" if self.mode == "protein"
-                            else f"{int(s['size'])} {unit}")
-            else:
-                 size_str = "N/A"
-            vis = self.item_visibility.get(s['id'], True)
-            exp = self.item_export_visibility.get(s['id'], True)
-            vis_icon = "👁" if vis else "🚫"
-            exp_icon = "☑" if exp else "☐"
-            self.layer_tree.insert(self.sample_node, "end", iid=s['id'],
-                                   text=s['name'],
-                                   values=(vis_icon, exp_icon, f"{s['rf']:.2f}", size_str))
+            group_name = self._get_sample_group_name(s['name'])
+            if group_name not in grouped_samples:
+                grouped_samples[group_name] = []
+                sample_groups.append(group_name)
+            grouped_samples[group_name].append(s)
+
+        for group_name in sample_groups:
+            group_iid = self._get_sample_group_node_id(group_name)
+            group_samples = grouped_samples[group_name]
+            group_vis = all(self.item_visibility.get(s['id'], True) for s in group_samples)
+            group_exp = all(self.item_export_visibility.get(s['id'], True) for s in group_samples)
+            self.layer_tree.insert(
+                self.sample_node, "end", iid=group_iid, text=group_name,
+                open=True,
+                values=("👁" if group_vis else "🚫",
+                        "☑" if group_exp else "☐",
+                        "", ""))
+            for s in group_samples:
+                if s['size'] > 0:
+                    size_str = (f"{s['size']:.2f} {unit}" if self.mode == "protein"
+                                else f"{int(s['size'])} {unit}")
+                else:
+                    size_str = "N/A"
+                vis = self.item_visibility.get(s['id'], True)
+                exp = self.item_export_visibility.get(s['id'], True)
+                vis_icon = "👁" if vis else "🚫"
+                exp_icon = "☑" if exp else "☐"
+                self.layer_tree.insert(group_iid, "end", iid=s['id'],
+                                       text=s['name'],
+                                       values=(vis_icon, exp_icon, f"{s['rf']:.2f}", size_str))
         for lbl in self.lane_labels:
             vis = self.item_visibility.get(lbl['id'], True)
             exp = self.item_export_visibility.get(lbl['id'], True)
@@ -861,8 +898,13 @@ class AnnotationMixin:
         if not selected:
             return
         # グループノード（マーカー親・試料親）を除外
-        targets = [iid for iid in selected
-                   if iid not in [self.marker_node, self.sample_node, self.label_node, self.line_node]]
+        targets = []
+        for iid in selected:
+            if self._is_layer_parent_node(iid):
+                targets.extend(self._get_sample_ids_in_group_node(iid))
+            else:
+                targets.append(iid)
+        targets = list(dict.fromkeys(targets))
         if not targets:
             return
         if not messagebox.askyesno(T('dlg_delete_title'),
@@ -939,7 +981,7 @@ class AnnotationMixin:
         """選択中のアイテムの表示/非表示をトグル"""
         selected = self.layer_tree.selection()
         targets = [iid for iid in selected
-                   if iid not in [self.marker_node, self.sample_node, self.label_node]]
+                   if not self._is_layer_parent_node(iid)]
         if not targets:
             return
         # 全て表示中なら非表示に、それ以外なら表示に
@@ -1028,16 +1070,24 @@ class AnnotationMixin:
             selected = set(self.layer_tree.selection())
         # 必ずクリックしたアイテムも含める
         selected.add(item_id)
-        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
+        group_child_ids = []
+        if self._is_sample_group_node(item_id):
+            group_child_ids = self._get_sample_ids_in_group_node(item_id)
+            selected.update(group_child_ids)
         # クリックしたアイテムの現在状態を基準に new_state を決定
-        current = self.item_visibility.get(item_id, True)
-        new_state = not current
+        target_ids = [iid for iid in selected if not self._is_layer_parent_node(iid)]
+        if not target_ids:
+            return
+        if group_child_ids:
+            new_state = not all(self.item_visibility.get(iid, True) for iid in group_child_ids)
+        else:
+            current = self.item_visibility.get(item_id, True)
+            new_state = not current
         # 選択中の非親ノード全てに適用
-        for iid in selected:
-            if iid not in parent_nodes:
-                self.item_visibility[iid] = new_state
+        for iid in target_ids:
+            self.item_visibility[iid] = new_state
         # マーカーが含まれる場合は一括ボタンも同期
-        if any(m['id'] in selected for m in self.markers):
+        if any(m['id'] in target_ids for m in self.markers):
             self._sync_marker_bulk_button()
         self.update_layer_panel()
         self.redraw_canvas()
@@ -1051,18 +1101,26 @@ class AnnotationMixin:
         else:
             selected = set(self.layer_tree.selection())
         selected.add(item_id)
-        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
-        current = self.item_export_visibility.get(item_id, True)
-        new_state = not current
-        for iid in selected:
-            if iid not in parent_nodes:
-                self.item_export_visibility[iid] = new_state
+        group_child_ids = []
+        if self._is_sample_group_node(item_id):
+            group_child_ids = self._get_sample_ids_in_group_node(item_id)
+            selected.update(group_child_ids)
+        target_ids = [iid for iid in selected if not self._is_layer_parent_node(iid)]
+        if not target_ids:
+            return
+        if group_child_ids:
+            new_state = not all(self.item_export_visibility.get(iid, True) for iid in group_child_ids)
+        else:
+            current = self.item_export_visibility.get(item_id, True)
+            new_state = not current
+        for iid in target_ids:
+            self.item_export_visibility[iid] = new_state
         self.update_layer_panel()
         self.redraw_canvas()
 
     def on_layer_double_click(self, event):
         item = self.layer_tree.identify_row(event.y)
-        if not item or item in [self.marker_node, self.sample_node, self.label_node]:
+        if not item or self._is_layer_parent_node(item):
             return
         # ラベルノードの子: 名前をインライン編集
         lbl_match = next((l for l in self.lane_labels if l['id'] == item), None)

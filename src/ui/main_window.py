@@ -416,8 +416,8 @@ class MainWindowMixin:
         except ValueError:
             return
         start, end = min(a, b), max(a, b)
-        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
-        target_rows = [r for r in all_rows[start:end + 1] if r not in parent_nodes]
+        target_rows = [r for r in all_rows[start:end + 1]
+                       if not self._is_layer_parent_node(r)]
         self.layer_tree.selection_set(target_rows)
 
         # ドラッグ選択範囲ボックスの描画
@@ -475,10 +475,9 @@ class MainWindowMixin:
 
     def _on_layer_select(self, event):
         selected = self.layer_tree.selection()
-        parent_nodes = (self.marker_node, self.sample_node, self.label_node, self.line_node)
-        invalid = [iid for iid in selected if iid in parent_nodes]
+        invalid = [iid for iid in selected if self._is_layer_parent_node(iid)]
         if invalid:
-            valid = [iid for iid in selected if iid not in parent_nodes]
+            valid = [iid for iid in selected if not self._is_layer_parent_node(iid)]
             self.layer_tree.unbind("<<TreeviewSelect>>")
             self.layer_tree.selection_set(valid)
             self.layer_tree.bind("<<TreeviewSelect>>", self._on_layer_select)
