@@ -568,6 +568,8 @@ class ImageManagerMixin:
         resized = img.resize((nw, nh), Image.Resampling.LANCZOS)
         self.tk_image = ImageTk.PhotoImage(resized)
         self.canvas.create_image(self.pan_x, self.pan_y, anchor="nw", image=self.tk_image)
+        image_left = self.pan_x
+        image_right = self.pan_x + w * self.zoom_scale
 
         # 回転ガイド線（スライダー操作中のみ表示）
         if not self.rotation_confirmed and getattr(self, '_rotation_sliding', False):
@@ -582,29 +584,27 @@ class ImageManagerMixin:
         if self.start_line_y is not None and self.item_visibility.get(self.start_line_id, True):
             _, c_start_y = self.image_to_canvas_coords(0, self.start_line_y)
             sl_color = "#007AFF"  # プレビューでは常にカラー
-            self.canvas.create_line(0, c_start_y, self.canvas.winfo_width(), c_start_y,
+            self.canvas.create_line(image_left, c_start_y, image_right, c_start_y,
                                     fill=sl_color, width=3)
-            _lbl_fs = max(6, int(10 * self.zoom_scale))
-            self.canvas.create_text(self.canvas.winfo_width() - 10, c_start_y + 12,
+            _lbl_fs = 10
+            self.canvas.create_text(image_right + 8, c_start_y + 12,
                                     text=T("out_start"),
-                                    fill=sl_color, anchor="e",
+                                    fill=sl_color, anchor="w",
                                     font=("Helvetica", _lbl_fs, "bold"))
 
         # 終了ライン
         if self.end_line_y is not None and self.item_visibility.get(self.end_line_id, True):
             _, c_end_y = self.image_to_canvas_coords(0, self.end_line_y)
             el_color = "#FF3B30"  # プレビューでは常にカラー
-            self.canvas.create_line(0, c_end_y, self.canvas.winfo_width(), c_end_y,
+            self.canvas.create_line(image_left, c_end_y, image_right, c_end_y,
                                     fill=el_color, width=3)
-            _lbl_fs = max(6, int(10 * self.zoom_scale))
-            self.canvas.create_text(10, c_end_y - 12, text=T("out_end"),
-                                    fill=el_color, anchor="w",
+            _lbl_fs = 10
+            self.canvas.create_text(image_left - 8, c_end_y - 12, text=T("out_end"),
+                                    fill=el_color, anchor="e",
                                     font=("Helvetica", _lbl_fs, "bold"))
 
         # マーカー（ライン）
         unit = "kDa" if self.mode == "protein" else "bp"
-        image_left = self.pan_x
-        image_right = self.pan_x + w * self.zoom_scale
         for m in self.markers:
             if not self.item_visibility.get(m['id'], True):
                 continue
