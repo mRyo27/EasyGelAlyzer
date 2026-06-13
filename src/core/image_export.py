@@ -458,6 +458,9 @@ class ImageExportMixin:
             left_margin = 0
             right_margin = 0
             padding = 40
+            # 右側ラベルの描画開始位置は img_w の右端から引き出し線オフセット(20*export_scale)分
+            # 離れた場所から始まるため、その分を right_margin に加算する
+            right_leader_offset = int(20 * export_scale) + 5  # 引き出し線 + anchor="lm" の余裕
 
             if left_markers or left_samples:
                 mw = max(
@@ -471,7 +474,7 @@ class ImageExportMixin:
                     max_text_width(right_markers, make_marker_text),
                     max_text_width(right_samples, make_sample_text)
                 )
-                right_margin = int(mw) + padding
+                right_margin = int(mw) + right_leader_offset + padding
 
             # 左右のアイテムをそれぞれ統合してY座標を解決する
             left_items = []
