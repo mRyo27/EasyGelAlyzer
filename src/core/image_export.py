@@ -23,6 +23,42 @@ class ImageExportMixin:
             scaled.append(copied)
         return scaled
 
+    def _draw_antialiased_line(self, image, points, fill, width=1, scale=4):
+        """Pillow の line() より滑らかな注釈線を描く"""
+        if not points:
+            return
+        w, h = image.size
+        if w <= 0 or h <= 0:
+            return
+        scale = max(2, int(scale))
+        pad = max(4, int(math.ceil(width * 2 + 2)))
+        min_x = max(0, int(math.floor(min(x for x, _ in points) - pad)))
+        min_y = max(0, int(math.floor(min(y for _, y in points) - pad)))
+        max_x = min(w, int(math.ceil(max(x for x, _ in points) + pad)))
+        max_y = min(h, int(math.ceil(max(y for _, y in points) + pad)))
+        if max_x <= min_x or max_y <= min_y:
+            return
+        box_w = max_x - min_x
+        box_h = max_y - min_y
+        overlay = Image.new("RGBA", (box_w * scale, box_h * scale), (0, 0, 0, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
+        scaled_points = [
+            (int(round((x - min_x) * scale)), int(round((y - min_y) * scale)))
+            for x, y in points
+        ]
+        color = Image.new("RGBA", (1, 1), fill).getpixel((0, 0))
+        overlay_draw.line(
+            scaled_points,
+            fill=color,
+            width=max(1, int(round(width * scale))),
+            joint="curve"
+        )
+        overlay = overlay.resize((box_w, box_h), Image.Resampling.LANCZOS)
+        crop_box = (min_x, min_y, max_x, max_y)
+        base = image.crop(crop_box).convert("RGBA")
+        result = Image.alpha_composite(base, overlay).convert(image.mode)
+        image.paste(result, crop_box)
+
     def export_annotated_image(self):
         if self.original_image is None:
             return
@@ -197,8 +233,8 @@ class ImageExportMixin:
             memo_pad_default_x = max(20, int(round(20 * export_scale)))
             memo_pad_default_y = max(15, int(round(15 * export_scale)))
             
-            # マーカー・サンプルのフォントサイズ (font_size) を基準に、スライダーの設定比率 (fs / 9.0) でスケーリング
-            lane_label_font_size_px = max(6, int(font_size * (self.lane_label_font_size / 9.0)))
+            # 操作画面と同じ基準: ラベル設定値を出力倍率ぶんだけ拡大する
+            lane_label_font_size_px = max(6, int(round(self.lane_label_font_size * export_scale)))
             
             font = get_japanese_font(size=font_size)
             lane_label_font = get_japanese_font(size=lane_label_font_size_px)
@@ -312,7 +348,7 @@ class ImageExportMixin:
                 if export_start_line:
                     s_color = get_annot_color_for("#007AFF")
                     sy_px = int(start_line_y)
-                    draw.line([(0, sy_px), (img_w, sy_px)], fill=s_color, width=line_w2)
+                    self._draw_antialiased_line(out_img, [(0, sy_px), (img_w, sy_px)], fill=s_color, width=line_w2)
                     label_y_s = sy_px + 2
                     draw.text((img_w - 5, label_y_s), T("out_start"),
                               fill=s_color, font=line_font, anchor="ra")
@@ -321,7 +357,7 @@ class ImageExportMixin:
                 if export_end_line:
                     e_color = get_annot_color_for("#FF3B30")
                     ey_px = int(end_line_y)
-                    draw.line([(0, ey_px), (img_w, ey_px)], fill=e_color, width=line_w2)
+                    self._draw_antialiased_line(out_img, [(0, ey_px), (img_w, ey_px)], fill=e_color, width=line_w2)
                     end_label_h = int(img_h * 0.02) + 4
                     if ey_px + end_label_h > img_h:
                         draw.text((5, ey_px - end_label_h), T("out_end"), fill=e_color, font=line_font)
@@ -338,7 +374,7 @@ class ImageExportMixin:
                     m = it['obj']
                     color = get_annot_color_for(MARKER_LINE_COLOR)
                     my_px = int(it['draw_y'])
-                    draw.line([(0, my_px), (img_w, my_px)], fill=color, width=line_w1)
+                    self._draw_antialiased_line(out_img, [(0, my_px), (img_w, my_px)], fill=color, width=line_w1)
                     lbl = make_marker_text(m)
                     lbl_w = int(temp_draw.textlength(lbl, font=font))
                     if it['side'] == 'left':
@@ -397,7 +433,7 @@ class ImageExportMixin:
                     final_img.paste(out_img, (0, 0))
                     
                     draw_final = ImageDraw.Draw(final_img)
-                    draw_final.line([(0, img_h), (final_w, img_h)], fill="#CCCCCC", width=line_w1)
+                    self._draw_antialiased_line(final_img, [(0, img_h), (final_w, img_h)], fill="#CCCCCC", width=line_w1)
                     
                     cur_y = img_h + memo_pad_y
                     for line in wrapped_lines:
@@ -503,7 +539,7 @@ class ImageExportMixin:
             lx1, ly = to_out(0, start_line_y)
             lx2 = lx1 + img_w
             if export_start_line:
-                draw.line([(lx1, ly), (lx2, ly)], fill=s_color, width=line_w3)
+                self._draw_antialiased_line(out_img, [(lx1, ly), (lx2, ly)], fill=s_color, width=line_w3)
                 draw.text((lx2 - 10, ly + 3), T('out_start'), fill=s_color, font=line_font, anchor="ra")
 
             # 終了ライン
@@ -514,7 +550,7 @@ class ImageExportMixin:
                     e_color = self._annot_bw_color()
                 lx1, ly = to_out(0, end_line_y)
                 lx2 = lx1 + img_w
-                draw.line([(lx1, ly), (lx2, ly)], fill=e_color, width=line_w3)
+                self._draw_antialiased_line(out_img, [(lx1, ly), (lx2, ly)], fill=e_color, width=line_w3)
                 draw.text((lx1 + 10, ly + 3), T("out_end"), fill=e_color, font=line_font)
 
             # ---- 左側アイテムの描画 ----
@@ -526,10 +562,10 @@ class ImageExportMixin:
                     band_x, band_y = to_out(0, m['y'])
                     label_y = int(it['draw_y']) + top_margin
                     # ティック
-                    draw.line([(band_x, band_y), (band_x + int(15 * export_scale), band_y)], fill=color, width=line_w2)
+                    self._draw_antialiased_line(out_img, [(band_x, band_y), (band_x + int(15 * export_scale), band_y)], fill=color, width=line_w2)
                     # 引き出し線
                     label_x = left_margin - int(20 * export_scale)
-                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
+                    self._draw_antialiased_line(out_img, [(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x - 5, label_y - font_size // 2),
                                make_marker_text(m), fill=color, font=font, anchor="rm")
                 else:
@@ -542,7 +578,7 @@ class ImageExportMixin:
                                  fill=color, outline="white")
                     # 引き出し線
                     label_x = left_margin - int(20 * export_scale)
-                    draw.line([(label_x, label_y), (pt_x, pt_y)], fill=color, width=line_w1)
+                    self._draw_antialiased_line(out_img, [(label_x, label_y), (pt_x, pt_y)], fill=color, width=line_w1)
                     draw.text((label_x - 5, label_y - font_size // 2),
                                make_sample_text(s), fill=color, font=font, anchor="rm")
 
@@ -555,10 +591,10 @@ class ImageExportMixin:
                     band_x, band_y = to_out(img_w, m['y'])
                     label_y = int(it['draw_y']) + top_margin
                     # ティック
-                    draw.line([(band_x - int(15 * export_scale), band_y), (band_x, band_y)], fill=color, width=line_w2)
+                    self._draw_antialiased_line(out_img, [(band_x - int(15 * export_scale), band_y), (band_x, band_y)], fill=color, width=line_w2)
                     # 引き出し線
                     label_x = left_margin + img_w + int(20 * export_scale)
-                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
+                    self._draw_antialiased_line(out_img, [(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x + 5, label_y - font_size // 2),
                                make_marker_text(m), fill=color, font=font, anchor="lm")
                 else:
@@ -571,7 +607,7 @@ class ImageExportMixin:
                                  fill=color, outline="white")
                     # 引き出し線
                     label_x = left_margin + img_w + int(20 * export_scale)
-                    draw.line([(pt_x, pt_y), (label_x, label_y)], fill=color, width=line_w1)
+                    self._draw_antialiased_line(out_img, [(pt_x, pt_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x + 5, label_y - font_size // 2),
                                make_sample_text(s), fill=color, font=font, anchor="lm")
 
@@ -590,8 +626,7 @@ class ImageExportMixin:
                                    if hasattr(self, '_lane_label_display_text')
                                    else (T('marker_node') if lbl['type'] == 'marker' else lbl['name']))
                     fs = int(lbl.get('font_size', self.lane_label_font_size))
-                    # マーカー・サンプルのフォントサイズ (font_size) を基準に、ラベルごとの設定比率 (fs / 9.0) でスケーリング
-                    lane_font_local = get_japanese_font(size=max(6, int(font_size * (fs / 9.0))))
+                    lane_font_local = get_japanese_font(size=max(6, int(round(fs * export_scale))))
                     draw_centered_multiline(draw, (lx, lane_label_y), lbl_display, lbl_color, lane_font_local)
 
             # 実験メモを描画
@@ -604,7 +639,7 @@ class ImageExportMixin:
                     border_color = "#CCCCCC"
                     
                 border_y = top_margin + img_h + pad10
-                draw.line([(memo_pad_x, border_y), (new_w - memo_pad_x, border_y)], fill=border_color, width=line_w1)
+                self._draw_antialiased_line(out_img, [(memo_pad_x, border_y), (new_w - memo_pad_x, border_y)], fill=border_color, width=line_w1)
                 
                 cur_y = border_y + memo_pad_y
                 line_spacing = gap4
