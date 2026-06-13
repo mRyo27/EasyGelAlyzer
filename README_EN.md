@@ -7,19 +7,23 @@
 ## Features
 
 - **Dual analysis modes** — Switch between Protein (SDS-PAGE, kDa) and DNA (agarose gel, bp)
-- **Interactive image viewer** — Zoom, pan, rotate, and adjust brightness/contrast of gel images
-- **Start/End line setup** — Place migration distance reference lines by clicking or dragging
-- **Molecular weight marker registration** — Click marker bands and enter known sizes; the standard curve updates automatically
-- **Sample band measurement** — Click a sample band to automatically estimate its size from the standard curve
+- **Interactive image viewer** — Zoom, pan, rotate, and adjust brightness/contrast of gel images, with support for **Background Correction (Rolling-ball algorithm)**
+- **Convenient Zoom & Position Reset** — Instantly reset zoom and pan settings using a double-click, middle double-click, or a double Shift press (automatically adjusts to cropped area after cropping)
+- **Start/End line setup** — Place migration distance reference lines by clicking (can be fine-tuned by dragging afterwards)
+- **Molecular weight marker registration** — Click marker bands and enter known sizes; the standard curve updates automatically (both manual entry and preset selection supported)
+- **Improved MW Marker Display** — Displays labels outside the image to prevent overlapping with other annotations. Formats label text into two centered lines for better readability
+- **Sample band measurement** — Click a sample band to automatically estimate its size from the standard curve (operates even when markers are toggled invisible)
 - **Standard curve fitting** — Linear regression of log₁₀(size) vs. Rf with R² display; manual coefficient override supported
-- **Lane labels** — Add draggable lane labels (MW marker / sample) above the gel image
-- **Layer panel** — Toggle visibility and export status per annotation item; supports renaming, reordering, and deletion
-- **Excel export** — Export marker data, sample results, and the standard curve graph to a multi-sheet `.xlsx` file
-- **Annotated image export** — Save the gel image with all annotations drawn; multiple layout options available
-- **Project save / load** — Save all measurement data and the image to a `.gelproj` JSON file to resume later
-- **Undo / Redo** — 20-step history for image state
+- **Enhanced Lane Labels & Repositioning** — Add draggable lane labels (MW marker / sample) above the gel image. Dragging lane labels features a slight snapping behavior near the center and displays alignment guidelines
+- **Improved Layer Panel** — Toggle visibility (👁 icon) and export status (📷 icon) per annotation item. Supports renaming, reordering, and deletion. Added scrollbars to handle a large number of layers easily
+- **Diverse Export Options** — Export results to **Excel** (`.xlsx`, including a fitted standard curve graph), **CSV** (`.csv`), or copy directly to your clipboard
+- **High-Quality Image Export** — Automatically resizes low-resolution images (under 1200px short side / 1800px long side) up to 4x before drawing annotations. Draws diagonal annotation lines with anti-aliasing (internal 4x drawing and composite scaling) to reduce jagged edges
+- **Project save / load** — Save all measurement data and the image to a `.gelproj` JSON file to resume later. **Direct project loading on startup** is supported
+- **Smart Quit/Save Prompts** — Prompt to save changes only when unsaved changes exist (automatically saves as an overwrite when a project is already loaded)
+- **Undo / Redo** — 20-step history for image state and annotations
 - **Drag & drop** — Drop image files directly onto the canvas (requires `tkinterdnd2`)
-- **Bilingual UI** — Switch between English and Japanese at startup
+- **Fast Startup (Lazy Loading)** — Heavily optimized loading times (reduced import times from ~1.46s to ~0.25s) by delaying the load of heavy libraries like NumPy, Matplotlib, and openpyxl until they are required
+- **Bilingual UI** — Toggle between English and Japanese at startup (can also be switched dynamically while the app is running)
 
 ---
 
@@ -103,14 +107,15 @@ To clone the repository and build the executable yourself:
 ## Quick Start
 
 1. **Launch** — Double-click `EasyGelAlyzer.exe` (if building from source, run `exe_build.bat` first).
-2. **Select mode** — Choose **Protein (kDa)** or **DNA (bp)** in the startup dialog.
-3. **Open an image** — Go to *File → Open Image*, or drag a JPEG / PNG / TIFF gel image onto the canvas.
-4. **Set reference lines** — Click *Set Start Line* and click the top edge of the gel, then click *Set End Line* and click the dye front (or bottom of migration).
-5. **Add markers** — Click *Add Marker*, then click each marker band and enter its known size.
-6. **Check the standard curve** — Verify the R² value in the standard curve panel (R² ≥ 0.95 is recommended).
-7. **Add samples** — Click *Add Sample*, then click each sample band; sizes are estimated automatically.
-8. **Export** — Use *Export → Excel* for tabular data, or *Export → Annotated Image* for figures intended for papers or reports.
-9. **Save** — Use *File → Save Project* (`.gelproj`) to save all data and resume later.
+2. **Select Mode / Load Project** — Choose **Protein (kDa)**, **DNA (bp)**, or load an existing project (`.gelproj`) using the **Load Project File** option to resume a previous session.
+3. **Open an Image** — Go to *File → Open Image*, or drag and drop a JPEG / PNG / TIFF gel image onto the canvas.
+4. **Pre-process (Optional)** — Adjust brightness/contrast or apply **Background Correction** if needed to clean up background noise.
+5. **Set Reference Lines** — Click *Set Start Line* and click the top edge of the gel (Rf = 0), then click *Set End Line* and click the dye front or bottom of migration (Rf = 1).
+6. **Add Markers** — Click *Add MW Marker*, click each marker band, and enter its known size (supports manual entry or preset lists. Press Esc to finish).
+7. **Verify Standard Curve** — Check the R² value in the calibration panel (R² ≥ 0.95 is recommended). You can also overwrite regression coefficients manually.
+8. **Add Samples** — Click *Add Sample*, then click each sample band; sizes are estimated automatically. Drag lane labels if needed (they snap to the center and show alignment lines).
+9. **Export** — Export results using *Export → Excel* or *CSV*, or copy them using the copy-to-clipboard button. Generate final figures using *Export → Annotated Image*.
+10. **Save** — Save all data using *File → Save Project* (`.gelproj`). If you are working on an existing project, you will be prompted to overwrite-save when exiting.
 
 ---
 
@@ -180,15 +185,25 @@ Three sheets are generated:
 - **Results sheet** — Sample number, sample name, Rf, estimated size
 - **Graph sheet** — Embedded standard curve graph image
 
+### CSV (`.csv`)
+
+Exports the sample results (Sample number, name, Rf, estimated size) into a plain text CSV file.
+
+### Copy to Clipboard
+
+Quickly copies the sample results table to the clipboard as tab-separated values, allowing easy pasting into spreadsheets or documents.
+
 ### Annotated Image
 
-You can select and output from four different layouts.
+Saves the gel image along with annotated lines, markers, and text. You can choose from four different layouts.
 
-Black and white mode and margin trimming options are also available.
+- **Auto Resolution Upscaling**: Low-resolution images (under 1200px on the short side or 1800px on the long side) are automatically enlarged up to 4x before drawing annotations. This prevents annotations from looking pixelated and produces sharp, clean figures.
+- **Anti-Aliasing**: Diagonal lines (such as sample/marker lines in layout modes) are drawn with anti-aliasing (drawn at 4x resolution internally and downscaled) to avoid jagged edges.
+- **Grayscale / B&W Mode**: When grayscale export is active, annotation colors can be selected as black or white (margins appear gray for white annotations to maintain readability).
+- **Experiment Memo**: Adds custom experimental logs to the bottom footer of the exported image.
 
-Start lines, end lines, molecular weight markers, sample markers, and labels can be excluded from the output image by unchecking the checkboxes in the Layers tab.
-
-The eye icon in the Layers tab toggles the display on the operation screen and does not affect the output image.
+Annotations like Start/End lines, MW markers, samples, and lane labels can be excluded from the exported image by unchecking their checkboxes in the **📷 (Camera) column** in the Layers tab.
+Note that the **👁 (Eye) column** only controls visibility on the application canvas and does not affect the output image.
 
 ---
 
