@@ -1,0 +1,25 @@
+v4.22.11 → v4.24.1
+
+マイナーアップデート:
+
+1. 画像出力は、低解像度画像だけ自動で高解像度化してから注釈を描くようにしました。目安は短辺1200px・長辺1800pxで、それ未満の場合だけ最大4倍まで拡大します。高解像度画像は縮小しません。文字、注釈線、点、メモ余白なども同じ倍率で描画するので、従来よりギザつきが出にくくなります。
+斜めの注釈線は、通常の Pillow draw.line() ではなく、線の周辺だけを内部4倍で描いてから縮小合成するアンチエイリアス処理に置き換えました。
+
+2.起動時に読み込んでいた重いライブラリを遅延読み込みへ変更しました。特に Matplotlib / NumPy は検量線グラフが必要になるまで読み込まず、openpyxl はExcel出力時だけ読み込みます。app import の計測では、約1.46秒相当から約0.25秒相当まで軽くなっています。
+
+
+パッチアップデート:
+
+1. ラベルフォントサイズは、出力側の計算式を操作画面側と同じ基準に揃えました。以前は画像高さベースで font_size * (fs / 9.0) のように計算していたため、画像サイズによって画面表示とズレていました。今は保存されているラベルフォントサイズに出力倍率だけを掛けています。
+
+Minor Updates:
+
+1. Image output now automatically resizes low-resolution images to high resolution before drawing annotations. The guideline is 1200px on the short side and 1800px on the long side; only images smaller than this will be enlarged up to 4x. High-resolution images are not reduced in size. Text, annotation lines, dots, and memo margins are all drawn at the same magnification, resulting in less jagged edges than before.
+
+Diagonal annotation lines now use anti-aliasing instead of the usual Pillow draw.line(), drawing only the area around the line at 4x internal magnification before scaling and compositing.
+
+2. Heavy libraries that were loaded at startup are now loaded lazily. Matplotlib and NumPy are not loaded until a calibration curve graph is needed, and openpyxl is only loaded when outputting to Excel. App import time has been reduced from approximately 1.46 seconds to approximately 0.25 seconds.
+
+Patch Updates:
+
+1. Label font size calculation formula on the output side is now aligned with the same standard as the user interface side. Previously, the font size was calculated based on the image height, like `font_size * (fs / 9.0)`, which caused discrepancies between the screen display and the image size. Now, only the output scaling factor is multiplied by the saved label font size.
