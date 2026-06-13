@@ -1,6 +1,5 @@
 from common import *
 import csv
-from openpyxl.chart import ScatterChart, Reference, Series
 
 
 class ExcelExportMixin:
@@ -16,6 +15,9 @@ class ExcelExportMixin:
         if not path:
             return
         try:
+            import openpyxl
+            from openpyxl.chart import ScatterChart, Reference, Series
+
             wb = openpyxl.Workbook()
             ws1 = wb.active
             ws1.title = T('xl_sheet_cal')
@@ -23,7 +25,7 @@ class ExcelExportMixin:
             log_header = T('xl_log') if self.mode == "protein" else T('xl_log_size')
             ws1.append([T('xl_marker_name'), T('xl_rf'), size_header, log_header])
             for m in self.markers:
-                ws1.append([m['name'], m['rf'], m['size'], float(np.log10(m['size']))])
+                ws1.append([m['name'], m['rf'], m['size'], float(math.log10(m['size']))])
 
             ws2 = wb.create_sheet(title=T('xl_sheet_res'))
             ws2.append([T('xl_sample_no'), T('xl_sample_name'), T('xl_rf'), size_header])
@@ -42,7 +44,7 @@ class ExcelExportMixin:
             # マーカーデータを書き込む
             for i, m in enumerate(self.markers, start=2):
                 ws3.cell(row=i, column=1, value=float(m['rf']))
-                ws3.cell(row=i, column=2, value=float(np.log10(m['size'])))
+                ws3.cell(row=i, column=2, value=float(math.log10(m['size'])))
 
             # 回帰直線データ（21点: 0.0〜1.0）を書き込む
             n_line_pts = 21
@@ -149,7 +151,7 @@ class ExcelExportMixin:
                 # Marker data
                 writer.writerow([T('xl_marker_name'), T('xl_rf'), size_header, log_header])
                 for m in self.markers:
-                    writer.writerow([m['name'], m['rf'], m['size'], float(np.log10(m['size']))])
+                    writer.writerow([m['name'], m['rf'], m['size'], float(math.log10(m['size']))])
                 writer.writerow([])
                 # Sample data
                 writer.writerow([T('xl_sample_no'), T('xl_sample_name'), T('xl_rf'), size_header])

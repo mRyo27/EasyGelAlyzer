@@ -2,6 +2,28 @@ from common import *
 
 
 class CalibrationMixin:
+    def _ensure_calibration_plot(self):
+        if getattr(self, 'fig_canvas', None) is not None:
+            return
+
+        import matplotlib
+        matplotlib.use("TkAgg")
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        from matplotlib.figure import Figure
+        import matplotlib.pyplot as plt
+
+        plt.rcParams['font.family'] = 'MS Gothic'
+        self.fig = Figure(figsize=(4, 3), dpi=100, facecolor="#F0F0F0")
+        self.ax = self.fig.add_subplot(111)
+        self.fig_canvas = FigureCanvasTkAgg(self.fig, master=self.right_frame)
+        try:
+            if getattr(self, '_plot_placeholder', None) is not None:
+                self._plot_placeholder.destroy()
+                self._plot_placeholder = None
+        except Exception:
+            pass
+        self.fig_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=5, before=self._coeff_frame)
+
     def update_result_table(self):
         for child in self.result_table.get_children():
             self.result_table.delete(child)
@@ -15,6 +37,8 @@ class CalibrationMixin:
     #  検量線計算・グラフ
     # ------------------------------------------------------------------ #
     def calculate_calibration_curve(self):
+        import numpy as np
+
         # when automatically calculating from markers, clear manual flag
         self._manual_coeff_applied = False
         if len(self.markers) < 2:
@@ -26,10 +50,13 @@ class CalibrationMixin:
             self.entry_b.delete(0, tk.END)
             self.entry_b.insert(0, "0.000000")
             self.lbl_r2.config(text=T('r2_na'))
-            self.ax.clear()
-            self.ax.text(0.5, 0.5, T('plot_add_markers'),
-                         ha='center', va='center')
-            self.fig_canvas.draw()
+            if getattr(self, 'fig_canvas', None) is not None:
+                self.ax.clear()
+                self.ax.text(0.5, 0.5, T('plot_add_markers'),
+                             ha='center', va='center')
+                self.fig_canvas.draw()
+            elif getattr(self, '_plot_placeholder', None) is not None:
+                self._plot_placeholder.config(text=T('plot_add_markers'))
             self._update_manual_coeff_ui()
             return
         rf_arr = np.array([m['rf'] for m in self.markers])
@@ -54,11 +81,18 @@ class CalibrationMixin:
         self.update_calibration_plot()
 
     def update_calibration_plot(self):
-        self.ax.clear()
+        import numpy as np
+
         if not self.markers:
-            self.ax.text(0.5, 0.5, T('plot_add_markers'), ha='center', va='center')
-            self.fig_canvas.draw()
+            if getattr(self, 'fig_canvas', None) is not None:
+                self.ax.clear()
+                self.ax.text(0.5, 0.5, T('plot_add_markers'), ha='center', va='center')
+                self.fig_canvas.draw()
+            elif getattr(self, '_plot_placeholder', None) is not None:
+                self._plot_placeholder.config(text=T('plot_add_markers'))
             return
+        self._ensure_calibration_plot()
+        self.ax.clear()
         rf_list = [m['rf'] for m in self.markers]
         log_size_list = np.log10([m['size'] for m in self.markers])
         self.ax.scatter(rf_list, log_size_list, color='blue', label='Marker', zorder=5)

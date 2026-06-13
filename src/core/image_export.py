@@ -2,6 +2,27 @@ from common import *
 
 
 class ImageExportMixin:
+    def _get_export_resolution_scale(self, width, height):
+        """低解像度画像だけ出力時に拡大し、注釈も同じ倍率で描画する"""
+        if width <= 0 or height <= 0:
+            return 1.0
+        short_side = min(width, height)
+        long_side = max(width, height)
+        scale = max(1.0, 1200 / short_side, 1800 / long_side)
+        return min(scale, 4.0)
+
+    def _scale_export_items(self, items, scale, keys):
+        if scale == 1.0:
+            return [dict(item) for item in items]
+        scaled = []
+        for item in items:
+            copied = dict(item)
+            for key in keys:
+                if key in copied and copied[key] is not None:
+                    copied[key] = copied[key] * scale
+            scaled.append(copied)
+        return scaled
+
     def export_annotated_image(self):
         if self.original_image is None:
             return
@@ -154,8 +175,27 @@ class ImageExportMixin:
             if self.grayscale:
                 base_img = base_img.convert("L").convert("RGB")
 
+            export_scale = self._get_export_resolution_scale(*base_img.size)
+            if export_scale > 1.0:
+                scaled_size = (
+                    int(round(base_img.size[0] * export_scale)),
+                    int(round(base_img.size[1] * export_scale)),
+                )
+                base_img = base_img.resize(scaled_size, Image.Resampling.LANCZOS)
+
+            start_line_y = self.start_line_y * export_scale
+            end_line_y = self.end_line_y * export_scale
+
             img_w, img_h = base_img.size
             font_size = max(12, int(img_h * 0.015))
+            line_w1 = max(1, int(round(export_scale)))
+            line_w2 = max(2, int(round(2 * export_scale)))
+            line_w3 = max(3, int(round(3 * export_scale)))
+            gap4 = max(4, int(round(4 * export_scale)))
+            gap6 = max(6, int(round(6 * export_scale)))
+            pad10 = max(10, int(round(10 * export_scale)))
+            memo_pad_default_x = max(20, int(round(20 * export_scale)))
+            memo_pad_default_y = max(15, int(round(15 * export_scale)))
             
             # マーカー・サンプルのフォントサイズ (font_size) を基準に、スライダーの設定比率 (fs / 9.0) でスケーリング
             lane_label_font_size_px = max(6, int(font_size * (self.lane_label_font_size / 9.0)))
@@ -208,6 +248,9 @@ class ImageExportMixin:
                            if self.item_export_visibility.get(s['id'], True)]
             label_list = [lbl for lbl in self.lane_labels
                           if self.item_export_visibility.get(lbl['id'], True)]
+            marker_list = self._scale_export_items(marker_list, export_scale, ("y",))
+            sample_list = self._scale_export_items(sample_list, export_scale, ("x", "y"))
+            label_list = self._scale_export_items(label_list, export_scale, ("x", "drag_offset_y"))
             export_start_line = self.item_export_visibility.get(self.start_line_id, True)
             export_end_line = self.item_export_visibility.get(self.end_line_id, True)
 
@@ -253,7 +296,7 @@ class ImageExportMixin:
                 for line in lines:
                     bbox = draw_obj.textbbox((0, 0), line, font=font)
                     line_heights.append(bbox[3] - bbox[1])
-                line_gap = 4
+                line_gap = gap4
                 cur_y = y
                 for idx, line in enumerate(lines):
                     line_w = draw_obj.textlength(line, font=font)
@@ -268,8 +311,8 @@ class ImageExportMixin:
                 # 開始ライン
                 if export_start_line:
                     s_color = get_annot_color_for("#007AFF")
-                    sy_px = int(self.start_line_y)
-                    draw.line([(0, sy_px), (img_w, sy_px)], fill=s_color, width=2)
+                    sy_px = int(start_line_y)
+                    draw.line([(0, sy_px), (img_w, sy_px)], fill=s_color, width=line_w2)
                     label_y_s = sy_px + 2
                     draw.text((img_w - 5, label_y_s), T("out_start"),
                               fill=s_color, font=line_font, anchor="ra")
@@ -277,8 +320,8 @@ class ImageExportMixin:
                 # 終了ライン
                 if export_end_line:
                     e_color = get_annot_color_for("#FF3B30")
-                    ey_px = int(self.end_line_y)
-                    draw.line([(0, ey_px), (img_w, ey_px)], fill=e_color, width=2)
+                    ey_px = int(end_line_y)
+                    draw.line([(0, ey_px), (img_w, ey_px)], fill=e_color, width=line_w2)
                     end_label_h = int(img_h * 0.02) + 4
                     if ey_px + end_label_h > img_h:
                         draw.text((5, ey_px - end_label_h), T("out_end"), fill=e_color, font=line_font)
@@ -295,7 +338,7 @@ class ImageExportMixin:
                     m = it['obj']
                     color = get_annot_color_for(MARKER_LINE_COLOR)
                     my_px = int(it['draw_y'])
-                    draw.line([(0, my_px), (img_w, my_px)], fill=color, width=1)
+                    draw.line([(0, my_px), (img_w, my_px)], fill=color, width=line_w1)
                     lbl = make_marker_text(m)
                     lbl_w = int(temp_draw.textlength(lbl, font=font))
                     if it['side'] == 'left':
@@ -315,13 +358,13 @@ class ImageExportMixin:
                     draw.ellipse((sx2 - r, sy2 - r, sx2 + r, sy2 + r),
                                  fill=color, outline="white")
                     lbl = make_sample_text(s)
-                    draw.text((sx2 + r + 6, sy2), lbl, fill=color, font=font, anchor="lm")
+                    draw.text((sx2 + r + gap6, sy2), lbl, fill=color, font=font, anchor="lm")
 
                 # レーンラベル（余白なし）
-                if label_list and self.start_line_y is not None:
+                if label_list and start_line_y is not None:
                     for lbl_item in label_list:
                         lx2 = int(lbl_item['x'])
-                        ll_y = int(self.start_line_y + lbl_item.get('drag_offset_y', -30))
+                        ll_y = int(start_line_y + lbl_item.get('drag_offset_y', -30 * export_scale))
                         lc = get_annot_color_for(MARKER_LABEL_COLOR if lbl_item['type'] == 'marker'
                               else self._get_label_color(lbl_item['name']))
                         lbl_display = (self._lane_label_display_text(lbl_item)
@@ -332,12 +375,12 @@ class ImageExportMixin:
                 # メモ描画処理
                 if include_memo_mode and memo_str:
                     memo_font = font
-                    memo_pad_x = 20
-                    memo_pad_y = 15
+                    memo_pad_x = memo_pad_default_x
+                    memo_pad_y = memo_pad_default_y
                     max_w = img_w - memo_pad_x * 2
                     
                     wrapped_lines = wrap_text(memo_str, memo_font, max_w)
-                    line_spacing = 4
+                    line_spacing = gap4
                     line_h = font_size + line_spacing
                     memo_h = len(wrapped_lines) * line_h + memo_pad_y * 2
                     
@@ -354,7 +397,7 @@ class ImageExportMixin:
                     final_img.paste(out_img, (0, 0))
                     
                     draw_final = ImageDraw.Draw(final_img)
-                    draw_final.line([(0, img_h), (final_w, img_h)], fill="#CCCCCC", width=1)
+                    draw_final.line([(0, img_h), (final_w, img_h)], fill="#CCCCCC", width=line_w1)
                     
                     cur_y = img_h + memo_pad_y
                     for line in wrapped_lines:
@@ -425,13 +468,13 @@ class ImageExportMixin:
             # メモ領域の計算
             memo_lines = []
             memo_h = 0
-            memo_pad_x = 20
-            memo_pad_y = 15
+            memo_pad_x = memo_pad_default_x
+            memo_pad_y = memo_pad_default_y
             if include_memo_mode and memo_str:
                 temp_new_w = img_w + left_margin + right_margin
                 max_w = temp_new_w - memo_pad_x * 2
                 memo_lines = wrap_text(memo_str, font, max_w)
-                line_spacing = 4
+                line_spacing = gap4
                 line_h = font_size + line_spacing
                 memo_h = len(memo_lines) * line_h + memo_pad_y * 2
                 bottom_margin += memo_h
@@ -457,10 +500,10 @@ class ImageExportMixin:
                 s_color = "#007AFF"
             else:
                  s_color = self._annot_bw_color()
-            lx1, ly = to_out(0, self.start_line_y)
+            lx1, ly = to_out(0, start_line_y)
             lx2 = lx1 + img_w
             if export_start_line:
-                draw.line([(lx1, ly), (lx2, ly)], fill=s_color, width=3)
+                draw.line([(lx1, ly), (lx2, ly)], fill=s_color, width=line_w3)
                 draw.text((lx2 - 10, ly + 3), T('out_start'), fill=s_color, font=line_font, anchor="ra")
 
             # 終了ライン
@@ -469,9 +512,9 @@ class ImageExportMixin:
                     e_color = "#FF3B30"
                 else:
                     e_color = self._annot_bw_color()
-                lx1, ly = to_out(0, self.end_line_y)
+                lx1, ly = to_out(0, end_line_y)
                 lx2 = lx1 + img_w
-                draw.line([(lx1, ly), (lx2, ly)], fill=e_color, width=3)
+                draw.line([(lx1, ly), (lx2, ly)], fill=e_color, width=line_w3)
                 draw.text((lx1 + 10, ly + 3), T("out_end"), fill=e_color, font=line_font)
 
             # ---- 左側アイテムの描画 ----
@@ -483,10 +526,10 @@ class ImageExportMixin:
                     band_x, band_y = to_out(0, m['y'])
                     label_y = int(it['draw_y']) + top_margin
                     # ティック
-                    draw.line([(band_x, band_y), (band_x + 15, band_y)], fill=color, width=2)
+                    draw.line([(band_x, band_y), (band_x + int(15 * export_scale), band_y)], fill=color, width=line_w2)
                     # 引き出し線
-                    label_x = left_margin - 20
-                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=1)
+                    label_x = left_margin - int(20 * export_scale)
+                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x - 5, label_y - font_size // 2),
                                make_marker_text(m), fill=color, font=font, anchor="rm")
                 else:
@@ -498,8 +541,8 @@ class ImageExportMixin:
                     draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
                                  fill=color, outline="white")
                     # 引き出し線
-                    label_x = left_margin - 20
-                    draw.line([(label_x, label_y), (pt_x, pt_y)], fill=color, width=1)
+                    label_x = left_margin - int(20 * export_scale)
+                    draw.line([(label_x, label_y), (pt_x, pt_y)], fill=color, width=line_w1)
                     draw.text((label_x - 5, label_y - font_size // 2),
                                make_sample_text(s), fill=color, font=font, anchor="rm")
 
@@ -512,10 +555,10 @@ class ImageExportMixin:
                     band_x, band_y = to_out(img_w, m['y'])
                     label_y = int(it['draw_y']) + top_margin
                     # ティック
-                    draw.line([(band_x - 15, band_y), (band_x, band_y)], fill=color, width=2)
+                    draw.line([(band_x - int(15 * export_scale), band_y), (band_x, band_y)], fill=color, width=line_w2)
                     # 引き出し線
-                    label_x = left_margin + img_w + 20
-                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=1)
+                    label_x = left_margin + img_w + int(20 * export_scale)
+                    draw.line([(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x + 5, label_y - font_size // 2),
                                make_marker_text(m), fill=color, font=font, anchor="lm")
                 else:
@@ -527,17 +570,17 @@ class ImageExportMixin:
                     draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
                                  fill=color, outline="white")
                     # 引き出し線
-                    label_x = left_margin + img_w + 20
-                    draw.line([(pt_x, pt_y), (label_x, label_y)], fill=color, width=1)
+                    label_x = left_margin + img_w + int(20 * export_scale)
+                    draw.line([(pt_x, pt_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x + 5, label_y - font_size // 2),
                                make_sample_text(s), fill=color, font=font, anchor="lm")
 
             # ---- レーンラベルを出力画像に描画 ----
-            if label_list and self.start_line_y is not None:
-                sy_out = int(self.start_line_y) + top_margin
+            if label_list and start_line_y is not None:
+                sy_out = int(start_line_y) + top_margin
                 for lbl in label_list:
                     lx = int(lbl['x']) + left_margin
-                    lane_label_y = int(self.start_line_y + lbl.get('drag_offset_y', -30)) + top_margin
+                    lane_label_y = int(start_line_y + lbl.get('drag_offset_y', -30 * export_scale)) + top_margin
                     if lbl['type'] == 'marker':
                         lbl_color = MARKER_LABEL_COLOR if not self.grayscale else self._annot_bw_color()
                     else:
@@ -560,11 +603,11 @@ class ImageExportMixin:
                     memo_fg = "black"
                     border_color = "#CCCCCC"
                     
-                border_y = top_margin + img_h + 10
-                draw.line([(memo_pad_x, border_y), (new_w - memo_pad_x, border_y)], fill=border_color, width=1)
+                border_y = top_margin + img_h + pad10
+                draw.line([(memo_pad_x, border_y), (new_w - memo_pad_x, border_y)], fill=border_color, width=line_w1)
                 
                 cur_y = border_y + memo_pad_y
-                line_spacing = 4
+                line_spacing = gap4
                 line_h = font_size + line_spacing
                 for line in memo_lines:
                     draw.text((memo_pad_x, cur_y), line, fill=memo_fg, font=font)

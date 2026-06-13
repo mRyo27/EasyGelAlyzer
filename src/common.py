@@ -1,14 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 from PIL import Image, ImageTk, ImageDraw, ImageEnhance, ImageFont
-import numpy as np
-
-import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-import openpyxl
 import io
 import os
 import math
@@ -69,10 +61,6 @@ def T(key):
     """現在の言語で文字列を返す"""
     entry = _T.get(key, {})
     return entry.get(_LANG, entry.get('en', key))
-
-
-# WindowsでのMatplotlib日本語フォント化け防止
-plt.rcParams['font.family'] = 'MS Gothic'
 
 
 def get_japanese_font(size=12):

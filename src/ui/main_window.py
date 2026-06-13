@@ -134,11 +134,16 @@ class MainWindowMixin:
         self.right_frame = ttk.LabelFrame(self.main_pane, text=T('analysis_panel'), padding=5)
         self.main_pane.add(self.right_frame, weight=1)
 
-        self.fig = Figure(figsize=(4, 3), dpi=100, facecolor="#F0F0F0")
-        self.ax = self.fig.add_subplot(111)
-        self.ax.text(0.5, 0.5, T('plot_add_markers'), ha='center', va='center')
-        self.fig_canvas = FigureCanvasTkAgg(self.fig, master=self.right_frame)
-        self.fig_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=5)
+        self.fig = None
+        self.ax = None
+        self.fig_canvas = None
+        self._plot_placeholder = ttk.Label(
+            self.right_frame,
+            text=T('plot_add_markers'),
+            anchor="center",
+            background="#F0F0F0"
+        )
+        self._plot_placeholder.pack(fill=tk.BOTH, expand=True, pady=5)
 
         self._coeff_frame = ttk.LabelFrame(self.right_frame, text=T('coeff_frame'), padding=5)
         self._coeff_frame.pack(fill=tk.X, pady=5)
@@ -928,11 +933,13 @@ class MainWindowMixin:
         try:
             if len(self.markers) >= 2:
                 self.update_calibration_plot()
-            else:
+            elif getattr(self, 'fig_canvas', None) is not None:
                 self.ax.clear()
                 self.ax.text(0.5, 0.5, T('plot_add_markers'),
                              ha='center', va='center')
                 self.fig_canvas.draw()
+            elif getattr(self, '_plot_placeholder', None) is not None:
+                self._plot_placeholder.config(text=T('plot_add_markers'))
         except Exception:
             pass
 
