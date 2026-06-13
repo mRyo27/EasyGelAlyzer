@@ -22,7 +22,6 @@
 - **Smart Quit/Save Prompts** — Prompt to save changes only when unsaved changes exist (automatically saves as an overwrite when a project is already loaded)
 - **Undo / Redo** — 20-step history for image state and annotations
 - **Drag & drop** — Drop image files directly onto the canvas (requires `tkinterdnd2`)
-- **Fast Startup (Lazy Loading)** — Heavily optimized loading times (reduced import times from ~1.46s to ~0.25s) by delaying the load of heavy libraries like NumPy, Matplotlib, and openpyxl until they are required
 - **Bilingual UI** — Toggle between English and Japanese at startup (can also be switched dynamically while the app is running)
 
 ---
