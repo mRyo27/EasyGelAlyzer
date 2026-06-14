@@ -520,7 +520,10 @@ class DensitometryMixin:
         from matplotlib.figure import Figure
 
         configure_matplotlib_japanese_font()
-        fig = Figure(figsize=(6, 4), dpi=100)
+        # 黄金比 1:1.618 （縦横比）
+        _fig_w = 6
+        _fig_h = round(_fig_w * 1.618, 3)
+        fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -627,12 +630,12 @@ class DensitometryMixin:
             pad = 20
             label_h = 28
             lane_w = max(60, min(140, int((cw - pad * 2) / max(len(crops), 1)) - 12))
-            max_h = ch - label_h - pad * 2
+            max_h = ch - label_h - pad * 2 - 20  # マーカーラベル用に余白を確保
             lane_h = max(1, max(crop.height for _, _, crop in crops))
             max_crop_w = max(crop.width for _, _, crop in crops)
             common_scale = min(max_h / lane_h, lane_w / max(max_crop_w, 1))
             x = pad
-            guide_ys = []
+            unit = "kDa" if self.mode == "protein" else "bp"
             for roi, name, crop in crops:
                 scale = common_scale
                 size = (max(1, int(crop.width * scale)), max(1, int(crop.height * scale)))
@@ -642,14 +645,19 @@ class DensitometryMixin:
                 canvas.create_text(x + lane_w / 2, pad, text=name, anchor="n",
                                    fill="#111", font=(UI_FONT_FAMILY, 10, "bold"))
                 canvas.create_image(x + lane_w / 2, pad + label_h, image=tk_img, anchor="n")
-                for sample in self.samples:
-                    if roi['roi'][0] <= sample.get('x', -1) <= roi['roi'][2]:
-                        gy = pad + label_h + (sample.get('y', 0) - roi['roi'][1]) * scale
-                        guide_ys.append(gy)
                 x += lane_w + 12
-            if show_guides.get():
-                for gy in guide_ys:
-                    canvas.create_line(0, gy, cw, gy, fill="#FF9500", dash=(4, 4))
+            # 分子量マーカーのラインとラベルを描画
+            if show_guides.get() and self.markers:
+                roi0_y0 = crops[0][0]['roi'][1]  # 共通のy座標基準（各ROIのy0は同じはず）
+                for m in self.markers:
+                    gy = pad + label_h + (m.get('y', 0) - roi0_y0) * common_scale
+                    if 0 <= gy <= ch:
+                        canvas.create_line(0, gy, cw, gy, fill="#FF9500", dash=(4, 4))
+                        size_val = (f"{m['size']:.1f}" if self.mode == "protein"
+                                    else f"{int(m['size'])}")
+                        label_txt = f"{m.get('name', '')} {size_val} {unit}"
+                        canvas.create_text(cw - 4, gy - 2, text=label_txt, anchor="se",
+                                           fill="#CC6600", font=(UI_FONT_FAMILY, 8))
             canvas._lane_refs = rendered_refs
 
         def export_png():
@@ -681,11 +689,13 @@ class DensitometryMixin:
         out = Image.new("RGB", (out_w, out_h), "white")
         draw = ImageDraw.Draw(out)
         font = get_japanese_font(18)
+        small_font = get_japanese_font(13)
         x = pad
-        guide_ys = []
         lane_h = max(1, max(crop.height for _, _, crop in crops))
         max_crop_w = max(crop.width for _, _, crop in crops)
         common_scale = min(max_h / lane_h, lane_w / max(max_crop_w, 1))
+        roi0_y0 = crops[0][0]['roi'][1] if crops else 0
+        unit = "kDa" if self.mode == "protein" else "bp"
         for roi, name, crop in crops:
             scale = common_scale
             size = (max(1, int(crop.width * scale)), max(1, int(crop.height * scale)))
@@ -693,13 +703,17 @@ class DensitometryMixin:
             text_w = draw.textlength(name, font=font)
             draw.text((x + lane_w / 2 - text_w / 2, pad), name, fill="black", font=font)
             out.paste(thumb, (x + (lane_w - size[0]) // 2, pad + label_h))
-            for sample in self.samples:
-                if roi['roi'][0] <= sample.get('x', -1) <= roi['roi'][2]:
-                    guide_ys.append(pad + label_h + (sample.get('y', 0) - roi['roi'][1]) * scale)
             x += lane_w + 16
-        if show_guides:
-            for gy in guide_ys:
-                draw.line((0, int(gy), out_w, int(gy)), fill="#FF9500", width=1)
+        if show_guides and self.markers:
+            for m in self.markers:
+                gy = int(pad + label_h + (m.get('y', 0) - roi0_y0) * common_scale)
+                if 0 <= gy <= out_h:
+                    draw.line((0, gy, out_w, gy), fill="#FF9500", width=1)
+                    size_val = (f"{m['size']:.1f}" if self.mode == "protein"
+                                else f"{int(m['size'])}")
+                    label_txt = f"{m.get('name', '')} {size_val} {unit}"
+                    tw = draw.textlength(label_txt, font=small_font)
+                    draw.text((out_w - tw - 4, gy - 15), label_txt, fill="#CC6600", font=small_font)
         out.save(path)
 
     def move_densitometry_roi(self, direction):

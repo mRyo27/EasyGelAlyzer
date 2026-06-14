@@ -84,10 +84,22 @@ class PDFExportMixin:
         if hasattr(self, '_recalculate_densitometry'):
             self._recalculate_densitometry()
         with PdfPages(path) as pdf:
-            self._pdf_image_page(pdf, page_size, self._render_pdf_annotation_image(options),
-                                 T("pdf_page_annotated"))
+            annot_img = self._render_pdf_annotation_image(options)
+            self._pdf_image_page(pdf, page_size, annot_img, T("pdf_page_annotated"))
+            # 実験メモが別ページとして保存されている場合は追加出力
+            memo_img = getattr(self, '_pdf_memo_image', None)
+            if memo_img is not None:
+                self._pdf_image_page(pdf, page_size, memo_img, T("pdf_page_annotated") + " - Memo")
+                self._pdf_memo_image = None
             fig = Figure(figsize=page_size, dpi=150)
-            ax = fig.add_axes([0.12, 0.35, 0.76, 0.38])
+            # 横幅比率0.76に対して縦幅を黄金比（1:1.618）で計算
+            # page_size=(8.27, 11.69) A4, axes座標は0-1正規化
+            # 黄金比: 縦 = 横 * (page_size[0]/page_size[1]) * 1.618
+            cal_w = 0.72
+            cal_h = cal_w * (page_size[0] / page_size[1]) * 1.618
+            cal_left = (1.0 - cal_w) / 2
+            cal_bottom = max(0.08, (1.0 - cal_h) / 2)
+            ax = fig.add_axes([cal_left, cal_bottom, cal_w, cal_h])
             self._draw_pdf_calibration_plot(ax, np)
             pdf.savefig(fig)
 
@@ -117,7 +129,11 @@ class PDFExportMixin:
                     [T('layer_name'), "ROI", T('dens_integrated'), T('dens_relative')]
                 )
                 fig = Figure(figsize=page_size, dpi=150)
-                ax = fig.add_axes([0.12, 0.35, 0.62, 0.38])
+                dens_w = 0.62
+                dens_h = dens_w * (page_size[0] / page_size[1]) * 1.618
+                dens_left = (1.0 - dens_w) / 2
+                dens_bottom = max(0.08, (1.0 - dens_h) / 2)
+                ax = fig.add_axes([dens_left, dens_bottom, dens_w, dens_h])
                 self._draw_pdf_densitometry_profiles(ax)
                 pdf.savefig(fig)
                 lane_img = self._render_lane_comparison_image(show_guides=True)
@@ -138,7 +154,7 @@ class PDFExportMixin:
     def _pdf_table_page(self, pdf, page_size, title, rows, headers):
         from matplotlib.figure import Figure
 
-        max_rows_per_page = 25
+        max_rows_per_page = 20
         if not rows:
             rows_chunks = [[[T("dens_no_data") for _ in headers]]]
         else:
@@ -197,10 +213,16 @@ class PDFExportMixin:
                                     img_h + top_margin + bottom_margin), "white")
             out.paste(base_img, (left_margin, top_margin))
             self._draw_pdf_annotations_on_image(out, left_margin, top_margin, layout, no_margin=False)
+        self._pdf_memo_image = None
         if include_memo and hasattr(self, 'memo_text'):
             memo = self.memo_text.get("1.0", tk.END).strip()
             if memo:
-                out = self._append_pdf_memo(out, memo)
+                # メモが長い場合（アノテーション画像高さの1.5倍超）は別ページとして保存
+                memo_img = self._build_pdf_memo_image(out.width, memo)
+                if memo_img is not None and out.height + memo_img.height > out.height * 1.5:
+                    self._pdf_memo_image = memo_img
+                else:
+                    out = self._append_pdf_memo(out, memo)
         return out
 
     def _draw_pdf_annotations_on_image(self, out, ox, oy, layout, no_margin=False):
@@ -234,12 +256,17 @@ class PDFExportMixin:
         marker_side = 'left' if layout in (1, 4) else 'right'
         sample_side = 'left' if layout in (1, 3) else 'right'
         label_items = []
+        tick_len = max(8, int(img_w * 0.015))
         for m in self.markers:
             if not self.item_export_visibility.get(m['id'], True):
                 continue
             y = ty(m['y'])
             m_color = color(MARKER_LINE_COLOR)
-            draw.line((tx(0), y, tx(img_w), y), fill=m_color, width=1)
+            # 画像全幅ではなくティック（短い横線）のみ描画（引き出し線は_draw_pdf_resolved_side_labelsで）
+            if marker_side == 'left':
+                draw.line((tx(0), y, tx(0) + tick_len, y), fill=m_color, width=1)
+            else:
+                draw.line((tx(img_w) - tick_len, y, tx(img_w), y), fill=m_color, width=1)
             size = f"{m['size']:.2f}" if self.mode == "protein" else f"{int(m['size'])}"
             label = f"{m['name']} Rf={m['rf']:.2f} ({size} {unit})"
             label_items.append({
@@ -274,7 +301,7 @@ class PDFExportMixin:
                 side = item['side']
                 label_x = tx(4) if side == 'left' else tx(img_w - 4)
                 anchor = "lm" if side == 'left' else "rm"
-                draw.text((label_x, item['source_y'] - 12), item['label'],
+                draw.text((label_x, item['source_y'] - font_size - 4), item['label'],
                           fill=item['fill'], font=item['font'], anchor=anchor)
         else:
             self._draw_pdf_resolved_side_labels(draw, label_items, tx(0), tx(img_w), font_size)
@@ -310,15 +337,31 @@ class PDFExportMixin:
                 draw.text((label_x, item['draw_y']), item['label'],
                           fill=item['fill'], font=item['font'], anchor=anchor)
 
+    def _build_pdf_memo_image(self, width, memo):
+        """実験メモのみの画像を生成して返す"""
+        font = get_japanese_font(14)
+        pad = 18
+        line_h = 22
+        lines = memo.splitlines() or [memo]
+        img = Image.new("RGB", (width, pad * 2 + line_h * len(lines) + 30), "white")
+        draw = ImageDraw.Draw(img)
+        draw.line((pad, pad - 4, width - pad, pad - 4), fill="#CCCCCC", width=1)
+        y = pad + 10
+        for line in lines:
+            draw.text((pad, y), line, fill="black", font=font)
+            y += line_h
+        return img
+
     def _append_pdf_memo(self, img, memo):
         font = get_japanese_font(14)
         pad = 18
-        line_h = 20
+        line_h = 22
         lines = memo.splitlines() or [memo]
-        out = Image.new("RGB", (img.width, img.height + pad * 2 + line_h * len(lines)), "white")
+        out = Image.new("RGB", (img.width, img.height + pad * 2 + line_h * len(lines) + 10), "white")
         out.paste(img, (0, 0))
         draw = ImageDraw.Draw(out)
-        y = img.height + pad
+        draw.line((pad, img.height + pad - 4, img.width - pad, img.height + pad - 4), fill="#CCCCCC", width=1)
+        y = img.height + pad + 10
         for line in lines:
             draw.text((pad, y), line, fill="black", font=font)
             y += line_h
@@ -375,11 +418,13 @@ class PDFExportMixin:
         out = Image.new("RGB", (out_w, out_h), "white")
         draw = ImageDraw.Draw(out)
         font = get_japanese_font(18)
+        small_font = get_japanese_font(13)
         x = pad
-        guide_ys = []
         lane_h = max(1, max(crop.height for _, _, crop in crops))
         max_crop_w = max(crop.width for _, _, crop in crops)
         common_scale = min(max_h / lane_h, lane_w / max(max_crop_w, 1))
+        roi0_y0 = crops[0][0]['roi'][1] if crops else 0
+        unit = "kDa" if self.mode == "protein" else "bp"
         for roi, name, crop in crops:
             scale = common_scale
             size = (max(1, int(crop.width * scale)), max(1, int(crop.height * scale)))
@@ -387,11 +432,15 @@ class PDFExportMixin:
             text_w = draw.textlength(name, font=font)
             draw.text((x + lane_w / 2 - text_w / 2, pad), name, fill="black", font=font)
             out.paste(thumb, (x + (lane_w - size[0]) // 2, pad + label_h))
-            for sample in self.samples:
-                if roi['roi'][0] <= sample.get('x', -1) <= roi['roi'][2]:
-                    guide_ys.append(pad + label_h + (sample.get('y', 0) - roi['roi'][1]) * scale)
             x += lane_w + 16
-        if show_guides:
-            for gy in guide_ys:
-                draw.line((0, int(gy), out_w, int(gy)), fill="#FF9500", width=1)
+        if show_guides and self.markers:
+            for m in self.markers:
+                gy = int(pad + label_h + (m.get('y', 0) - roi0_y0) * common_scale)
+                if 0 <= gy <= out_h:
+                    draw.line((0, gy, out_w, gy), fill="#FF9500", width=1)
+                    size_val = (f"{m['size']:.1f}" if self.mode == "protein"
+                                else f"{int(m['size'])}")
+                    label_txt = f"{m.get('name', '')} {size_val} {unit}"
+                    tw = draw.textlength(label_txt, font=small_font)
+                    draw.text((out_w - tw - 4, gy - 15), label_txt, fill="#CC6600", font=small_font)
         return out
