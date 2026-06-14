@@ -17,6 +17,7 @@ class ProjectIOMixin:
             'markers': [m.copy() for m in self.markers],
             'samples': [s.copy() for s in self.samples],
             'lane_labels': [l.copy() for l in self.lane_labels],
+            'densitometry_rois': [d.copy() for d in getattr(self, 'densitometry_rois', [])],
             'lane_label_font_size': self.lane_label_font_size,
             'calibration_a': self.calibration_a,
             'calibration_b': self.calibration_b,
@@ -79,6 +80,7 @@ class ProjectIOMixin:
                     {k: v for k, v in s.items()} for s in self.samples
                 ],
                 'lane_labels': self.lane_labels,
+                'densitometry_rois': getattr(self, 'densitometry_rois', []),
                 'lane_label_font_size': self.lane_label_font_size,
                 'calibration_a': self.calibration_a,
                 'calibration_b': self.calibration_b,
@@ -126,6 +128,7 @@ class ProjectIOMixin:
                         {k: v for k, v in s.items()} for s in self.samples
                     ],
                     'lane_labels': self.lane_labels,
+                    'densitometry_rois': getattr(self, 'densitometry_rois', []),
                     'lane_label_font_size': self.lane_label_font_size,
                     'calibration_a': self.calibration_a,
                     'calibration_b': self.calibration_b,
@@ -218,6 +221,7 @@ class ProjectIOMixin:
             self.markers = project.get('markers', [])
             self.samples = project.get('samples', [])
             self.lane_labels = project.get('lane_labels', [])
+            self.densitometry_rois = project.get('densitometry_rois', [])
             self.lane_label_font_size = project.get('lane_label_font_size', 11)
             self.calibration_a = project.get('calibration_a', 0.0)
             self.calibration_b = project.get('calibration_b', 0.0)
@@ -233,7 +237,7 @@ class ProjectIOMixin:
             memo_val = project.get('memo', '')
 
             # 各オブジェクトにIDが無い場合は付与
-            for obj in self.markers + self.samples + self.lane_labels:
+            for obj in self.markers + self.samples + self.lane_labels + self.densitometry_rois:
                 if 'id' not in obj:
                     obj['id'] = str(uuid.uuid4())
 
@@ -260,6 +264,9 @@ class ProjectIOMixin:
             self.apply_image_adjustments()
             self.fit_image_to_canvas()
             self.recalculate_rf_and_sizes()
+            if hasattr(self, '_recalculate_densitometry'):
+                self._recalculate_densitometry()
+                self._update_densitometry_panel()
             self.update_layer_panel()
             self.project_path = path  # Store path for quick save
             # Save successful: record saved state for future change detection

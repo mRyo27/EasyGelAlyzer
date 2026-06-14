@@ -20,8 +20,13 @@ class MainWindowMixin:
         self._file_menu.add_command(label=f"{T('menu_excel')} (Ctrl+E)", command=self.export_to_excel)
         self._file_menu.add_command(label=f"{T('btn_csv')} (Ctrl+Shift+E)", command=self.export_to_csv)
         self._file_menu.add_command(label=f"{T('menu_image')} (Ctrl+I)", command=self.export_annotated_image)
+        self._file_menu.add_command(label="PDF Export", command=self.export_analysis_pdf)
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_quit'), command=self.on_app_close)
+
+        self._view_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="表示", menu=self._view_menu)
+        self._view_menu.add_command(label="レーン比較モード", command=self.open_lane_comparison_mode)
 
         edit_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label='Edit', menu=edit_menu)
@@ -261,6 +266,10 @@ class MainWindowMixin:
                         fg="#34C759", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
                         command=self.start_sample_measurement)
         self.btn_add_sample.pack(side=tk.LEFT, padx=2)
+        self.btn_densitometry = tk.Button(self._analysis_frame, text="Densitometry",
+                          fg="#00C7BE", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
+                          command=self.start_densitometry_roi_mode)
+        self.btn_densitometry.pack(side=tk.LEFT, padx=2)
         self.btn_add_lane = tk.Button(self._analysis_frame, text=T('btn_add_lane'),
                           fg="#FF9500", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
                           command=self.add_lane_label)
@@ -285,6 +294,9 @@ class MainWindowMixin:
         self.btn_image = ttk.Button(self._output_frame, text=T('btn_image'),
                     command=self.export_annotated_image, width=14)
         self.btn_image.pack(side=tk.LEFT, padx=6)
+        self.btn_pdf = ttk.Button(self._output_frame, text="PDF",
+                    command=self.export_analysis_pdf, width=10)
+        self.btn_pdf.pack(side=tk.LEFT, padx=6)
 
         self.lbl_status = ttk.Label(tb_row3,
                                     text=T('status_init'),
@@ -809,8 +821,9 @@ class MainWindowMixin:
             self._file_menu.entryconfig(6, label=f"{T('menu_excel')} (Ctrl+E)")
             self._file_menu.entryconfig(7, label=f"{T('btn_csv')} (Ctrl+Shift+E)")
             self._file_menu.entryconfig(8, label=f"{T('menu_image')} (Ctrl+I)")
-            # index 9 = separator
-            self._file_menu.entryconfig(10, label=T('menu_quit'))
+            self._file_menu.entryconfig(9, label="PDF Export")
+            # index 10 = separator
+            self._file_menu.entryconfig(11, label=T('menu_quit'))
         except Exception:
             LOGGER.exception("Unexpected error")
         # ---- 編集メニュー ----
@@ -956,6 +969,7 @@ class MainWindowMixin:
         self.markers.clear()
         self.samples.clear()
         self.lane_labels = []
+        self.densitometry_rois = []
         self.start_line_y = None
         self.end_line_y = None
         self.calibration_a = 0.0

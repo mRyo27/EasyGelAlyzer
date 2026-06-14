@@ -210,6 +210,7 @@ class ImageManagerMixin:
             self.markers = []
             self.samples = []
             self.lane_labels = []
+            self.densitometry_rois = []
             self.calibration_a = 0.0
             self.calibration_b = 0.0
             self.calibration_r2 = 0.0
@@ -435,6 +436,7 @@ class ImageManagerMixin:
         self.markers.clear()
         self.samples.clear()
         self.lane_labels = []
+        self.densitometry_rois = []
         self.fit_image_to_canvas()
         self.btn_trim.config(state=tk.NORMAL)
         self.lbl_status.config(text=T('status_rotation_done'))
@@ -649,6 +651,9 @@ class ImageManagerMixin:
 
         # 泳動ラインラベル描画
         self._draw_lane_labels()
+
+        if hasattr(self, '_draw_densitometry_rois'):
+            self._draw_densitometry_rois()
 
     def toggle_color_grayscale(self):
         """白黒/カラー切り替え（プレビュー・出力共通）"""

@@ -152,6 +152,10 @@ class AnnotationMixin:
                 cx, cy, cx, cy, outline="yellow", width=2)
             return
 
+        elif self.active_mode == 'densitometry_roi':
+            self._begin_densitometry_roi(event)
+            return
+
         # --- ドラッグ判定（優先度順）---
 
         # 試料（クリック点(x,y)の近傍判定でドラッグ可能）
@@ -278,6 +282,9 @@ class AnnotationMixin:
             self.canvas.coords(self.trim_rect_id,
                                self.trim_start_x, self.trim_start_y, cx, cy)
 
+        elif self.active_mode == 'densitometry_roi':
+            self._drag_densitometry_roi(event)
+
     def on_left_release(self, event):
         if self.active_mode in ['drag_start', 'drag_end', 'drag_marker', 'drag_sample']:
             if getattr(self, '_drag_redraw_after_id', None) is not None:
@@ -302,6 +309,8 @@ class AnnotationMixin:
                 self.execute_trimming()
             else:
                 self.cancel_trimming()
+        elif self.active_mode == 'densitometry_roi':
+            self._end_densitometry_roi(event)
 
     # ------------------------------------------------------------------ #
     #  ライン設定
@@ -447,7 +456,7 @@ class AnnotationMixin:
         self.active_mode = new_mode
         if hasattr(self, '_update_preset_controls_state'):
             self._update_preset_controls_state()
-        if new_mode in ('add_marker', 'add_sample'):
+        if new_mode in ('add_marker', 'add_sample', 'densitometry_roi'):
             self.canvas.config(cursor="crosshair")
         else:
             self.canvas.config(cursor="")

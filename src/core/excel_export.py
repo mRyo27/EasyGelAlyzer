@@ -51,6 +51,23 @@ class ExcelExportMixin:
             for i, s in enumerate(self.samples, 1):
                 ws2.append([i, s['name'], s['rf'], s['size'] if s['size'] > 0 else "N/A"])
 
+            if getattr(self, 'densitometry_rois', None):
+                self._recalculate_densitometry()
+                ws_den = wb.create_sheet(title="Densitometry")
+                ws_den.append([
+                    "No.", "Lane/Sample", "X1", "Y1", "X2", "Y2",
+                    "Integrated Density", "Relative to Max"
+                ])
+                for i, roi in enumerate(self.densitometry_rois, 1):
+                    x0, y0, x1, y1 = roi.get('roi', [0, 0, 0, 0])
+                    ws_den.append([
+                        i,
+                        roi.get('name', ''),
+                        float(x0), float(y0), float(x1), float(y1),
+                        float(roi.get('integrated_density', 0.0)),
+                        float(roi.get('relative_density', 0.0)),
+                    ])
+
             ws3 = wb.create_sheet(title=T('xl_sheet_graph'))
 
             # ---- 回帰直線用データを ws3 に書き込む ----

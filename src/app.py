@@ -7,6 +7,8 @@ from core.calibration import CalibrationMixin
 from core.project_io import ProjectIOMixin
 from core.excel_export import ExcelExportMixin
 from core.image_export import ImageExportMixin
+from core.pdf_export import PDFExportMixin
+from core.densitometry import DensitometryMixin
 
 
 class EasyGelAlyzerApp(
@@ -18,6 +20,8 @@ class EasyGelAlyzerApp(
     ProjectIOMixin,
     ExcelExportMixin,
     ImageExportMixin,
+    PDFExportMixin,
+    DensitometryMixin,
 ):
     def __init__(self, root):
         self.root = root
@@ -108,6 +112,9 @@ class EasyGelAlyzerApp(
         # x: 横位置(元画像系), y_above_start: 開始ラインより上に表示(固定値, キャンバスオフセット)
         self.lane_labels = []
         self.lane_label_font_size = 11  # ラベルフォントサイズ（スライダーで変更可）
+        self.densitometry_rois = []
+        self._dens_roi_start = None
+        self._dens_roi_rect_id = None
         self.image_preset_mode = 'none'
 
         # アイテムごとの表示/非表示 (id -> bool)

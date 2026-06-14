@@ -10,9 +10,9 @@ class CalibrationMixin:
         matplotlib.use("TkAgg")
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         from matplotlib.figure import Figure
-        import matplotlib.pyplot as plt
+        from graphics.fonts import configure_matplotlib_japanese_font
 
-        plt.rcParams['font.family'] = 'MS Gothic'
+        configure_matplotlib_japanese_font()
         self.fig = Figure(figsize=(4, 3), dpi=100, facecolor="#F0F0F0")
         self.ax = self.fig.add_subplot(111)
         self.fig_canvas = FigureCanvasTkAgg(self.fig, master=self.right_frame)
