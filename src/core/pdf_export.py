@@ -260,10 +260,10 @@ class PDFExportMixin:
             draw.text((x, y - 12), label, fill=fill, font=font, anchor=anchor)
             return
         if side == 'left':
-            label_x = image_left - 16
+            label_x = max(8, image_left - 48)
             anchor = "rm"
         else:
-            label_x = image_right + 16
+            label_x = image_right + 48
             anchor = "lm"
         start_x = point_x if point_x is not None else (image_left if side == 'left' else image_right)
         draw.line((start_x, y, label_x, y), fill=fill, width=1)
@@ -306,12 +306,16 @@ class PDFExportMixin:
         for roi in getattr(self, 'densitometry_rois', []):
             result = self._calculate_densitometry_profile(roi)
             if result:
-                ax.plot(result['corrected'], label=roi.get('name', T("dens_lane_prefix")))
+                y_vals = result['corrected']
+                x_vals = self._normalized_profile_x(len(y_vals))
+                ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")))
         ax.set_title(T("lane_profile_title"))
         ax.set_xlabel(T("lane_profile_x"))
         ax.set_ylabel(T("lane_profile_y"))
+        ax.set_xlim(0.0, 1.0)
         ax.grid(True, linestyle=":", alpha=0.5)
-        ax.legend()
+        ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
+        ax.figure.subplots_adjust(right=0.74)
 
     def _render_lane_comparison_image(self, show_guides=True):
         if not getattr(self, 'densitometry_rois', []):

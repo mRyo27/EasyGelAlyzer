@@ -187,7 +187,7 @@ class MainWindowMixin:
 
         # ツールバー
         toolbar_container = ttk.Frame(self.root, padding=5)
-        toolbar_container.pack(fill=tk.X, side=tk.TOP)
+        toolbar_container.pack(fill=tk.X, side=tk.TOP, before=self.main_pane)
 
         tb_row1 = ttk.Frame(toolbar_container)
         tb_row1.pack(fill=tk.X, pady=2)

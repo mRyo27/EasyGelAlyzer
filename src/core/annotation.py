@@ -968,8 +968,7 @@ class AnnotationMixin:
                 vis = self.item_visibility.get(roi['id'], True)
                 self.layer_tree.insert(self.dens_node, "end", iid=roi['id'],
                                        text=roi.get('name', ''),
-                                       values=("👁" if vis else "🚫", "", "",
-                                               f"{roi.get('relative_density', 0.0):.3f}"))
+                                       values=("👁" if vis else "🚫", "", "", ""))
         # Start/End line items
         if self.start_line_y is not None:
             st_vis = self.item_visibility.get(self.start_line_id, True)

@@ -1193,12 +1193,12 @@ TRANSLATIONS = {
         "ja": "相対値"
     },
     "dens_overlay_plot": {
-        "en": "Overlay Plot",
-        "ja": "重ね描き"
+        "en": "Compare Profiles",
+        "ja": "プロファイル比較"
     },
     "dens_delete_roi": {
-        "en": "Delete Lane",
-        "ja": "領域削除"
+        "en": "Delete",
+        "ja": "削除"
     },
     "pdf_marker_table": {
         "en": "Marker Results",
@@ -1229,8 +1229,8 @@ TRANSLATIONS = {
         "ja": "レーン輝度プロファイル"
     },
     "lane_profile_x": {
-        "en": "Position from start line",
-        "ja": "開始ラインからの位置"
+        "en": "Relative migration distance",
+        "ja": "相対泳動距離"
     },
     "lane_profile_y": {
         "en": "Background-corrected density",

@@ -444,11 +444,18 @@ class DensitometryMixin:
         if not getattr(self, 'densitometry_rois', []):
             messagebox.showwarning(T("warn_title"), T("dens_no_roi"))
             return
+        existing = getattr(self, '_lane_profile_window', None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift()
+            existing.focus_force()
+            return
         self._recalculate_densitometry()
         win = tk.Toplevel(self.root)
+        self._lane_profile_window = win
         win.title(T("lane_profile_title"))
         win.geometry("780x560")
         win.transient(self.root)
+        win.protocol("WM_DELETE_WINDOW", lambda: (setattr(self, '_lane_profile_window', None), win.destroy()))
 
         left = ttk.Frame(win, padding=6)
         left.pack(side=tk.LEFT, fill=tk.Y)
@@ -479,28 +486,38 @@ class DensitometryMixin:
             for roi in selected_rois():
                 corrected = self._calculate_densitometry_profile(roi)
                 if corrected:
-                    ax.plot(corrected['corrected'], label=roi.get('name', T("dens_lane_prefix")))
+                    y_vals = corrected['corrected']
+                    x_vals = self._normalized_profile_x(len(y_vals))
+                    ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")))
             ax.set_title(T("lane_profile_title"))
             ax.set_xlabel(T("lane_profile_x"))
             ax.set_ylabel(T("lane_profile_y"))
+            ax.set_xlim(0.0, 1.0)
             ax.grid(True, linestyle=":", alpha=0.5)
             if selected_rois():
-                ax.legend()
-            fig.tight_layout()
+                ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
+            fig.subplots_adjust(right=0.74)
             canvas.draw()
 
         def export_plot(fmt):
             path = filedialog.asksaveasfilename(
                 title=T("dlg_save_image"),
                 defaultextension=f".{fmt}",
-                filetypes=[(f"{fmt.upper()} files", f"*.{fmt}")]
+                filetypes=[(f"{fmt.upper()} files", f"*.{fmt}")],
+                parent=win
             )
             if path:
-                fig.savefig(path, format=fmt, bbox_inches="tight")
+                fig.savefig(path, format=fmt, dpi=300, bbox_inches="tight")
+                messagebox.showinfo(T("ok_title"), T("ok_image"), parent=win)
 
         ttk.Button(left, text=T("export_png"), command=lambda: export_plot("png")).pack(fill=tk.X, pady=(12, 2))
         ttk.Button(left, text=T("export_svg"), command=lambda: export_plot("svg")).pack(fill=tk.X, pady=2)
         redraw()
+
+    def _normalized_profile_x(self, n_points):
+        if n_points <= 1:
+            return [0.0]
+        return [i / (n_points - 1) for i in range(n_points)]
 
     def open_lane_comparison_mode(self):
         if not getattr(self, 'densitometry_rois', []):
