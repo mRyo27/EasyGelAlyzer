@@ -24,21 +24,45 @@ class DensitometryMixin:
         candidates = self._densitometry_name_candidates()
         win = tk.Toplevel(self.root)
         win.title(T("dens_name_title"))
-        win.geometry("340x150")
+        win.geometry("340x200")
         win.resizable(False, False)
         win.transient(self.root)
         win.grab_set()
-        self._center_dialog(win, 340, 150)
+        self._center_dialog(win, 340, 200)
+
         ttk.Label(win, text=T("dens_name_prompt"),
-                  font=(UI_FONT_FAMILY, 10, "bold")).pack(pady=10)
+                  font=(UI_FONT_FAMILY, 10, "bold")).pack(pady=(10, 5))
+
         name_var = tk.StringVar(value=self._default_densitometry_name(candidates))
+
+        combo = None
         if candidates:
-            entry = ttk.Combobox(win, textvariable=name_var, values=candidates,
-                                 width=26, state="readonly")
-        else:
-            entry = ttk.Entry(win, textvariable=name_var, width=28)
-        entry.pack(pady=4)
+            combo_lbl = ttk.Label(win, text="既存グループから選択:" if get_language() == 'ja' else "Select Existing Group:")
+            combo_lbl.pack(anchor=tk.W, padx=35, pady=(2, 0))
+            
+            combo = ttk.Combobox(win, values=candidates, width=26, state="readonly")
+            combo.pack(pady=(2, 6))
+            
+            def_name = self._default_densitometry_name(candidates)
+            if def_name in candidates:
+                combo.set(def_name)
+            else:
+                combo.set(candidates[0])
+
+        entry_lbl = ttk.Label(win, text="または新しい名前を入力:" if get_language() == 'ja' else "Or Enter Custom Name:")
+        entry_lbl.pack(anchor=tk.W, padx=35, pady=(2, 0))
+
+        entry = ttk.Entry(win, textvariable=name_var, width=28)
+        entry.pack(pady=(2, 10))
+
+        if combo:
+            def on_combo_select(event):
+                name_var.set(combo.get())
+            combo.bind("<<ComboboxSelected>>", on_combo_select)
+
         entry.focus_set()
+        entry.select_range(0, tk.END)
+
         result = [None]
 
         def ok(event=None):
@@ -48,8 +72,11 @@ class DensitometryMixin:
             result[0] = name
             win.destroy()
 
-        ttk.Button(win, text="OK", command=ok).pack(side=tk.LEFT, padx=90, pady=12)
-        ttk.Button(win, text=T("dlg_cancel"), command=win.destroy).pack(side=tk.LEFT, pady=12)
+        btn_frame = ttk.Frame(win)
+        btn_frame.pack(pady=5)
+        ttk.Button(btn_frame, text="OK", command=ok).pack(side=tk.LEFT, padx=8)
+        ttk.Button(btn_frame, text=T("dlg_cancel"), command=win.destroy).pack(side=tk.LEFT, padx=8)
+
         entry.bind("<Return>", ok)
         self.root.wait_window(win)
         return result[0]
@@ -65,8 +92,7 @@ class DensitometryMixin:
 
     def _densitometry_name_candidates(self):
         names = []
-        if self.markers:
-            names.append(T('marker_node'))
+        names.append(T('marker_node'))
         for s in self.samples:
             base = self._get_sample_group_name(s.get('name', ''))
             if base and base not in names:
