@@ -1251,6 +1251,38 @@ TRANSLATIONS = {
     "dens_show_lines": {
         "en": "Show Marker/Sample Lines",
         "ja": "マーカー・試料線を表示"
+    },
+    "btn_auto_marker": {
+        "en": "Auto Detect (Marker)",
+        "ja": "自動追加(ﾏｰｶｰ)"
+    },
+    "btn_auto_sample": {
+        "en": "Auto Detect (Sample)",
+        "ja": "自動追加(試料)"
+    },
+    "auto_detect_status_pick": {
+        "en": "Drag a rectangle over the lane to detect bands.",
+        "ja": "自動検出したいレーン領域をドラッグして囲んでください。"
+    },
+    "auto_detect_status_approve": {
+        "en": "Click candidates to accept/reject, then confirm.",
+        "ja": "候補枠をクリックして承認/却下を切り替え、確定してください。"
+    },
+    "auto_detect_panel_title": {
+        "en": "Approve Auto Detected Bands",
+        "ja": "自動検出バンドの承認"
+    },
+    "auto_detect_btn_approve_all": {
+        "en": "Approve All",
+        "ja": "すべて承認"
+    },
+    "auto_detect_btn_reject_all": {
+        "en": "Reject All",
+        "ja": "すべて却下"
+    },
+    "auto_detect_btn_confirm": {
+        "en": "Confirm & Add",
+        "ja": "適用/確定"
     }
 }
 

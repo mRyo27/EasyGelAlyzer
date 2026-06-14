@@ -664,6 +664,40 @@ class ImageManagerMixin:
         if hasattr(self, '_draw_densitometry_rois'):
             self._draw_densitometry_rois()
 
+        # 承認モードの候補バンドの描画
+        if self.active_mode == 'auto_detect_approve':
+            for c in getattr(self, 'detected_candidates', []):
+                x0 = c['x'] - c['w'] / 2.0
+                x1 = c['x'] + c['w'] / 2.0
+                y0 = c['y'] - c['h'] / 2.0
+                y1 = c['y'] + c['h'] / 2.0
+
+                cx0, cy0 = self.image_to_canvas_coords(x0, y0)
+                cx1, cy1 = self.image_to_canvas_coords(x1, y1)
+                cx, cy = self.image_to_canvas_coords(c['x'], c['y'])
+
+                if c['state'] == 'accepted':
+                    outline_color = "#34C759"
+                    dash = None
+                    width = 2
+                elif c['state'] == 'rejected':
+                    outline_color = "#FF3B30"
+                    dash = (4, 4)
+                    width = 1
+                else:
+                    outline_color = "#FF9500"
+                    dash = (4, 4)
+                    width = 2
+
+                self.canvas.create_rectangle(
+                    cx0, cy0, cx1, cy1,
+                    outline=outline_color, width=width, dash=dash
+                )
+
+                cross_size = 5
+                self.canvas.create_line(cx - cross_size, cy, cx + cross_size, cy, fill=outline_color, width=1)
+                self.canvas.create_line(cx, cy - cross_size, cx, cy + cross_size, fill=outline_color, width=1)
+
     def toggle_color_grayscale(self):
         """白黒/カラー切り替え（プレビュー・出力共通）"""
         self.grayscale = not self.grayscale

@@ -292,6 +292,15 @@ class MainWindowMixin:
                            command=self.end_measurement_mode, width=16)
         self.btn_end_mode.grid(row=1, column=4, padx=2, pady=1)
 
+        self.btn_auto_marker = tk.Button(self._analysis_frame, text=T('btn_auto_marker'),
+                          fg="#8E44AD", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          command=self.start_auto_detect_marker)
+        self.btn_auto_marker.grid(row=2, column=0, padx=2, pady=1)
+        self.btn_auto_sample = tk.Button(self._analysis_frame, text=T('btn_auto_sample'),
+                          fg="#27AE60", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          command=self.start_auto_detect_sample)
+        self.btn_auto_sample.grid(row=2, column=1, padx=2, pady=1)
+
         # === 右グループ: 出力 ===
         self._output_frame = ttk.LabelFrame(tb_row3, text=T('tb_output'), padding=2)
         self._output_frame.pack(side=tk.RIGHT, padx=4)

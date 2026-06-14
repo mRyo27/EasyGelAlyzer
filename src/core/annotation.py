@@ -108,6 +108,35 @@ class AnnotationMixin:
         ix, iy = self.canvas_to_image_coords(cx, cy)
         h = self.original_image.size[1]
 
+        # --- 自動検出のドラッグ開始 ---
+        if self.active_mode == 'auto_detect_select':
+            self._auto_detect_drag_start = (cx, cy)
+            if getattr(self, '_auto_detect_rect_id', None):
+                self.canvas.delete(self._auto_detect_rect_id)
+                self._auto_detect_rect_id = None
+            return
+
+        # --- 自動検出の承認モード中のクリック判定 ---
+        if self.active_mode == 'auto_detect_approve':
+            clicked_candidate = None
+            for c in getattr(self, 'detected_candidates', []):
+                x0 = c['x'] - c['w'] / 2
+                x1 = c['x'] + c['w'] / 2
+                y0 = c['y'] - c['h'] / 2
+                y1 = c['y'] + c['h'] / 2
+                if min(x0, x1) - 4 <= ix <= max(x0, x1) + 4 and min(y0, y1) - 4 <= iy <= max(y0, y1) + 4:
+                    clicked_candidate = c
+                    break
+            if clicked_candidate:
+                if clicked_candidate['state'] == 'pending':
+                    clicked_candidate['state'] = 'accepted'
+                elif clicked_candidate['state'] == 'accepted':
+                    clicked_candidate['state'] = 'rejected'
+                else: # rejected
+                    clicked_candidate['state'] = 'accepted'
+                self.redraw_canvas()
+            return
+
         # --- 通常モード処理を最優先（add_marker, add_sample, set_start, set_end, trim_drag） ---
         if self.active_mode == 'set_start':
             self.push_undo_state()
@@ -226,6 +255,17 @@ class AnnotationMixin:
         h = self.original_image.size[1]
         w = self.original_image.size[0]
 
+        if self.active_mode == 'auto_detect_select':
+            start_pos = getattr(self, '_auto_detect_drag_start', None)
+            if start_pos:
+                start_x, start_y = start_pos
+                if getattr(self, '_auto_detect_rect_id', None) is None:
+                    self._auto_detect_rect_id = self.canvas.create_rectangle(
+                        start_x, start_y, cx, cy, outline="#007AFF", width=2, dash=(4, 2), tags=("auto_detect_drag_rect",))
+                else:
+                    self.canvas.coords(self._auto_detect_rect_id, start_x, start_y, cx, cy)
+            return
+
         if self.active_mode == 'drag_start':
             old_start_y = float(getattr(self, '_drag_start_prev_y', self.start_line_y))
             new_start_y = max(0.0, min(float(iy), float(h)))
@@ -331,6 +371,37 @@ class AnnotationMixin:
             self._end_densitometry_roi(event)
         elif self.active_mode == 'drag_densitometry_roi':
             self._end_drag_densitometry_roi()
+        elif self.active_mode == 'auto_detect_select':
+            if getattr(self, '_auto_detect_rect_id', None):
+                try:
+                    self.canvas.delete(self._auto_detect_rect_id)
+                except Exception:
+                    pass
+                self._auto_detect_rect_id = None
+            
+            start_pos = getattr(self, '_auto_detect_drag_start', None)
+            if start_pos:
+                start_cx, start_cy = start_pos
+                end_cx, end_cy = event.x, event.y
+                ix1, iy1 = self.canvas_to_image_coords(start_cx, start_cy)
+                ix2, iy2 = self.canvas_to_image_coords(end_cx, end_cy)
+                
+                left = min(ix1, ix2)
+                right = max(ix1, ix2)
+                top = min(iy1, iy2)
+                bottom = max(iy1, iy2)
+                
+                w, h = self.original_image.size
+                left = max(0.0, min(left, float(w)))
+                right = max(0.0, min(right, float(w)))
+                top = max(0.0, min(top, float(h)))
+                bottom = max(0.0, min(bottom, float(h)))
+                
+                if (right - left) >= 5 and (bottom - top) >= 5:
+                    self.auto_detect_bands(left, top, right, bottom)
+                else:
+                    self.end_auto_detect_mode()
+            self._auto_detect_drag_start = None
 
     # ------------------------------------------------------------------ #
     #  ライン設定
@@ -1554,6 +1625,305 @@ class AnnotationMixin:
             self.canvas.delete("lane_label_snap_guide")
         except Exception:
             LOGGER.exception("Failed to clear lane label snap guides")
+
+    # ------------------------------------------------------------------ #
+    #  自動検出・追加モード
+    # ------------------------------------------------------------------ #
+    def start_auto_detect_marker(self):
+        if self.original_image is None:
+            return
+        if self.start_line_y is None or self.end_line_y is None:
+            messagebox.showwarning(T('warn_title'), T('warn_no_start_end'))
+            return
+        self.end_measurement_mode()
+        self.active_mode = 'auto_detect_select'
+        self._auto_detect_target = 'marker'
+        self.canvas.config(cursor="crosshair")
+        self.lbl_status.config(text=T('auto_detect_status_pick'))
+
+    def start_auto_detect_sample(self):
+        if self.original_image is None:
+            return
+        if self.start_line_y is None or self.end_line_y is None:
+            messagebox.showwarning(T('warn_title'), T('warn_no_start_end'))
+            return
+        self.end_measurement_mode()
+        self.active_mode = 'auto_detect_select'
+        self._auto_detect_target = 'sample'
+        self.canvas.config(cursor="crosshair")
+        self.lbl_status.config(text=T('auto_detect_status_pick'))
+
+    def auto_detect_bands(self, left, top, right, bottom):
+        import numpy as np
+
+        img = self.processed_image if self.processed_image else self.original_image
+        if img is None:
+            return
+        arr = np.asarray(img.convert("L"), dtype=float)
+
+        line_min = min(self.start_line_y, self.end_line_y)
+        line_max = max(self.start_line_y, self.end_line_y)
+        scan_top = max(top, line_min)
+        scan_bottom = min(bottom, line_max)
+
+        if scan_bottom <= scan_top + 3:
+            self.lbl_status.config(text="レーン領域と重なりがありません" if get_language() == "ja" else "No overlap with lane area")
+            self.end_auto_detect_mode()
+            return
+
+        center_x = (left + right) / 2.0
+        width = right - left
+        sub_width = max(3.0, width * 0.2)
+        sub_left = int(round(center_x - sub_width / 2.0))
+        sub_right = int(round(center_x + sub_width / 2.0))
+
+        img_w = arr.shape[1]
+        sub_left = max(0, min(sub_left, img_w))
+        sub_right = max(0, min(sub_right, img_w))
+        if sub_right <= sub_left + 1:
+            sub_left = max(0, int(center_x) - 1)
+            sub_right = min(img_w, int(center_x) + 2)
+
+        y_start_idx = int(round(scan_top))
+        y_end_idx = int(round(scan_bottom))
+
+        crop = arr[y_start_idx:y_end_idx, sub_left:sub_right]
+        if crop.size == 0:
+            self.end_auto_detect_mode()
+            return
+
+        profile = crop.mean(axis=1)
+
+        edge_n = max(1, min(5, len(profile) // 5))
+        top_bg = float(profile[:edge_n].mean())
+        bottom_bg = float(profile[-edge_n:].mean())
+        background = np.linspace(top_bg, bottom_bg, len(profile))
+
+        bg_mean = (top_bg + bottom_bg) / 2.0
+        if bg_mean < 127.0:
+            signal = np.maximum(profile - background, 0.0)
+        else:
+            signal = np.maximum(background - profile, 0.0)
+
+        window_size = 5
+        if len(signal) < window_size:
+            window_size = max(1, len(signal) // 2 * 2 - 1)
+
+        if window_size > 1:
+            smoothed = np.convolve(signal, np.ones(window_size)/window_size, mode='same')
+        else:
+            smoothed = signal.copy()
+
+        peaks = []
+        max_sig = smoothed.max()
+        threshold = max_sig * 0.05
+
+        for i in range(1, len(smoothed) - 1):
+            if smoothed[i] > smoothed[i-1] and smoothed[i] > smoothed[i+1]:
+                if smoothed[i] > threshold:
+                    peaks.append(i)
+
+        candidates = []
+        for p in peaks:
+            y_up = p
+            while y_up > 0:
+                if smoothed[y_up - 1] > smoothed[y_up]:
+                    break
+                if smoothed[y_up] <= 1.0:
+                    break
+                y_up -= 1
+
+            y_down = p
+            while y_down < len(smoothed) - 1:
+                if smoothed[y_down + 1] > smoothed[y_down]:
+                    break
+                if smoothed[y_down] <= 1.0:
+                    break
+                y_down += 1
+
+            indices = np.arange(y_up, y_down + 1)
+            weights = signal[y_up:y_down + 1]
+            sum_weights = weights.sum()
+
+            if sum_weights > 0:
+                y_centroid_local = (indices * weights).sum() / sum_weights
+                y_centroid_local = max(float(y_up), min(y_centroid_local, float(y_down)))
+            else:
+                y_centroid_local = float(p)
+
+            y_image = y_start_idx + y_centroid_local
+            band_h = max(4.0, float(y_down - y_up))
+
+            duplicate = False
+            for cand in candidates:
+                if abs(cand['y'] - y_image) < 4.0:
+                    duplicate = True
+                    break
+            if duplicate:
+                continue
+
+            candidates.append({
+                'x': center_x,
+                'y': y_image,
+                'w': width,
+                'h': band_h,
+                'state': 'pending'
+            })
+
+        if not candidates:
+            self.lbl_status.config(text="バンドが検出されませんでした" if get_language() == "ja" else "No bands detected")
+            self.end_auto_detect_mode()
+            return
+
+        self.detected_candidates = candidates
+        self.active_mode = 'auto_detect_approve'
+        self.lbl_status.config(text=T('auto_detect_status_approve'))
+        self.redraw_canvas()
+        self.show_auto_detect_panel()
+
+    def show_auto_detect_panel(self):
+        if getattr(self, '_auto_detect_panel', None):
+            try:
+                self._auto_detect_panel.destroy()
+            except Exception:
+                pass
+            self._auto_detect_panel = None
+
+        panel = tk.Toplevel(self.root)
+        panel.title(T('auto_detect_panel_title'))
+        panel.geometry("300x180")
+        panel.resizable(False, False)
+        panel.transient(self.root)
+
+        x = self.root.winfo_rootx() + (self.root.winfo_width() - 300) // 2
+        y = self.root.winfo_rooty() + (self.root.winfo_height() - 180) // 2
+        panel.geometry(f"+{max(0, x)}+{max(0, y)}")
+
+        self._auto_detect_panel = panel
+
+        btn_frame = ttk.Frame(panel, padding=10)
+        btn_frame.pack(fill=tk.BOTH, expand=True)
+
+        def approve_all():
+            for c in self.detected_candidates:
+                c['state'] = 'accepted'
+            self.redraw_canvas()
+
+        def reject_all():
+            for c in self.detected_candidates:
+                c['state'] = 'rejected'
+            self.redraw_canvas()
+
+        def confirm():
+            self.confirm_auto_detect()
+
+        def cancel():
+            self.end_auto_detect_mode()
+
+        ttk.Button(btn_frame, text=T('auto_detect_btn_approve_all'), command=approve_all).pack(fill=tk.X, pady=3)
+        ttk.Button(btn_frame, text=T('auto_detect_btn_reject_all'), command=reject_all).pack(fill=tk.X, pady=3)
+        ttk.Button(btn_frame, text=T('auto_detect_btn_confirm'), command=confirm).pack(fill=tk.X, pady=3)
+        ttk.Button(btn_frame, text=T('dlg_cancel'), command=cancel).pack(fill=tk.X, pady=3)
+
+        panel.protocol('WM_DELETE_WINDOW', cancel)
+
+    def confirm_auto_detect(self):
+        accepted = [c for c in self.detected_candidates if c['state'] == 'accepted']
+        if not accepted:
+            messagebox.showwarning(T('warn_title'), "承認されたバンドがありません" if get_language() == "ja" else "No accepted bands.")
+            return
+
+        self.push_undo_state()
+
+        denom = self.end_line_y - self.start_line_y
+        if denom == 0:
+            denom = 1.0
+
+        if self._auto_detect_target == 'marker':
+            new_markers = []
+            for c in accepted:
+                rf = (c['y'] - self.start_line_y) / denom
+                new_markers.append({
+                    'id': str(uuid.uuid4()),
+                    'name': '',
+                    'y': c['y'],
+                    'size': 0.0,
+                    'rf': rf
+                })
+
+            all_markers = self.markers + new_markers
+            all_markers.sort(key=lambda m: m['rf'])
+
+            for i, m in enumerate(all_markers):
+                m['name'] = f"Marker-{i+1}"
+
+            self.markers = all_markers
+            self.calculate_calibration_curve()
+            self.update_sample_sizes()
+        else:
+            import re
+            existing_indices = []
+            for s in self.samples:
+                m = re.match(r'^SampleAuto(\d+)', s['name'])
+                if m:
+                    existing_indices.append(int(m.group(1)))
+            next_idx = 1
+            while next_idx in existing_indices:
+                next_idx += 1
+            group_base = f"SampleAuto{next_idx}"
+
+            accepted.sort(key=lambda c: c['y'])
+            for i, c in enumerate(accepted):
+                rf = (c['y'] - self.start_line_y) / denom
+                name = f"{group_base}-{i+1}"
+                color = self.get_sample_color(name)
+
+                size = 0.0
+                if len(self.markers) >= 2 or getattr(self, '_manual_coeff_applied', False):
+                    log_size = self.calibration_a * rf + self.calibration_b
+                    size = 10 ** log_size
+                    if self.mode == "dna":
+                        size = round(size)
+
+                self.samples.append({
+                    'id': str(uuid.uuid4()),
+                    'name': name,
+                    'x': c['x'],
+                    'y': c['y'],
+                    'rf': rf,
+                    'size': size,
+                    'color': color
+                })
+
+        self.update_layer_panel()
+        self.update_result_table()
+        if hasattr(self, '_sync_lane_profile_plot'):
+            self._sync_lane_profile_plot()
+
+        self.end_auto_detect_mode()
+
+    def end_auto_detect_mode(self):
+        self.active_mode = 'none'
+        self.canvas.config(cursor="")
+        self.detected_candidates = []
+        self._auto_detect_target = None
+        self._auto_detect_drag_start = None
+        if getattr(self, '_auto_detect_rect_id', None):
+            try:
+                self.canvas.delete(self._auto_detect_rect_id)
+            except Exception:
+                pass
+            self._auto_detect_rect_id = None
+
+        if getattr(self, '_auto_detect_panel', None):
+            try:
+                self._auto_detect_panel.destroy()
+            except Exception:
+                pass
+            self._auto_detect_panel = None
+
+        self.lbl_status.config(text=T('status_end_mode'))
+        self.redraw_canvas()
 
     # ------------------------------------------------------------------ #
     #  カラー/白黒切替
