@@ -24,10 +24,6 @@ class MainWindowMixin:
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_quit'), command=self.on_app_close)
 
-        self._view_menu = tk.Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label=T("menu_view"), menu=self._view_menu)
-        self._view_menu.add_command(label=T("menu_lane_compare"), command=self.open_lane_comparison_mode)
-
         edit_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label='Edit', menu=edit_menu)
         edit_menu.add_command(label=T('menu_switch_mode'), command=self.switch_mode_via_menu)
@@ -187,7 +183,8 @@ class MainWindowMixin:
 
         # ツールバー
         toolbar_container = ttk.Frame(self.root, padding=5)
-        toolbar_container.pack(fill=tk.X, side=tk.TOP, before=self.main_pane)
+        toolbar_container.pack(fill=tk.X, side=tk.BOTTOM)
+        self._toolbar_container = toolbar_container
 
         tb_row1 = ttk.Frame(toolbar_container)
         tb_row1.pack(fill=tk.X, pady=2)
@@ -308,6 +305,7 @@ class MainWindowMixin:
                                     text=T('status_init'),
                                     font=(UI_FONT_FAMILY, 9, "italic"))
         self.lbl_status.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+        self.root.bind("<Configure>", self._on_main_layout_configure, add="+")
 
     def _init_dnd(self):
         """ウィンドウハンドルが確定した後にDnDを初期化する"""
@@ -834,11 +832,6 @@ class MainWindowMixin:
             self._file_menu.entryconfig(11, label=T('menu_quit'))
         except Exception:
             LOGGER.exception("Unexpected error")
-        try:
-            self.menubar.entryconfig(1, label=T("menu_view"))
-            self._view_menu.entryconfig(0, label=T("menu_lane_compare"))
-        except Exception:
-            LOGGER.exception("Unexpected error")
         # ---- 編集メニュー ----
         try:
             self._edit_menu.entryconfig(0, label=T('menu_switch_mode'))
@@ -1007,6 +1000,40 @@ class MainWindowMixin:
             "Size", text=T('col_size_kda') if self.mode == 'protein' else T('col_size_bp'))
         self.update_layer_panel()
         self.calculate_calibration_curve()
+
+    def _on_main_layout_configure(self, event=None):
+        if event is not None and event.widget is not self.root:
+            return
+        if getattr(self, '_layout_adjust_after_id', None):
+            try:
+                self.root.after_cancel(self._layout_adjust_after_id)
+            except Exception:
+                LOGGER.exception("Failed to cancel layout adjustment")
+        self._layout_adjust_after_id = self.root.after(120, self._adjust_main_pane_layout)
+
+    def _adjust_main_pane_layout(self):
+        self._layout_adjust_after_id = None
+        try:
+            total_w = self.main_pane.winfo_width()
+            total_h = self.main_pane.winfo_height()
+            if total_w <= 300 or total_h <= 200:
+                return
+            aspect = total_w / max(total_h, 1)
+            if aspect >= 1.55:
+                left_ratio, right_ratio = 0.24, 0.24
+            else:
+                left_ratio, right_ratio = 0.28, 0.28
+            left_w = max(220, int(total_w * left_ratio))
+            right_w = max(260, int(total_w * right_ratio))
+            center_min = 360
+            if left_w + right_w + center_min > total_w:
+                overflow = left_w + right_w + center_min - total_w
+                left_w = max(190, left_w - overflow // 2)
+                right_w = max(220, right_w - overflow + overflow // 2)
+            self.main_pane.sashpos(0, left_w)
+            self.main_pane.sashpos(1, max(left_w + center_min, total_w - right_w))
+        except Exception:
+            LOGGER.exception("Failed to adjust main pane layout")
 
     def copy_results_to_clipboard(self):
         """結果テーブルのデータをクリップボードにコピーする"""

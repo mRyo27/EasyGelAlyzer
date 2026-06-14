@@ -151,6 +151,8 @@ class EasyGelAlyzerApp(
             if total_w > 10:
                 self.main_pane.sashpos(0, int(total_w * 0.25))
                 self.main_pane.sashpos(1, int(total_w * 0.75))
+                if hasattr(self, '_adjust_main_pane_layout'):
+                    self._adjust_main_pane_layout()
         except Exception:
             LOGGER.exception("Unexpected error")
         # --- バージョン表示ラベル（ステータスバー） ---

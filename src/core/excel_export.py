@@ -67,6 +67,43 @@ class ExcelExportMixin:
                         float(roi.get('integrated_density', 0.0)),
                         float(roi.get('relative_density', 0.0)),
                     ])
+                profile_start_col = 10
+                max_len = 0
+                for idx, roi in enumerate(self.densitometry_rois):
+                    result = self._calculate_densitometry_profile(roi)
+                    if not result:
+                        continue
+                    corrected = result.get('corrected', [])
+                    max_len = max(max_len, len(corrected))
+                    col_x = profile_start_col + idx * 2
+                    col_y = col_x + 1
+                    ws_den.cell(row=1, column=col_x, value=f"{roi.get('name', '')} X")
+                    ws_den.cell(row=1, column=col_y, value=f"{roi.get('name', '')} Density")
+                    xs = self._normalized_profile_x(len(corrected)) if hasattr(self, '_normalized_profile_x') else [
+                        j / max(len(corrected) - 1, 1) for j in range(len(corrected))]
+                    for row_idx, (xv, yv) in enumerate(zip(xs, corrected), start=2):
+                        ws_den.cell(row=row_idx, column=col_x, value=float(xv))
+                        ws_den.cell(row=row_idx, column=col_y, value=float(yv))
+                if max_len:
+                    dens_chart = ScatterChart()
+                    dens_chart.title = T("lane_profile_title")
+                    dens_chart.x_axis.title = T("lane_profile_x")
+                    dens_chart.y_axis.title = T("lane_profile_y")
+                    dens_chart.x_axis.scaling.min = 0.0
+                    dens_chart.x_axis.scaling.max = 1.0
+                    for idx, roi in enumerate(self.densitometry_rois):
+                        col_x = profile_start_col + idx * 2
+                        col_y = col_x + 1
+                        if ws_den.cell(row=2, column=col_y).value is None:
+                            continue
+                        xvalues = Reference(ws_den, min_col=col_x, min_row=2, max_row=max_len + 1)
+                        yvalues = Reference(ws_den, min_col=col_y, min_row=2, max_row=max_len + 1)
+                        series = Series(yvalues, xvalues, title=roi.get('name', ''))
+                        series.marker.symbol = "none"
+                        dens_chart.series.append(series)
+                    dens_chart.width = 18
+                    dens_chart.height = 10
+                    ws_den.add_chart(dens_chart, "J8")
 
             ws3 = wb.create_sheet(title=T('xl_sheet_graph'))
 

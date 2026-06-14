@@ -31,7 +31,7 @@ class DensitometryMixin:
         self._center_dialog(win, 340, 150)
         ttk.Label(win, text=T("dens_name_prompt"),
                   font=(UI_FONT_FAMILY, 10, "bold")).pack(pady=10)
-        name_var = tk.StringVar(value=candidates[0] if candidates else "Sample1")
+        name_var = tk.StringVar(value=self._default_densitometry_name(candidates))
         if candidates:
             entry = ttk.Combobox(win, textvariable=name_var, values=candidates,
                                  width=26, state="readonly")
@@ -65,6 +65,10 @@ class DensitometryMixin:
 
     def _densitometry_name_candidates(self):
         names = []
+        for m in self.markers:
+            name = m.get('name', '')
+            if name and name not in names:
+                names.append(name)
         for s in self.samples:
             base = self._get_sample_group_name(s.get('name', ''))
             if base and base not in names:
@@ -75,6 +79,15 @@ class DensitometryMixin:
                 if base and base not in names:
                     names.append(base)
         return names
+
+    def _default_densitometry_name(self, candidates):
+        if not candidates:
+            return "Sample1"
+        used = {roi.get('name', '') for roi in getattr(self, 'densitometry_rois', [])}
+        for name in candidates:
+            if name not in used:
+                return name
+        return candidates[0]
 
     def _validate_densitometry_name(self, name, warn=True):
         if not name:
@@ -235,22 +248,31 @@ class DensitometryMixin:
         if getattr(self, '_dens_panel_created', False):
             return
         self._dens_frame = ttk.LabelFrame(self.right_frame, text=T("dens_panel"), padding=5)
-        self._dens_frame.pack(fill=tk.BOTH, expand=False, pady=5)
+        pack_kwargs = {'fill': tk.BOTH, 'expand': False, 'pady': 5}
+        if getattr(self, '_result_table_frame', None) is not None:
+            pack_kwargs['before'] = self._result_table_frame
+        self._dens_frame.pack(**pack_kwargs)
         self._dens_profile_canvas = tk.Canvas(self._dens_frame, height=110, bg="white", highlightthickness=1)
         self._dens_profile_canvas.pack(fill=tk.X, expand=True)
+        tree_wrap = ttk.Frame(self._dens_frame)
+        tree_wrap.pack(fill=tk.X, pady=3)
         self._dens_tree = ttk.Treeview(
-            self._dens_frame,
+            tree_wrap,
             columns=("Name", "Integrated", "Relative"),
             show="headings",
             height=4
         )
+        dens_scroll_y = ttk.Scrollbar(tree_wrap, orient=tk.VERTICAL,
+                                      command=self._dens_tree.yview)
+        self._dens_tree.configure(yscrollcommand=dens_scroll_y.set)
         for col, text, width in (
                 ("Name", T("layer_name"), 90),
                 ("Integrated", T("dens_integrated"), 120),
                 ("Relative", T("dens_relative"), 70)):
             self._dens_tree.heading(col, text=text)
             self._dens_tree.column(col, width=width, anchor="center")
-        self._dens_tree.pack(fill=tk.X, pady=3)
+        self._dens_tree.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        dens_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
         self._dens_tree.bind("<<TreeviewSelect>>", self._on_densitometry_panel_select)
         btns = ttk.Frame(self._dens_frame)
         btns.pack(fill=tk.X)
@@ -369,9 +391,12 @@ class DensitometryMixin:
         return any(roi.get('id') == item_id for roi in getattr(self, 'densitometry_rois', []))
 
     def _get_densitometry_color(self, roi):
+        if any(m.get('name') == roi.get('name') for m in self.markers):
+            return MARKER_LABEL_COLOR
         return self.get_sample_color(roi.get('name', '')) if hasattr(self, 'get_sample_color') else "#00C7BE"
 
     def _find_densitometry_roi_hit(self, cx, cy):
+        self._dens_hit_handle = None
         for roi in reversed(getattr(self, 'densitometry_rois', [])):
             if not self.item_visibility.get(roi.get('id'), True):
                 continue
@@ -381,6 +406,12 @@ class DensitometryMixin:
             left, right = sorted((c0x, c1x))
             top, bottom = sorted((c0y, c1y))
             if left - 6 <= cx <= right + 6 and top <= cy <= bottom:
+                if abs(cx - left) <= 8:
+                    self._dens_hit_handle = 'left'
+                elif abs(cx - right) <= 8:
+                    self._dens_hit_handle = 'right'
+                else:
+                    self._dens_hit_handle = 'move'
                 return roi
         return None
 
@@ -389,6 +420,7 @@ class DensitometryMixin:
         self.drag_target = roi.get('id')
         self._dens_drag_start_ix = self.canvas_to_image_coords(event.x, event.y)[0]
         self._dens_drag_original_roi = list(roi.get('roi', []))
+        self._dens_drag_handle = getattr(self, '_dens_hit_handle', 'move')
         self.lbl_status.config(text=T("dens_status_move"))
 
     def _drag_existing_densitometry_roi(self, event):
@@ -398,10 +430,18 @@ class DensitometryMixin:
         ix = self.canvas_to_image_coords(event.x, event.y)[0]
         dx = float(ix) - float(self._dens_drag_start_ix)
         x0, y0, x1, y1 = self._dens_drag_original_roi
-        width = x1 - x0
         img_w = float(self.original_image.size[0])
-        new_x0 = max(0.0, min(float(x0) + dx, img_w - width))
-        new_roi = [new_x0, y0, new_x0 + width, y1]
+        handle = getattr(self, '_dens_drag_handle', 'move')
+        if handle == 'left':
+            new_x0 = max(0.0, min(float(x0) + dx, float(x1) - 3.0))
+            new_roi = [new_x0, y0, x1, y1]
+        elif handle == 'right':
+            new_x1 = min(img_w, max(float(x1) + dx, float(x0) + 3.0))
+            new_roi = [x0, y0, new_x1, y1]
+        else:
+            width = x1 - x0
+            new_x0 = max(0.0, min(float(x0) + dx, img_w - width))
+            new_roi = [new_x0, y0, new_x0 + width, y1]
         if self._is_densitometry_roi_position_valid(new_roi, exclude_id=roi.get('id')):
             roi['roi'] = new_roi
             self._recalculate_densitometry()
@@ -413,6 +453,7 @@ class DensitometryMixin:
         self.drag_target = None
         self._dens_drag_start_ix = None
         self._dens_drag_original_roi = None
+        self._dens_drag_handle = None
         self.lbl_status.config(text="")
 
     def _draw_densitometry_rois(self):
@@ -507,8 +548,15 @@ class DensitometryMixin:
                 parent=win
             )
             if path:
-                fig.savefig(path, format=fmt, dpi=300, bbox_inches="tight")
-                messagebox.showinfo(T("ok_title"), T("ok_image"), parent=win)
+                try:
+                    canvas.draw()
+                    save_kwargs = {'format': fmt, 'bbox_inches': "tight"}
+                    if fmt != "svg":
+                        save_kwargs['dpi'] = 300
+                    fig.savefig(path, **save_kwargs)
+                    messagebox.showinfo(T("ok_title"), T("ok_image"), parent=win)
+                except Exception as e:
+                    messagebox.showerror(T("err_title"), str(e), parent=win)
 
         ttk.Button(left, text=T("export_png"), command=lambda: export_plot("png")).pack(fill=tk.X, pady=(12, 2))
         ttk.Button(left, text=T("export_svg"), command=lambda: export_plot("svg")).pack(fill=tk.X, pady=2)
@@ -574,10 +622,13 @@ class DensitometryMixin:
             label_h = 28
             lane_w = max(60, min(140, int((cw - pad * 2) / max(len(crops), 1)) - 12))
             max_h = ch - label_h - pad * 2
+            lane_h = max(1, max(crop.height for _, _, crop in crops))
+            max_crop_w = max(crop.width for _, _, crop in crops)
+            common_scale = min(max_h / lane_h, lane_w / max(max_crop_w, 1))
             x = pad
             guide_ys = []
             for roi, name, crop in crops:
-                scale = min(lane_w / crop.width, max_h / crop.height)
+                scale = common_scale
                 size = (max(1, int(crop.width * scale)), max(1, int(crop.height * scale)))
                 thumb = crop.resize(size, Image.Resampling.LANCZOS)
                 tk_img = ImageTk.PhotoImage(thumb)
@@ -626,8 +677,11 @@ class DensitometryMixin:
         font = get_japanese_font(18)
         x = pad
         guide_ys = []
+        lane_h = max(1, max(crop.height for _, _, crop in crops))
+        max_crop_w = max(crop.width for _, _, crop in crops)
+        common_scale = min(max_h / lane_h, lane_w / max(max_crop_w, 1))
         for roi, name, crop in crops:
-            scale = min(lane_w / crop.width, max_h / crop.height)
+            scale = common_scale
             size = (max(1, int(crop.width * scale)), max(1, int(crop.height * scale)))
             thumb = crop.resize(size, Image.Resampling.LANCZOS)
             text_w = draw.textlength(name, font=font)

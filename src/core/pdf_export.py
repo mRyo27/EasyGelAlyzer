@@ -87,9 +87,8 @@ class PDFExportMixin:
             self._pdf_image_page(pdf, page_size, self._render_pdf_annotation_image(options),
                                  T("pdf_page_annotated"))
             fig = Figure(figsize=page_size, dpi=150)
-            ax = fig.add_subplot(111)
+            ax = fig.add_axes([0.12, 0.35, 0.76, 0.38])
             self._draw_pdf_calibration_plot(ax, np)
-            fig.tight_layout()
             pdf.savefig(fig)
 
             self._pdf_table_page(
@@ -118,9 +117,8 @@ class PDFExportMixin:
                     [T('layer_name'), "ROI", T('dens_integrated'), T('dens_relative')]
                 )
                 fig = Figure(figsize=page_size, dpi=150)
-                ax = fig.add_subplot(111)
+                ax = fig.add_axes([0.12, 0.35, 0.62, 0.38])
                 self._draw_pdf_densitometry_profiles(ax)
-                fig.tight_layout()
                 pdf.savefig(fig)
                 lane_img = self._render_lane_comparison_image(show_guides=True)
                 if lane_img is not None:
@@ -223,6 +221,7 @@ class PDFExportMixin:
 
         marker_side = 'left' if layout in (1, 4) else 'right'
         sample_side = 'left' if layout in (1, 3) else 'right'
+        label_items = []
         for m in self.markers:
             if not self.item_export_visibility.get(m['id'], True):
                 continue
@@ -231,7 +230,15 @@ class PDFExportMixin:
             draw.line((tx(0), y, tx(img_w), y), fill=m_color, width=1)
             size = f"{m['size']:.2f}" if self.mode == "protein" else f"{int(m['size'])}"
             label = f"{m['name']} Rf={m['rf']:.2f} ({size} {unit})"
-            self._draw_pdf_side_label(draw, label, font, m_color, tx(0), tx(img_w), y, marker_side, no_margin)
+            label_items.append({
+                'side': marker_side,
+                'label': label,
+                'font': font,
+                'fill': m_color,
+                'source_x': tx(0) if marker_side == 'left' else tx(img_w),
+                'source_y': y,
+                'draw_y': y,
+            })
         for s in self.samples:
             if not self.item_export_visibility.get(s['id'], True):
                 continue
@@ -240,7 +247,25 @@ class PDFExportMixin:
             r = max(4, int(img_h * 0.006))
             draw.ellipse((x - r, y - r, x + r, y + r), fill=s_color, outline="white")
             label = f"{s['name']} Rf={s['rf']:.2f} ({self._format_sample_size(s)})"
-            self._draw_pdf_side_label(draw, label, font, s_color, tx(0), tx(img_w), y, sample_side, no_margin, x)
+            label_items.append({
+                'side': sample_side,
+                'label': label,
+                'font': font,
+                'fill': s_color,
+                'source_x': x,
+                'source_y': y,
+                'draw_y': y,
+            })
+
+        if no_margin:
+            for item in label_items:
+                side = item['side']
+                label_x = tx(4) if side == 'left' else tx(img_w - 4)
+                anchor = "lm" if side == 'left' else "rm"
+                draw.text((label_x, item['source_y'] - 12), item['label'],
+                          fill=item['fill'], font=item['font'], anchor=anchor)
+        else:
+            self._draw_pdf_resolved_side_labels(draw, label_items, tx(0), tx(img_w), font_size)
 
         for lbl in self.lane_labels:
             if not self.item_export_visibility.get(lbl['id'], True) or self.start_line_y is None:
@@ -253,21 +278,25 @@ class PDFExportMixin:
                 tw = draw.textlength(line, font=font)
                 draw.text((x - tw / 2, y + i * (font_size + 3)), line, fill=lbl_color, font=font)
 
-    def _draw_pdf_side_label(self, draw, label, font, fill, image_left, image_right, y, side, no_margin, point_x=None):
-        if no_margin:
-            x = image_left + 4 if side == 'left' else image_right - 4
-            anchor = "lm" if side == 'left' else "rm"
-            draw.text((x, y - 12), label, fill=fill, font=font, anchor=anchor)
-            return
-        if side == 'left':
-            label_x = max(8, image_left - 48)
-            anchor = "rm"
-        else:
-            label_x = image_right + 48
-            anchor = "lm"
-        start_x = point_x if point_x is not None else (image_left if side == 'left' else image_right)
-        draw.line((start_x, y, label_x, y), fill=fill, width=1)
-        draw.text((label_x, y), label, fill=fill, font=font, anchor=anchor)
+    def _draw_pdf_resolved_side_labels(self, draw, items, image_left, image_right, font_size):
+        min_gap = max(font_size + 6, 18)
+        for side in ('left', 'right'):
+            side_items = [item for item in items if item['side'] == side]
+            side_items.sort(key=lambda item: item['draw_y'])
+            for i in range(1, len(side_items)):
+                if side_items[i]['draw_y'] - side_items[i - 1]['draw_y'] < min_gap:
+                    side_items[i]['draw_y'] = side_items[i - 1]['draw_y'] + min_gap
+            for item in side_items:
+                if side == 'left':
+                    label_x = max(8, image_left - 48)
+                    anchor = "rm"
+                else:
+                    label_x = image_right + 48
+                    anchor = "lm"
+                draw.line((item['source_x'], item['source_y'], label_x, item['draw_y']),
+                          fill=item['fill'], width=1)
+                draw.text((label_x, item['draw_y']), item['label'],
+                          fill=item['fill'], font=item['font'], anchor=anchor)
 
     def _append_pdf_memo(self, img, memo):
         font = get_japanese_font(14)
@@ -336,8 +365,11 @@ class PDFExportMixin:
         font = get_japanese_font(18)
         x = pad
         guide_ys = []
+        lane_h = max(1, max(crop.height for _, _, crop in crops))
+        max_crop_w = max(crop.width for _, _, crop in crops)
+        common_scale = min(max_h / lane_h, lane_w / max(max_crop_w, 1))
         for roi, name, crop in crops:
-            scale = min(lane_w / crop.width, max_h / crop.height)
+            scale = common_scale
             size = (max(1, int(crop.width * scale)), max(1, int(crop.height * scale)))
             thumb = crop.resize(size, Image.Resampling.LANCZOS)
             text_w = draw.textlength(name, font=font)
