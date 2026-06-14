@@ -647,7 +647,7 @@ class DensitometryMixin:
                         txt = ax.text(rf, 1.02, label_txt, color='#CC6600', fontsize=8,
                                 horizontalalignment='center', verticalalignment='bottom',
                                 bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'),
-                                transform=ax.get_xaxis_transform(), clip_on=True)
+                                transform=ax.get_xaxis_transform(), clip_on=False)
                         if not exporting:
                             self._profile_lines[m['id']] = line
                             self._profile_texts[m['id']] = (txt, 'marker')
@@ -682,7 +682,7 @@ class DensitometryMixin:
                         txt = ax.text(rf, 1.02, label_txt, color=s_color, fontsize=8,
                                 horizontalalignment='center', verticalalignment='bottom',
                                 bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'),
-                                transform=ax.get_xaxis_transform(), clip_on=True)
+                                transform=ax.get_xaxis_transform(), clip_on=False)
                         if not exporting:
                             self._profile_lines[s['id']] = line
                             self._profile_texts[s['id']] = (txt, 'sample')
@@ -910,10 +910,26 @@ class DensitometryMixin:
             update_scrollbar()
             canvas.draw()
 
+        def on_draw(event):
+            if not getattr(self, '_profile_texts', None):
+                return
+            cur_xmin, cur_xmax = ax.get_xlim()
+            for item_id, (txt, item_type) in list(self._profile_texts.items()):
+                try:
+                    pos = txt.get_position()
+                    rf = pos[0]
+                    if cur_xmin <= rf <= cur_xmax:
+                        txt.set_visible(True)
+                    else:
+                        txt.set_visible(False)
+                except Exception:
+                    pass
+
         fig.canvas.mpl_connect('button_press_event', on_press)
         fig.canvas.mpl_connect('motion_notify_event', on_motion)
         fig.canvas.mpl_connect('button_release_event', on_release)
         fig.canvas.mpl_connect('scroll_event', on_scroll)
+        fig.canvas.mpl_connect('draw_event', on_draw)
 
         # Shiftキーでのズームリセットをウィンドウにバインド
         win.bind("<KeyPress>", lambda e: reset_view() if e.keysym in ('Shift_L', 'Shift_R') else None)
