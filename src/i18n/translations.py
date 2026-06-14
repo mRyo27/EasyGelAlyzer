@@ -1247,6 +1247,10 @@ TRANSLATIONS = {
     "export_svg": {
         "en": "Export SVG",
         "ja": "SVG出力"
+    },
+    "dens_show_lines": {
+        "en": "Show Marker/Sample Lines",
+        "ja": "マーカー・試料線を表示"
     }
 }
 

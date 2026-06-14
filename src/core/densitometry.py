@@ -521,6 +521,10 @@ class DensitometryMixin:
         plot_frame = ttk.Frame(win, padding=6)
         plot_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+        show_lines_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(left, text=T("dens_show_lines"), variable=show_lines_var,
+                        command=lambda: redraw()).pack(anchor=tk.W, pady=6)
+
         vars_by_id = {}
         for roi in self.densitometry_rois:
             var = tk.BooleanVar(value=True)
@@ -543,7 +547,7 @@ class DensitometryMixin:
         def selected_rois():
             return [r for r in self.densitometry_rois if vars_by_id[r['id']].get()]
 
-        def redraw():
+        def redraw(exporting=False):
             ax.clear()
             for roi in selected_rois():
                 corrected = self._calculate_densitometry_profile(roi)
@@ -556,10 +560,133 @@ class DensitometryMixin:
             ax.set_ylabel(T("lane_profile_y"))
             ax.set_xlim(0.0, 1.0)
             ax.grid(True, linestyle=":", alpha=0.5)
+
+            # マーカー・試料ラインの描画（トグルがON、かつエクスポート中でない場合のみ）
+            if show_lines_var.get() and not exporting:
+                y_lim = ax.get_ylim()
+                y_range = y_lim[1] - y_lim[0]
+                
+                # 分子量マーカー
+                for m in self.markers:
+                    if not self.item_visibility.get(m['id'], True):
+                        continue
+                    rf = m.get('rf', 0.0)
+                    ax.axvline(x=rf, color='#FF9F00', linestyle='--', alpha=0.8, linewidth=1.5)
+                    # テキストラベル (上部に配置)
+                    label_y = y_lim[1] - y_range * 0.06
+                    size_val = f"{m['size']:.1f}" if self.mode == "protein" else f"{int(m['size'])}"
+                    unit = "kDa" if self.mode == "protein" else "bp"
+                    label_txt = f"{m.get('name', '')}\n{size_val} {unit}"
+                    ax.text(rf, label_y, label_txt, color='#CC6600', fontsize=8,
+                            horizontalalignment='center', verticalalignment='top',
+                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+
+                # 試料
+                for s in self.samples:
+                    if not self.item_visibility.get(s['id'], True):
+                        continue
+                    rf = s.get('rf', 0.0)
+                    s_color = s.get('color', '#34C759')
+                    ax.axvline(x=rf, color=s_color, linestyle=':', alpha=0.8, linewidth=1.5)
+                    # テキストラベル (下部に配置)
+                    label_y = y_lim[0] + y_range * 0.06
+                    size_val = self._format_sample_size(s)
+                    label_txt = f"{s.get('name', '')}\n{size_val}"
+                    ax.text(rf, label_y, label_txt, color=s_color, fontsize=8,
+                            horizontalalignment='center', verticalalignment='bottom',
+                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+
             if selected_rois():
                 ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
             fig.subplots_adjust(right=0.74)
             canvas.draw()
+
+        # ドラッグ連動処理の定義
+        drag_state = {
+            'item_id': None,
+            'item_type': None,  # 'marker' or 'sample'
+            'dragged': False
+        }
+
+        def on_press(event):
+            if event.inaxes != ax or not show_lines_var.get():
+                return
+            click_x = event.xdata
+            if click_x is None:
+                return
+            
+            closest_item = None
+            min_dist = 0.025  # スナップ範囲 (Rf値の距離)
+
+            # マーカーから探索
+            for m in self.markers:
+                if not self.item_visibility.get(m['id'], True):
+                    continue
+                dist = abs(m.get('rf', 0.0) - click_x)
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_item = {'id': m['id'], 'type': 'marker'}
+            
+            # 試料から探索
+            for s in self.samples:
+                if not self.item_visibility.get(s['id'], True):
+                    continue
+                dist = abs(s.get('rf', 0.0) - click_x)
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_item = {'id': s['id'], 'type': 'sample'}
+            
+            if closest_item:
+                drag_state['item_id'] = closest_item['id']
+                drag_state['item_type'] = closest_item['type']
+                drag_state['dragged'] = False
+                self.push_undo_state()
+
+        def on_motion(event):
+            if event.inaxes != ax or drag_state['item_id'] is None:
+                return
+            new_rf = event.xdata
+            if new_rf is None:
+                return
+            new_rf = max(0.0, min(1.0, new_rf))
+
+            if self.start_line_y is None or self.end_line_y is None:
+                return
+            denom = self.end_line_y - self.start_line_y
+            new_y = self.start_line_y + new_rf * denom
+
+            if drag_state['item_type'] == 'marker':
+                for m in self.markers:
+                    if m['id'] == drag_state['item_id']:
+                        m['rf'] = new_rf
+                        m['y'] = new_y
+                        break
+            elif drag_state['item_type'] == 'sample':
+                for s in self.samples:
+                    if s['id'] == drag_state['item_id']:
+                        s['rf'] = new_rf
+                        s['y'] = new_y
+                        break
+
+            drag_state['dragged'] = True
+            
+            # 各種連動更新
+            self.calculate_calibration_curve()
+            self.update_sample_sizes()
+            self.update_result_table()
+            self.update_layer_panel()
+            self.redraw_canvas()
+            redraw()
+
+        def on_release(event):
+            if drag_state['item_id'] is not None:
+                drag_state['item_id'] = None
+                drag_state['item_type'] = None
+                drag_state['dragged'] = False
+
+        fig.canvas.mpl_connect('button_press_event', on_press)
+        fig.canvas.mpl_connect('motion_notify_event', on_motion)
+        fig.canvas.mpl_connect('button_release_event', on_release)
 
         def export_plot(fmt):
             path = filedialog.asksaveasfilename(
@@ -570,13 +697,18 @@ class DensitometryMixin:
             )
             if path:
                 try:
-                    canvas.draw()
+                    # エクスポート時には縦線を描画しない
+                    redraw(exporting=True)
                     save_kwargs = {'format': fmt, 'bbox_inches': "tight"}
                     if fmt != "svg":
                         save_kwargs['dpi'] = 300
                     fig.savefig(path, **save_kwargs)
+                    
+                    # 描画を通常（縦線あり）に戻す
+                    redraw(exporting=False)
                     messagebox.showinfo(T("ok_title"), T("ok_image"), parent=win)
                 except Exception as e:
+                    redraw(exporting=False)
                     messagebox.showerror(T("err_title"), str(e), parent=win)
 
         ttk.Button(left, text=T("export_png"), command=lambda: export_plot("png")).pack(fill=tk.X, pady=(12, 2))
