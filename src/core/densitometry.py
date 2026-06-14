@@ -469,8 +469,6 @@ class DensitometryMixin:
             self._recalculate_densitometry()
             self._update_densitometry_panel(select_id=roi.get('id'))
             self.redraw_canvas()
-            if hasattr(self, '_lane_profile_redraw') and self._lane_profile_redraw:
-                self._lane_profile_redraw()
 
     def _end_drag_densitometry_roi(self):
         self.active_mode = 'none'
@@ -522,7 +520,10 @@ class DensitometryMixin:
         win.transient(self.root)
         win.protocol("WM_DELETE_WINDOW", lambda: (
             setattr(self, '_lane_profile_window', None),
-            setattr(self, '_lane_profile_redraw', None),
+            setattr(self, '_redraw_lane_profile', None),
+            setattr(self, '_lane_profile_canvas', None),
+            setattr(self, '_profile_lines', {}),
+            setattr(self, '_profile_texts', {}),
             win.destroy()
         ))
 
@@ -546,16 +547,15 @@ class DensitometryMixin:
         from matplotlib.figure import Figure
 
         configure_matplotlib_japanese_font()
-        # 黄金比 横1.618:縦81 (横長)
+        # 黄金比 横1.618:縦1 (横長)
         _fig_h = 5
         _fig_w = round(_fig_h * 1.618, 3)
         fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
-        # expose redraw for external calls
-        self._lane_profile_redraw = redraw
         
         # グラフキャンバスとスクロールバーの配置
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
+        self._lane_profile_canvas = canvas
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, side=tk.TOP)
 
         x_scrollbar = ttk.Scrollbar(plot_frame, orient=tk.HORIZONTAL)
@@ -591,6 +591,10 @@ class DensitometryMixin:
         def redraw(exporting=False):
             # 現在のズーム範囲を退避
             cur_xmin, cur_xmax = ax.get_xlim()
+            
+            if not exporting:
+                self._profile_lines = {}
+                self._profile_texts = {}
             
             ax.clear()
             for roi in selected_rois():
@@ -635,15 +639,18 @@ class DensitometryMixin:
                         if not self.item_visibility.get(m['id'], True):
                             continue
                         rf = m.get('rf', 0.0)
-                        ax.axvline(x=rf, color='#FF9F00', linestyle='--', alpha=0.8, linewidth=1.5)
+                        line = ax.axvline(x=rf, color='#FF9F00', linestyle='--', alpha=0.8, linewidth=1.5)
                         # テキストラベル (上部に配置)
-                        label_y = y_lim[1] - y_range * 0.06
                         size_val = f"{m['size']:.1f}" if self.mode == "protein" else f"{int(m['size'])}"
                         unit = "kDa" if self.mode == "protein" else "bp"
                         label_txt = f"{m.get('name', '')}\n{size_val} {unit}"
-                        ax.text(rf, label_y, label_txt, color='#CC6600', fontsize=8,
-                                horizontalalignment='center', verticalalignment='top',
-                                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+                        txt = ax.text(rf, 1.02, label_txt, color='#CC6600', fontsize=8,
+                                horizontalalignment='center', verticalalignment='bottom',
+                                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'),
+                                transform=ax.get_xaxis_transform(), clip_on=True)
+                        if not exporting:
+                            self._profile_lines[m['id']] = line
+                            self._profile_texts[m['id']] = (txt, 'marker')
 
                 # 試料
                 for s in self.samples:
@@ -668,18 +675,21 @@ class DensitometryMixin:
                     if sample_roi_active:
                         rf = s.get('rf', 0.0)
                         s_color = s.get('color', '#34C759')
-                        ax.axvline(x=rf, color=s_color, linestyle=':', alpha=0.8, linewidth=1.5)
+                        line = ax.axvline(x=rf, color=s_color, linestyle=':', alpha=0.8, linewidth=1.5)
                         # テキストラベル (下部に配置)
-                        label_y = y_lim[0] + y_range * 0.06
                         size_val = self._format_sample_size(s)
                         label_txt = f"{s.get('name', '')}\n{size_val}"
-                        ax.text(rf, label_y, label_txt, color=s_color, fontsize=8,
-                                horizontalalignment='center', verticalalignment='bottom',
-                                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+                        txt = ax.text(rf, -0.02, label_txt, color=s_color, fontsize=8,
+                                horizontalalignment='center', verticalalignment='top',
+                                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'),
+                                transform=ax.get_xaxis_transform(), clip_on=True)
+                        if not exporting:
+                            self._profile_lines[s['id']] = line
+                            self._profile_texts[s['id']] = (txt, 'sample')
 
             if selected_rois():
                 ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
-            fig.subplots_adjust(right=0.74)
+            fig.subplots_adjust(right=0.74, top=0.90, bottom=0.12)
             
             # xlimを復元または初期化
             if hasattr(ax, '_xlim_initialized') and not exporting:
@@ -934,6 +944,64 @@ class DensitometryMixin:
         ttk.Button(left, text=T("export_png"), command=lambda: export_plot("png")).pack(fill=tk.X, pady=(12, 2))
         ttk.Button(left, text=T("export_svg"), command=lambda: export_plot("svg")).pack(fill=tk.X, pady=2)
         redraw()
+        self._redraw_lane_profile = redraw
+
+    def _sync_lane_profile_item(self, item_id):
+        if not getattr(self, '_lane_profile_window', None):
+            return
+        if not getattr(self, '_profile_lines', None):
+            return
+        
+        line = self._profile_lines.get(item_id)
+        text_info = self._profile_texts.get(item_id)
+        if line is None:
+            return
+            
+        rf = None
+        item = None
+        is_marker = False
+        for m in self.markers:
+            if m['id'] == item_id:
+                rf = m.get('rf', 0.0)
+                item = m
+                is_marker = True
+                break
+        if rf is None:
+            for s in self.samples:
+                if s['id'] == item_id:
+                    rf = s.get('rf', 0.0)
+                    item = s
+                    break
+        
+        if rf is None:
+            return
+            
+        line.set_xdata([rf, rf])
+        
+        if text_info:
+            txt, item_type = text_info
+            if is_marker:
+                size_val = f"{item['size']:.1f}" if self.mode == "protein" else f"{int(item['size'])}"
+                unit = "kDa" if self.mode == "protein" else "bp"
+                label_txt = f"{item.get('name', '')}\n{size_val} {unit}"
+            else:
+                size_val = self._format_sample_size(item)
+                label_txt = f"{item.get('name', '')}\n{size_val}"
+            
+            txt.set_text(label_txt)
+            pos = txt.get_position()
+            txt.set_position((rf, pos[1]))
+            
+        if getattr(self, '_lane_profile_canvas', None):
+            self._lane_profile_canvas.draw_idle()
+
+    def _sync_lane_profile_plot(self):
+        if getattr(self, '_redraw_lane_profile', None):
+            try:
+                self._recalculate_densitometry()
+                self._redraw_lane_profile()
+            except Exception as e:
+                LOGGER.exception("Error syncing lane profile plot")
 
     def _normalized_profile_x(self, n_points):
         if n_points <= 1:

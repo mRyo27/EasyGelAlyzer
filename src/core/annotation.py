@@ -250,6 +250,8 @@ class AnnotationMixin:
                     break
             self._update_rf_values_only()
             self._schedule_drag_redraw()
+            if hasattr(self, '_sync_lane_profile_item'):
+                self._sync_lane_profile_item(self.drag_target)
 
         elif self.active_mode == 'drag_sample':
             for s in self.samples:
@@ -259,6 +261,8 @@ class AnnotationMixin:
                     break
             self._update_rf_values_only()
             self._schedule_drag_redraw()
+            if hasattr(self, '_sync_lane_profile_item'):
+                self._sync_lane_profile_item(self.drag_target)
 
         elif self.active_mode == 'drag_lane_label':
             # 縦横自由に移動可能に変更
@@ -307,6 +311,8 @@ class AnnotationMixin:
                 self._update_densitometry_panel()
                 self.update_layer_panel()
             self.redraw_canvas()
+            if hasattr(self, '_sync_lane_profile_plot'):
+                self._sync_lane_profile_plot()
         elif self.active_mode == 'drag_lane_label':
             if getattr(self, '_drag_redraw_after_id', None) is not None:
                 self.root.after_cancel(self._drag_redraw_after_id)
@@ -423,6 +429,8 @@ class AnnotationMixin:
                 self.update_sample_sizes()
                 self.update_layer_panel()
                 self.redraw_canvas()
+                if hasattr(self, '_sync_lane_profile_plot'):
+                    self._sync_lane_profile_plot()
                 
                 self._preset_index += 1
                 if self._preset_index < len(self._active_preset_sizes):
@@ -452,6 +460,8 @@ class AnnotationMixin:
             self.update_sample_sizes()
             self.update_layer_panel()
             self.redraw_canvas()
+            if hasattr(self, '_sync_lane_profile_plot'):
+                self._sync_lane_profile_plot()
 
     def end_measurement_mode(self):
         self.active_mode = 'none'
@@ -782,6 +792,8 @@ class AnnotationMixin:
         self.update_layer_panel()
         self.update_result_table()
         self.redraw_canvas()
+        if hasattr(self, '_sync_lane_profile_plot'):
+            self._sync_lane_profile_plot()
 
     def _get_sample_base_names(self):
         """既存試料のベース名リスト（末尾の-数字を除いたもの）"""
@@ -1007,6 +1019,7 @@ class AnnotationMixin:
             return
         changed_marker = False
         changed_sample = False
+        affected_groups = set()
         for iid in targets:
             m_match = [m for m in self.markers if m['id'] == iid]
             if m_match:
@@ -1015,8 +1028,23 @@ class AnnotationMixin:
                 continue
             s_match = [s for s in self.samples if s['id'] == iid]
             if s_match:
+                group_name = self._get_sample_group_name(s_match[0]['name'])
+                affected_groups.add(group_name)
                 self.samples.remove(s_match[0])
                 changed_sample = True
+
+        if affected_groups:
+            for gname in affected_groups:
+                g_samples = [s for s in self.samples if self._get_sample_group_name(s['name']) == gname]
+                if not g_samples:
+                    continue
+                if len(g_samples) == 1 and g_samples[0]['name'] == gname:
+                    pass
+                else:
+                    for idx, s in enumerate(g_samples):
+                        s['name'] = f"{gname}-{idx+1}"
+            self.update_sample_colors()
+
         if changed_marker:
             self.calculate_calibration_curve()
             self.update_sample_sizes()
@@ -1052,6 +1080,8 @@ class AnnotationMixin:
             self.update_layer_panel()
             self.update_result_table()
             self.redraw_canvas()
+            if hasattr(self, '_sync_lane_profile_plot'):
+                self._sync_lane_profile_plot()
 
     def move_layer(self, direction):
         selected = self.layer_tree.selection()
