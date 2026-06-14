@@ -469,6 +469,8 @@ class DensitometryMixin:
             self._recalculate_densitometry()
             self._update_densitometry_panel(select_id=roi.get('id'))
             self.redraw_canvas()
+            if hasattr(self, '_lane_profile_redraw') and self._lane_profile_redraw:
+                self._lane_profile_redraw()
 
     def _end_drag_densitometry_roi(self):
         self.active_mode = 'none'
@@ -518,7 +520,11 @@ class DensitometryMixin:
         win.title(T("lane_profile_title"))
         self._center_dialog(win, 1000, 560)
         win.transient(self.root)
-        win.protocol("WM_DELETE_WINDOW", lambda: (setattr(self, '_lane_profile_window', None), win.destroy()))
+        win.protocol("WM_DELETE_WINDOW", lambda: (
+            setattr(self, '_lane_profile_window', None),
+            setattr(self, '_lane_profile_redraw', None),
+            win.destroy()
+        ))
 
         left = ttk.Frame(win, padding=6)
         left.pack(side=tk.LEFT, fill=tk.Y)
@@ -545,6 +551,8 @@ class DensitometryMixin:
         _fig_w = round(_fig_h * 1.618, 3)
         fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
+        # expose redraw for external calls
+        self._lane_profile_redraw = redraw
         
         # グラフキャンバスとスクロールバーの配置
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
