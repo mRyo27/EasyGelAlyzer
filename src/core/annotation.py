@@ -95,6 +95,8 @@ class AnnotationMixin:
     def _flush_drag_redraw(self):
         self._drag_redraw_after_id = None
         self.redraw_canvas()
+        if self.active_mode == 'drag_lane_label':
+            self._draw_lane_label_snap_guides()
 
     # ------------------------------------------------------------------ #
     #  画像読み込み
@@ -152,21 +154,13 @@ class AnnotationMixin:
 
         # --- ドラッグ判定（優先度順）---
 
-        # 開始ライン
-        if self.start_line_y is not None:
-            c_start_y = self.image_to_canvas_coords(0, self.start_line_y)[1]
-            if abs(cy - c_start_y) <= 10:
-                self.active_mode = 'drag_start'
-                self.push_undo_state()
-                return
-
-        # 終了ライン
-        if self.end_line_y is not None:
-            c_end_y = self.image_to_canvas_coords(0, self.end_line_y)[1]
-            if abs(cy - c_end_y) <= 10:
-                self.active_mode = 'drag_end'
-                self.push_undo_state()
-                return
+        # 試料（クリック点(x,y)の近傍判定でドラッグ可能）
+        sample_hit = self._find_sample_hit(cx, cy)
+        if sample_hit is not None:
+            self.active_mode = 'drag_sample'
+            self.drag_target = sample_hit['id']
+            self.push_undo_state()
+            return
 
         # マーカー（add_marker モード以外でもドラッグ可能）
         for m in self.markers:
@@ -177,13 +171,20 @@ class AnnotationMixin:
                 self.push_undo_state()
                 return
 
-        # 試料（クリック点(x,y)の近傍判定でドラッグ可能）
-        for s in self.samples:
-            c_sx, c_sy = self.image_to_canvas_coords(s['x'], s['y'])
-            dist = math.hypot(cx - c_sx, cy - c_sy)
-            if dist <= 12:
-                self.active_mode = 'drag_sample'
-                self.drag_target = s['id']
+        # 開始ライン
+        if self.start_line_y is not None:
+            c_start_y = self.image_to_canvas_coords(0, self.start_line_y)[1]
+            if abs(cy - c_start_y) <= 10:
+                self.active_mode = 'drag_start'
+                self._drag_start_prev_y = float(self.start_line_y)
+                self.push_undo_state()
+                return
+
+        # 終了ライン
+        if self.end_line_y is not None:
+            c_end_y = self.image_to_canvas_coords(0, self.end_line_y)[1]
+            if abs(cy - c_end_y) <= 10:
+                self.active_mode = 'drag_end'
                 self.push_undo_state()
                 return
 
@@ -217,7 +218,14 @@ class AnnotationMixin:
         w = self.original_image.size[0]
 
         if self.active_mode == 'drag_start':
-            self.start_line_y = max(0.0, min(float(iy), float(h)))
+            old_start_y = float(getattr(self, '_drag_start_prev_y', self.start_line_y))
+            new_start_y = max(0.0, min(float(iy), float(h)))
+            self.start_line_y = new_start_y
+            self._drag_start_prev_y = new_start_y
+            delta_y = old_start_y - new_start_y
+            if delta_y:
+                for lbl in self.lane_labels:
+                    lbl['drag_offset_y'] = float(lbl.get('drag_offset_y', -30)) + delta_y
             self._update_rf_values_only()
             self._schedule_drag_redraw()
 
@@ -262,8 +270,7 @@ class AnnotationMixin:
                         lbl['drag_offset_y'] = final_y - float(self.start_line_y)
                         self._update_lane_label_snap_guides(lbl)
                     break
-            self.redraw_canvas()
-            self._draw_lane_label_snap_guides()
+            self._schedule_drag_redraw()
 
         elif self.active_mode == 'trim_drag' and self.trim_rect_id:
             self.trim_end_x = cx
@@ -278,9 +285,13 @@ class AnnotationMixin:
                 self._drag_redraw_after_id = None
             self.active_mode = 'none'
             self.drag_target = None
+            self._drag_start_prev_y = None
             self.recalculate_rf_and_sizes()
             self.redraw_canvas()
         elif self.active_mode == 'drag_lane_label':
+            if getattr(self, '_drag_redraw_after_id', None) is not None:
+                self.root.after_cancel(self._drag_redraw_after_id)
+                self._drag_redraw_after_id = None
             self.active_mode = 'none'
             self.drag_target = None
             self._clear_lane_label_snap_guides()
@@ -300,6 +311,21 @@ class AnnotationMixin:
             return
         self.active_mode = 'set_start'
         self.lbl_status.config(text=T('status_set_start'))
+
+    def _find_sample_hit(self, cx, cy):
+        """Return the closest visible sample under the pointer, in canvas pixels."""
+        best_sample = None
+        best_dist = None
+        hit_radius = max(16, int(10 * max(self.zoom_scale, 1.0)))
+        for s in self.samples:
+            if not self.item_visibility.get(s['id'], True):
+                continue
+            c_sx, c_sy = self.image_to_canvas_coords(s['x'], s['y'])
+            dist = math.hypot(cx - c_sx, cy - c_sy)
+            if dist <= hit_radius and (best_dist is None or dist < best_dist):
+                best_sample = s
+                best_dist = dist
+        return best_sample
 
     def set_end_line(self):
         if self.original_image is None:

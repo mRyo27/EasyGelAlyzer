@@ -415,11 +415,11 @@ class MainWindowMixin:
         if self.layer_tree.identify_region(event.x, event.y) == "separator":
             return "break"
 
+        self._update_tree_drag_box(event)
         row = self.layer_tree.identify_row(event.y)
         if not row or not self._tree_drag_anchor:
             return
         if row == getattr(self, '_tree_drag_last_row', None):
-            self._update_tree_drag_box(event)
             return
         self._tree_drag_last_row = row
         # anchor から現在行までの全行を選択
@@ -435,9 +435,6 @@ class MainWindowMixin:
         if target_rows != getattr(self, '_tree_drag_last_selection', ()):
             self.layer_tree.selection_set(target_rows)
             self._tree_drag_last_selection = target_rows
-
-        # ドラッグ選択範囲ボックスの描画
-        self._update_tree_drag_box(event)
 
     def _update_tree_drag_box(self, event):
         if not hasattr(self, '_tree_drag_box_borders') or not self._tree_drag_box_borders:
