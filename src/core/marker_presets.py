@@ -1,5 +1,8 @@
 import os
 import json
+import logging
+
+LOGGER = logging.getLogger("EasyGelAlyzer")
 
 def _get_presets_path():
     home = os.path.expanduser('~')
@@ -15,6 +18,7 @@ def list_presets():
         with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception:
+        LOGGER.exception("Failed to load marker presets from %s", path)
         return []
 
 def get_preset(name):
@@ -26,18 +30,27 @@ def get_preset(name):
 
 def save_user_preset(name, mode, sizes):
     presets = list_presets()
+    valid_sizes = []
+    for size in sizes:
+        try:
+            value = float(size)
+            if value <= 0:
+                raise ValueError
+            valid_sizes.append(value)
+        except (TypeError, ValueError):
+            LOGGER.warning("Ignoring invalid preset size for %s: %r", name, size)
     found = False
     for p in presets:
         if p.get('name') == name:
             p['mode'] = mode
-            p['sizes'] = sizes
+            p['sizes'] = valid_sizes
             found = True
             break
     if not found:
         presets.append({
             'name': name,
             'mode': mode,
-            'sizes': sizes
+            'sizes': valid_sizes
         })
     _write_presets(presets)
 
@@ -62,4 +75,4 @@ def _write_presets(presets):
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(presets, f, ensure_ascii=False, indent=2)
     except Exception:
-        pass
+        LOGGER.exception("Failed to save marker presets to %s", path)

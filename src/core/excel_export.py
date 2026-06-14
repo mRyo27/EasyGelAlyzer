@@ -3,9 +3,28 @@ import csv
 
 
 class ExcelExportMixin:
+    def _validate_marker_sizes_for_export(self):
+        invalid = []
+        for i, m in enumerate(self.markers):
+            try:
+                size = float(m.get('size'))
+                if not math.isfinite(size) or size <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                invalid.append(m.get('name', f"Marker-{i + 1}"))
+        if invalid:
+            messagebox.showwarning(
+                T("warn_title"),
+                "Marker sizes must be positive numbers: " + ", ".join(invalid)
+            )
+            return False
+        return True
+
     def export_to_excel(self):
         if not self.markers:
             messagebox.showwarning(T("warn_title"), T("warn_no_markers"))
+            return
+        if not self._validate_marker_sizes_for_export():
             return
         path = filedialog.asksaveasfilename(
             title=T("dlg_save_excel"),
@@ -135,6 +154,8 @@ class ExcelExportMixin:
         """Export marker and sample data to CSV file."""
         if not self.markers:
             messagebox.showwarning(T("warn_title"), T("warn_no_markers"))
+            return
+        if not self._validate_marker_sizes_for_export():
             return
         path = filedialog.asksaveasfilename(
             title=T("dlg_save_csv"),

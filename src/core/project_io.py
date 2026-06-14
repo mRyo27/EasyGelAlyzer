@@ -241,7 +241,7 @@ class ProjectIOMixin:
             try:
                 self.rotation_slider.state(['!disabled'])
             except Exception:
-                pass
+                LOGGER.exception("Unexpected error")
             self.entry_angle.config(state=tk.NORMAL)
             self.btn_rotate_confirm.config(state=tk.NORMAL)
             self.btn_trim.config(state=tk.NORMAL)

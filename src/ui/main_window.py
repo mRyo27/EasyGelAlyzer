@@ -115,7 +115,7 @@ class MainWindowMixin:
         self.memo_frame = ttk.LabelFrame(self.left_frame, text=T('lbl_memo'), padding=3)
         self.memo_frame.pack(fill=tk.BOTH, expand=False, pady=4)
         
-        self.memo_text = tk.Text(self.memo_frame, height=4, wrap=tk.WORD, font=("Helvetica", 9))
+        self.memo_text = tk.Text(self.memo_frame, height=4, wrap=tk.WORD, font=(UI_FONT_FAMILY, 9))
         self.memo_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         memo_scroll = ttk.Scrollbar(self.memo_frame, orient=tk.VERTICAL, command=self.memo_text.yview)
@@ -160,7 +160,7 @@ class MainWindowMixin:
         self.btn_apply_coeff.grid(row=0, column=4, padx=5)
         self._update_manual_coeff_ui()
         self.lbl_r2 = ttk.Label(self._coeff_frame, text="R² = 0.0000",
-                                font=("Helvetica", 10, "bold"))
+                                font=(UI_FONT_FAMILY, 10, "bold"))
         self.lbl_r2.pack(anchor=tk.W, pady=2)
 
         self._result_table_frame = ttk.LabelFrame(self.right_frame, text=T('result_table'), padding=5)
@@ -224,15 +224,15 @@ class MainWindowMixin:
         self._analysis_frame = ttk.LabelFrame(tb_row3, text=T('tb_measure'), padding=2)
         self._analysis_frame.pack(side=tk.LEFT, padx=4)
         self.btn_start_line = tk.Button(self._analysis_frame, text=T('btn_start_line'),
-                        fg="#007AFF", font=("Helvetica", 11, "bold"), width=14,
+                        fg="#007AFF", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
                         command=self.set_start_line)
         self.btn_start_line.pack(side=tk.LEFT, padx=2)
         self.btn_end_line = tk.Button(self._analysis_frame, text=T('btn_end_line'),
-                          fg="#FF3B30", font=("Helvetica", 11, "bold"), width=14,
+                          fg="#FF3B30", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
                           command=self.set_end_line)
         self.btn_end_line.pack(side=tk.LEFT, padx=2)
         self.btn_add_marker = tk.Button(self._analysis_frame, text=T('btn_add_marker'),
-                        fg="#B044FF", font=("Helvetica", 11, "bold"), width=14,
+                        fg="#B044FF", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
                         command=self.start_marker_measurement)
         self.btn_add_marker.pack(side=tk.LEFT, padx=2)
 
@@ -258,11 +258,11 @@ class MainWindowMixin:
         self._update_preset_controls_state()
 
         self.btn_add_sample = tk.Button(self._analysis_frame, text=T('btn_add_sample'),
-                        fg="#34C759", font=("Helvetica", 11, "bold"), width=14,
+                        fg="#34C759", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
                         command=self.start_sample_measurement)
         self.btn_add_sample.pack(side=tk.LEFT, padx=2)
         self.btn_add_lane = tk.Button(self._analysis_frame, text=T('btn_add_lane'),
-                          fg="#FF9500", font=("Helvetica", 11, "bold"), width=14,
+                          fg="#FF9500", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
                           command=self.add_lane_label)
         self.btn_add_lane.pack(side=tk.LEFT, padx=2)
         self.btn_end_mode = ttk.Button(self._analysis_frame, text=T('btn_end_mode'),
@@ -288,7 +288,7 @@ class MainWindowMixin:
 
         self.lbl_status = ttk.Label(tb_row3,
                                     text=T('status_init'),
-                                    font=("Helvetica", 9, "italic"))
+                                    font=(UI_FONT_FAMILY, 9, "italic"))
         self.lbl_status.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
 
     def _init_dnd(self):
@@ -301,11 +301,13 @@ class MainWindowMixin:
                 self.root.dnd_bind('<<Drop>>', self._on_drop)
                 self._dnd_available = True
             except Exception:
+                LOGGER.exception("Failed to initialize tkinterdnd2 drag and drop")
                 self._dnd_available = False
         elif sys.platform == 'win32':
             try:
                 self._dnd_available = self._register_native_windows_dnd()
             except Exception:
+                LOGGER.exception("Failed to initialize native Windows drag and drop")
                 self._dnd_available = False
         # ステータスバーを更新
         if not self._dnd_available:
@@ -493,7 +495,7 @@ class MainWindowMixin:
                 self._selected_label_font_slider.state(['disabled'])
                 self._selected_label_font_label.config(text=T('lbl_font_size_prefix') + "-")
             except Exception:
-                pass
+                LOGGER.exception("Unexpected error")
             self._current_label_selections = []
             return
 
@@ -513,13 +515,13 @@ class MainWindowMixin:
                 self._selected_label_font_slider.set(first_fs)
                 self._selected_label_font_label.config(text=T('lbl_font_size_prefix') + str(first_fs))
             except Exception:
-                pass
+                LOGGER.exception("Unexpected error")
         else:
             try:
                 self._selected_label_font_slider.state(['disabled'])
                 self._selected_label_font_label.config(text=T('lbl_font_size_prefix') + "-")
             except Exception:
-                pass
+                LOGGER.exception("Unexpected error")
             self._current_label_selections = []
 
     def _on_escape(self, event):
@@ -540,7 +542,7 @@ class MainWindowMixin:
                     return   # 左パネル内 → 選択解除しない
                 w = w.master
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         # それ以外（キャンバス・右パネル等）をクリックしたら選択解除
         self.layer_tree.selection_remove(self.layer_tree.selection())
 
@@ -798,8 +800,7 @@ class MainWindowMixin:
             # index 9 = separator
             self._file_menu.entryconfig(10, label=T('menu_quit'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- 編集メニュー ----
         try:
             self._edit_menu.entryconfig(0, label=T('menu_switch_mode'))
@@ -811,19 +812,17 @@ class MainWindowMixin:
             lang_label = T('menu_lang_en') if get_language() == 'ja' else T('menu_lang_ja')
             self._edit_menu.entryconfig(6, label=lang_label)
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ヘルプメニュー ----
         try:
             self._help_menu.entryconfig(0, label=T('menu_how'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- 左パネル ----
         try:
             self.left_frame.config(text=T('layer_panel'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.layer_tree.heading("#0", text=T('layer_name'))
         self.layer_tree.heading("Rf", text=T('layer_rf'))
         self.layer_tree.heading("Size", text=T('layer_size'))
@@ -833,35 +832,34 @@ class MainWindowMixin:
             self.layer_tree.item(self.label_node, text=T('label_node'))
             self.layer_tree.item(self.line_node, text=T('line_node'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.btn_delete.config(text=T('btn_delete'))
         self.btn_toggle_marker.config(
             text=T('btn_show_marker') if not self.marker_visible else T('btn_toggle_marker'))
         try:
             self.memo_frame.config(text=T('lbl_memo'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- 右パネル ----
         try:
             self.right_frame.config(text=T('analysis_panel'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         try:
             self._result_table_frame.config(text=T('result_table'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.result_table.heading("Name", text=T('xl_sample_name'))
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')
         self.result_table.heading("Size", text=size_heading)
         try:
             self.btn_copy_clipboard.config(text=T('btn_clipboard_copy'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         try:
             self._coeff_frame.config(text=T('coeff_frame'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.btn_apply_coeff.config(text=T('btn_apply'))
 
         # R2ラベルの言語更新
@@ -883,19 +881,18 @@ class MainWindowMixin:
             self.btn_undo.config(text=T('tb_undo'))
             self.btn_redo.config(text=T('tb_redo'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         # ---- ツールバー行2 ----
         try:
             self.lbl_rotate.config(text=T('tb_rotate_label'))
             self.btn_rotate_confirm.config(text=T('tb_rotate_confirm'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ツールバー解析グループ ----
         try:
             self._analysis_frame.config(text=T('tb_measure'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.btn_start_line.config(text=T('btn_start_line'))
         self.btn_end_line.config(text=T('btn_end_line'))
         self.btn_add_marker.config(text=T('btn_add_marker'))
@@ -907,13 +904,12 @@ class MainWindowMixin:
             self.radio_preset.config(text=T('lbl_preset_mode'))
             self.btn_manage_presets.config(text=T('btn_manage_presets'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ツールバー出力グループ ----
         try:
             self._output_frame.config(text=T('tb_output'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.btn_color_bw_toggle.config(
             text=T('btn_bw') if self.grayscale else T('btn_color'))
         try:
@@ -921,8 +917,7 @@ class MainWindowMixin:
             self.btn_csv.config(text=T('btn_csv'))
             self.btn_image.config(text=T('btn_image'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ステータス ----
         self.lbl_status.config(text=T('status_init'))
 
@@ -941,8 +936,7 @@ class MainWindowMixin:
             elif getattr(self, '_plot_placeholder', None) is not None:
                 self._plot_placeholder.config(text=T('plot_add_markers'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
     def switch_mode_via_menu(self):
         if not messagebox.askyesno(T("confirm_mode_title"), T("confirm_mode_body")):
             return
@@ -1029,7 +1023,7 @@ class MainWindowMixin:
         self.guide_overlay.place(relx=0.5, y=10, anchor="n", width=420, height=70)
         
         lbl = tk.Label(self.guide_overlay, text=text, bg="#FFF3CD", fg="#856404",
-                       font=("Helvetica", 11, "bold"))
+                       font=(UI_FONT_FAMILY, 11, "bold"))
         lbl.pack(pady=(5, 2))
         
         btn_frame = tk.Frame(self.guide_overlay, bg="#FFF3CD")

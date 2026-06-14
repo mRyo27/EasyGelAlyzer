@@ -2,10 +2,11 @@ from common import *
 
 
 class AnnotationMixin:
-    def push_undo_state(self):
+    def push_undo_state(self, clone_image=False):
         if self.original_image is None:
             return
-        state = (self.original_image.copy(), self.start_line_y, self.end_line_y,
+        image_state = self.original_image.copy() if clone_image else self.original_image
+        state = (image_state, self.start_line_y, self.end_line_y,
                  self.brightness_val, self.contrast_val, getattr(self, 'bg_corr_radius', None))
         self.undo_stack.append(state)
         if len(self.undo_stack) > 20:
@@ -17,7 +18,7 @@ class AnnotationMixin:
             self.lbl_status.config(text=T('status_no_undo'))
             return
 
-        current = (self.original_image.copy() if self.original_image else None,
+        current = (self.original_image if self.original_image else None,
                    self.start_line_y, self.end_line_y,
                    self.brightness_val, self.contrast_val, getattr(self, 'bg_corr_radius', None))
         self.redo_stack.append(current)
@@ -46,7 +47,7 @@ class AnnotationMixin:
         if not self.redo_stack:
             self.lbl_status.config(text=T('status_no_redo'))
             return
-        current = (self.original_image.copy() if self.original_image else None,
+        current = (self.original_image if self.original_image else None,
                    self.start_line_y, self.end_line_y,
                    self.brightness_val, self.contrast_val, getattr(self, 'bg_corr_radius', None))
         self.undo_stack.append(current)
@@ -327,6 +328,19 @@ class AnnotationMixin:
         if getattr(self, 'preset_mode_var', None) and self.preset_mode_var.get() == "preset" and hasattr(self, '_preset_index'):
             if self._preset_index < len(self._active_preset_sizes):
                 val = self._active_preset_sizes[self._preset_index]
+                try:
+                    val = float(val)
+                    if val <= 0:
+                        raise ValueError
+                except (TypeError, ValueError):
+                    LOGGER.warning("Skipping invalid preset marker size: %r", val)
+                    messagebox.showwarning(T("warn_input"), T('dlg_marker_input_err').format(unit="kDa" if self.mode == "protein" else "bp"))
+                    self._preset_index += 1
+                    if self._preset_index < len(self._active_preset_sizes):
+                        self._update_preset_guide()
+                    else:
+                        self.end_measurement_mode()
+                    return
                 name = f"Marker-{val}"
                 m_id = str(uuid.uuid4())
                 self.markers.append({
@@ -453,7 +467,7 @@ class AnnotationMixin:
         dialog.geometry(f"+{x}+{y}")
 
         ttk.Label(dialog, text=T('dlg_label_type_prompt'),
-                  font=("Helvetica", 10, "bold")).pack(pady=12)
+                  font=(UI_FONT_FAMILY, 10, "bold")).pack(pady=12)
         btn_frame = ttk.Frame(dialog)
         btn_frame.pack(pady=8)
         selected = [None]
@@ -554,7 +568,7 @@ class AnnotationMixin:
         dialog.geometry(f"+{x}+{y}")
 
         ttk.Label(dialog, text=T('dlg_sample_lane_msg'),
-                  font=("Helvetica", 10, "bold")).pack(pady=8)
+                  font=(UI_FONT_FAMILY, 10, "bold")).pack(pady=8)
 
         frame = ttk.Frame(dialog)
         frame.pack(fill=tk.X, padx=15)
@@ -570,7 +584,7 @@ class AnnotationMixin:
         entry.grid(row=1, column=1, padx=3, pady=4)
 
         ttk.Label(frame, text=T('dlg_sample_lane_hint'),
-                  font=("Helvetica", 8)).grid(row=2, column=0, columnspan=2, sticky="w", padx=3)
+                  font=(UI_FONT_FAMILY, 8)).grid(row=2, column=0, columnspan=2, sticky="w", padx=3)
 
         def on_combo_select(event=None):
             sel = combo.get()
@@ -802,6 +816,9 @@ class AnnotationMixin:
             for s in self.samples:
                 log_size = self.calibration_a * s['rf'] + self.calibration_b
                 size = 10 ** log_size
+                if not math.isfinite(size) or size <= 0:
+                    s['size'] = 0.0
+                    continue
                 if self.mode == "dna":
                     size = round(size)
                 s['size'] = size
@@ -1212,7 +1229,7 @@ class AnnotationMixin:
             self._selected_label_font_label.config(text=T('lbl_font_size_prefix') + str(fs))
             self.redraw_canvas()
         except Exception:
-            pass
+            LOGGER.exception("Failed to update selected label font size")
 
     def _draw_lane_labels(self):
         """泳動ラインラベルをcanvasに描画する"""
@@ -1246,7 +1263,7 @@ class AnnotationMixin:
             self.canvas.create_text(
                 cx, label_cy, text=display_name,
                 fill=color, anchor="n",
-                font=("Helvetica", fs_scaled, "bold"),
+                font=(UI_FONT_FAMILY, fs_scaled, "bold"),
                 justify=tk.CENTER,
                 tags=(tag,)
             )
@@ -1272,7 +1289,7 @@ class AnnotationMixin:
                 0, 0,
                 text=self._lane_label_display_text(lbl),
                 anchor="n",
-                font=("Helvetica", fs_scaled, "bold"),
+                font=(UI_FONT_FAMILY, fs_scaled, "bold"),
                 justify=tk.CENTER
             )
             bbox = self.canvas.bbox(item)
@@ -1285,13 +1302,13 @@ class AnnotationMixin:
                     'center_offset': ((top + bottom) / 2) / z,
                 }
         except Exception:
-            pass
+            LOGGER.exception("Failed to measure lane label bounds")
         finally:
             if item is not None:
                 try:
                     self.canvas.delete(item)
                 except Exception:
-                    pass
+                    LOGGER.exception("Failed to delete temporary lane label item")
         line_count = len(self._lane_label_display_text(lbl).splitlines())
         return {
             'width': 0,
@@ -1383,7 +1400,7 @@ class AnnotationMixin:
         try:
             self.canvas.delete("lane_label_snap_guide")
         except Exception:
-            pass
+            LOGGER.exception("Failed to clear lane label snap guides")
 
     # ------------------------------------------------------------------ #
     #  カラー/白黒切替

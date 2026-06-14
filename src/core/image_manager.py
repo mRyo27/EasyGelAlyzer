@@ -196,14 +196,14 @@ class ImageManagerMixin:
                                  T('err_load') + T('warn_no_image'))
             return
         try:
-            with open(path, 'rb') as f:
-                image_bytes = f.read()
-            self.source_image = Image.open(io.BytesIO(image_bytes))
-            self.source_image.load()
-            if self.source_image.mode != 'RGB':
-                self.source_image = self.source_image.convert('RGB')
-            self.original_image = self.source_image.copy()
+            with Image.open(path) as img:
+                img.load()
+                loaded = img.convert('RGB') if img.mode != 'RGB' else img.copy()
+            self.source_image = loaded
+            self.original_image = loaded
             self.processed_image = None
+            self._canvas_image_cache_key = None
+            self._canvas_image_cache = None
             self.image_preset_mode = 'none'
             self.start_line_y = None
             self.end_line_y = None
@@ -224,7 +224,7 @@ class ImageManagerMixin:
             try:
                 self.rotation_slider.state(['!disabled'])
             except Exception:
-                pass
+                LOGGER.exception("Failed to enable rotation slider")
             self.entry_angle.config(state='normal')
             self.push_undo_state()
             self.lbl_status.config(text=T('status_loaded'))
@@ -256,7 +256,7 @@ class ImageManagerMixin:
             files = self.root.tk.splitlist(event.data)
             self._handle_dropped_files(files)
         except Exception:
-            pass
+            LOGGER.exception("Failed to handle dropped files")
 
     def _on_native_drop(self, files):
         self._handle_dropped_files(files)
@@ -315,6 +315,7 @@ class ImageManagerMixin:
         try:
             self._native_dnd_original_wndproc = user32.SetWindowLongPtrW(hwnd, GWL_WNDPROC, self._native_dnd_proc)
         except Exception:
+            LOGGER.debug("SetWindowLongPtrW failed; falling back to SetWindowLongW", exc_info=True)
             self._native_dnd_original_wndproc = user32.SetWindowLongW(hwnd, GWL_WNDPROC, self._native_dnd_proc)
 
         return True
@@ -336,12 +337,13 @@ class ImageManagerMixin:
         self.entry_angle.insert(0, f"{angle:.1f}")
         self.processed_image = self.original_image.rotate(
             angle, expand=True, resample=Image.Resampling.BICUBIC)
+        self._canvas_image_cache_key = None
         self.rotation_confirmed = False
         self.btn_trim.config(state=tk.DISABLED)
         try:
             self.btn_rotate_confirm.config(state=tk.NORMAL)
         except Exception:
-            pass
+            LOGGER.exception("Failed to enable rotation confirm button")
         self.redraw_canvas()
 
     def _set_rotation_sliding(self, state: bool):
@@ -365,11 +367,11 @@ class ImageManagerMixin:
         try:
             self.rotation_slider.state(['disabled'])
         except Exception:
-            pass
+            LOGGER.exception("Failed to disable rotation slider")
         try:
             self.entry_angle.config(state='disabled')
         except Exception:
-            pass
+            LOGGER.exception("Failed to disable rotation angle entry")
         # reset preview
         self.suppress_rotation_preview = True
         self.rotation_slider.set(0)
@@ -388,15 +390,15 @@ class ImageManagerMixin:
             else:
                 self.rotation_slider.state(['disabled'])
         except Exception:
-            pass
+            LOGGER.exception("Failed to update rotation slider state")
         try:
             self.entry_angle.config(state=entry_state)
         except Exception:
-            pass
+            LOGGER.exception("Failed to update rotation angle entry state")
         try:
             self.btn_rotate_confirm.config(state=confirm_state)
         except Exception:
-            pass
+            LOGGER.exception("Failed to update rotation confirm button state")
 
     def on_angle_entry_enter(self, event):
         if self.original_image is None:
@@ -422,10 +424,11 @@ class ImageManagerMixin:
             msg = T('warn_rotate_blocked')
             messagebox.showwarning(T('warn_title'), msg)
             return
-        self.push_undo_state()
+        self.push_undo_state(clone_image=True)
         self.original_image = self.original_image.rotate(
             self.rotation_angle, expand=True, resample=Image.Resampling.BICUBIC)
         self.processed_image = None
+        self._canvas_image_cache_key = None
         self.rotation_confirmed = True
         self.start_line_y = None
         self.end_line_y = None
@@ -473,9 +476,10 @@ class ImageManagerMixin:
             messagebox.showwarning(T('warn_title'), T('warn_trim_small'))
             self.cancel_trimming()
             return
-        self.push_undo_state()
+        self.push_undo_state(clone_image=True)
         self.original_image = self.original_image.crop(
              (int(left), int(top), int(right), int(bottom)))
+        self._canvas_image_cache_key = None
         dy = int(top)
         dx = int(left)
         new_h = int(bottom - top)
@@ -549,7 +553,7 @@ class ImageManagerMixin:
             c_factor = (self.contrast_val + 100) / 100
             enhanced = ImageEnhance.Brightness(base_img).enhance(b_factor)
             self.processed_image = ImageEnhance.Contrast(enhanced).enhance(c_factor)
-            
+        self._canvas_image_cache_key = None
         self.redraw_canvas()
 
     def redraw_canvas(self):
@@ -565,8 +569,13 @@ class ImageManagerMixin:
         w, h = img.size
         nw = max(1, int(w * self.zoom_scale))
         nh = max(1, int(h * self.zoom_scale))
-        resized = img.resize((nw, nh), Image.Resampling.LANCZOS)
-        self.tk_image = ImageTk.PhotoImage(resized)
+        cache_key = (id(base), self.grayscale, nw, nh, getattr(self, '_rotation_sliding', False))
+        if getattr(self, '_canvas_image_cache_key', None) != cache_key:
+            resample = Image.Resampling.BILINEAR if getattr(self, '_rotation_sliding', False) else Image.Resampling.LANCZOS
+            resized = img.resize((nw, nh), resample)
+            self._canvas_image_cache = ImageTk.PhotoImage(resized)
+            self._canvas_image_cache_key = cache_key
+        self.tk_image = self._canvas_image_cache
         self.canvas.create_image(self.pan_x, self.pan_y, anchor="nw", image=self.tk_image)
         image_left = self.pan_x
         image_right = self.pan_x + w * self.zoom_scale
@@ -590,7 +599,7 @@ class ImageManagerMixin:
             self.canvas.create_text(image_right + 8, c_start_y + 12,
                                     text=T("out_start"),
                                     fill=sl_color, anchor="w",
-                                    font=("Helvetica", _lbl_fs, "bold"))
+                                    font=(UI_FONT_FAMILY, _lbl_fs, "bold"))
 
         # 終了ライン
         if self.end_line_y is not None and self.item_visibility.get(self.end_line_id, True):
@@ -601,7 +610,7 @@ class ImageManagerMixin:
             _lbl_fs = 10
             self.canvas.create_text(image_left - 8, c_end_y - 12, text=T("out_end"),
                                     fill=el_color, anchor="e",
-                                    font=("Helvetica", _lbl_fs, "bold"))
+                                    font=(UI_FONT_FAMILY, _lbl_fs, "bold"))
 
         # マーカー（ライン）
         unit = "kDa" if self.mode == "protein" else "bp"
@@ -618,7 +627,7 @@ class ImageManagerMixin:
             _mk_fs = 8
             self.canvas.create_text(image_left - 8, cy - 8,
                                     text=lbl, fill=mk_color, anchor="e",
-                                    font=("Helvetica", _mk_fs))
+                                    font=(UI_FONT_FAMILY, _mk_fs))
 
         # 試料（点として描画）
         unit = "kDa" if self.mode == "protein" else "bp"
@@ -636,7 +645,7 @@ class ImageManagerMixin:
             _sm_fs = max(6, int(9 * self.zoom_scale))
             self.canvas.create_text(c_sx + 10, c_sy - 8, text=lbl,
                                     fill=s['color'], anchor="w",
-                                    font=("Helvetica", _sm_fs, "bold"))
+                                    font=(UI_FONT_FAMILY, _sm_fs, "bold"))
 
         # 泳動ラインラベル描画
         self._draw_lane_labels()

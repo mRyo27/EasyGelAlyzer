@@ -44,7 +44,7 @@ class EasyGelAlyzerApp(
                         self.root.iconphoto(True, _icon_img)
                         self._icon_img = _icon_img  # GC防止
                 except Exception:
-                    pass
+                    LOGGER.exception("Unexpected error")
                 break
 
         self.mode = None
@@ -141,8 +141,7 @@ class EasyGelAlyzerApp(
                 self.main_pane.sashpos(0, int(total_w * 0.25))
                 self.main_pane.sashpos(1, int(total_w * 0.75))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # --- バージョン表示ラベル（ステータスバー） ---
         version_label = ttk.Label(self.root, text=f"EasyGelAlyzer v{VERSION}", anchor="e")
         version_label.pack(fill=tk.X, side=tk.BOTTOM)
