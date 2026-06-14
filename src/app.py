@@ -117,6 +117,10 @@ class EasyGelAlyzerApp(
         # 中ボタンダブルクリック判定用
         self._last_middle_click_time = 0.0
         self._tree_drag_anchor = None
+        self._tree_rows_cache = None
+        self._tree_drag_last_row = None
+        self._tree_drag_last_selection = ()
+        self._drag_redraw_after_id = None
         self._native_dnd_proc = None
         self._native_dnd_original_wndproc = None
 

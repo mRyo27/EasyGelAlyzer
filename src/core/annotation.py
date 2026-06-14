@@ -65,11 +65,7 @@ class AnnotationMixin:
     def recalculate_rf_and_sizes(self):
         if (self.start_line_y is not None and self.end_line_y is not None
                 and self.end_line_y != self.start_line_y):
-            denom = self.end_line_y - self.start_line_y
-            for m in self.markers:
-                m['rf'] = (m['y'] - self.start_line_y) / denom
-            for s in self.samples:
-                s['rf'] = (s['y'] - self.start_line_y) / denom
+            self._update_rf_values_only()
             self.calculate_calibration_curve()
             self.update_sample_sizes()
         else:
@@ -80,6 +76,25 @@ class AnnotationMixin:
                 s['size'] = 0.0
         self.update_layer_panel()
         self.update_result_table()
+
+    def _update_rf_values_only(self):
+        if (self.start_line_y is None or self.end_line_y is None
+                or self.end_line_y == self.start_line_y):
+            return
+        denom = self.end_line_y - self.start_line_y
+        for m in self.markers:
+            m['rf'] = (m['y'] - self.start_line_y) / denom
+        for s in self.samples:
+            s['rf'] = (s['y'] - self.start_line_y) / denom
+
+    def _schedule_drag_redraw(self):
+        if getattr(self, '_drag_redraw_after_id', None) is not None:
+            return
+        self._drag_redraw_after_id = self.root.after(16, self._flush_drag_redraw)
+
+    def _flush_drag_redraw(self):
+        self._drag_redraw_after_id = None
+        self.redraw_canvas()
 
     # ------------------------------------------------------------------ #
     #  画像読み込み
@@ -203,21 +218,21 @@ class AnnotationMixin:
 
         if self.active_mode == 'drag_start':
             self.start_line_y = max(0.0, min(float(iy), float(h)))
-            self.recalculate_rf_and_sizes()
-            self.redraw_canvas()
+            self._update_rf_values_only()
+            self._schedule_drag_redraw()
 
         elif self.active_mode == 'drag_end':
             self.end_line_y = max(0.0, min(float(iy), float(h)))
-            self.recalculate_rf_and_sizes()
-            self.redraw_canvas()
+            self._update_rf_values_only()
+            self._schedule_drag_redraw()
 
         elif self.active_mode == 'drag_marker':
             for m in self.markers:
                 if m['id'] == self.drag_target:
                     m['y'] = max(0.0, min(float(iy), float(h)))
                     break
-            self.recalculate_rf_and_sizes()
-            self.redraw_canvas()
+            self._update_rf_values_only()
+            self._schedule_drag_redraw()
 
         elif self.active_mode == 'drag_sample':
             for s in self.samples:
@@ -225,8 +240,8 @@ class AnnotationMixin:
                     s['x'] = max(0.0, min(float(ix), float(w)))
                     s['y'] = max(0.0, min(float(iy), float(h)))
                     break
-            self.recalculate_rf_and_sizes()
-            self.redraw_canvas()
+            self._update_rf_values_only()
+            self._schedule_drag_redraw()
 
         elif self.active_mode == 'drag_lane_label':
             # 縦横自由に移動可能に変更
@@ -258,6 +273,9 @@ class AnnotationMixin:
 
     def on_left_release(self, event):
         if self.active_mode in ['drag_start', 'drag_end', 'drag_marker', 'drag_sample']:
+            if getattr(self, '_drag_redraw_after_id', None) is not None:
+                self.root.after_cancel(self._drag_redraw_after_id)
+                self._drag_redraw_after_id = None
             self.active_mode = 'none'
             self.drag_target = None
             self.recalculate_rf_and_sizes()

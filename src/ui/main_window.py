@@ -407,6 +407,9 @@ class MainWindowMixin:
         self._tree_drag_start_x = event.x
         self._tree_drag_start_y = event.y
         self._tree_drag_box_borders = []
+        self._tree_rows_cache = self._all_tree_rows()
+        self._tree_drag_last_row = row
+        self._tree_drag_last_selection = tuple(self.layer_tree.selection())
 
     def _tree_drag_motion(self, event):
         if self.layer_tree.identify_region(event.x, event.y) == "separator":
@@ -415,19 +418,28 @@ class MainWindowMixin:
         row = self.layer_tree.identify_row(event.y)
         if not row or not self._tree_drag_anchor:
             return
+        if row == getattr(self, '_tree_drag_last_row', None):
+            self._update_tree_drag_box(event)
+            return
+        self._tree_drag_last_row = row
         # anchor から現在行までの全行を選択
-        all_rows = self._all_tree_rows()
+        all_rows = getattr(self, '_tree_rows_cache', None) or self._all_tree_rows()
         try:
             a = all_rows.index(self._tree_drag_anchor)
             b = all_rows.index(row)
         except ValueError:
             return
         start, end = min(a, b), max(a, b)
-        target_rows = [r for r in all_rows[start:end + 1]
-                       if not self._is_layer_parent_node(r)]
-        self.layer_tree.selection_set(target_rows)
+        target_rows = tuple(r for r in all_rows[start:end + 1]
+                            if not self._is_layer_parent_node(r))
+        if target_rows != getattr(self, '_tree_drag_last_selection', ()):
+            self.layer_tree.selection_set(target_rows)
+            self._tree_drag_last_selection = target_rows
 
         # ドラッグ選択範囲ボックスの描画
+        self._update_tree_drag_box(event)
+
+    def _update_tree_drag_box(self, event):
         if not hasattr(self, '_tree_drag_box_borders') or not self._tree_drag_box_borders:
             self._tree_drag_box_borders = [
                 tk.Frame(self.layer_tree, bg='#FF9500'),  # 上
@@ -450,6 +462,9 @@ class MainWindowMixin:
 
     def _tree_drag_end(self, event):
         self._tree_drag_anchor = None
+        self._tree_rows_cache = None
+        self._tree_drag_last_row = None
+        self._tree_drag_last_selection = ()
         if hasattr(self, '_tree_drag_box_borders') and self._tree_drag_box_borders:
             for border in self._tree_drag_box_borders:
                 border.destroy()
