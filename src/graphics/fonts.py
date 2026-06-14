@@ -1,4 +1,6 @@
 import os
+import matplotlib.backends.backend_svg
+import matplotlib.backends.backend_pdf
 
 from common import get_japanese_font
 
