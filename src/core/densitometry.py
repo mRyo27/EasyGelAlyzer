@@ -314,7 +314,8 @@ class DensitometryMixin:
 
     def _update_densitometry_preview(self, profile_result):
         self._ensure_densitometry_panel()
-        self._draw_profile_on_canvas(profile_result)
+        temp_roi = {'name': getattr(self, '_pending_densitometry_name', 'Preview')}
+        self._draw_profile_on_canvas(profile_result, temp_roi)
 
     def _update_densitometry_panel(self, select_id=None):
         self._ensure_densitometry_panel()
@@ -340,7 +341,7 @@ class DensitometryMixin:
             self._dens_tree.selection_set(last_id)
             self._draw_profile_for_densitometry_id(last_id)
         else:
-            self._draw_profile_on_canvas(None)
+            self._draw_profile_on_canvas(None, None)
 
     def _on_densitometry_panel_select(self, event=None):
         if not getattr(self, '_dens_tree', None):
@@ -351,9 +352,9 @@ class DensitometryMixin:
 
     def _draw_profile_for_densitometry_id(self, roi_id):
         roi = next((r for r in self.densitometry_rois if r.get('id') == roi_id), None)
-        self._draw_profile_on_canvas(self._calculate_densitometry_profile(roi) if roi else None)
+        self._draw_profile_on_canvas(self._calculate_densitometry_profile(roi) if roi else None, roi)
 
-    def _draw_profile_on_canvas(self, profile_result):
+    def _draw_profile_on_canvas(self, profile_result, roi=None):
         if not getattr(self, '_dens_profile_canvas', None):
             return
         c = self._dens_profile_canvas
@@ -379,9 +380,10 @@ class DensitometryMixin:
                 pts.extend((x, y))
             return pts
 
+        roi_color = self._get_densitometry_color(roi) if roi else "#007AFF"
         if len(profile) > 1:
             c.create_line(*points(background), fill="#999", dash=(3, 3), width=1)
-            c.create_line(*points(profile), fill="#007AFF", width=2)
+            c.create_line(*points(profile), fill=roi_color, width=2)
         c.create_text(
             8, h - 8,
             text=f"{T('dens_integrated')}: {profile_result.get('integrated_density', 0.0):.1f}",
@@ -409,9 +411,11 @@ class DensitometryMixin:
         return any(roi.get('id') == item_id for roi in getattr(self, 'densitometry_rois', []))
 
     def _get_densitometry_color(self, roi):
-        if any(m.get('name') == roi.get('name') for m in self.markers):
+        name = roi.get('name', '')
+        if name in (T('marker_node'), "MW Markers", "分子量マーカー"):
             return MARKER_LABEL_COLOR
-        return self.get_sample_color(roi.get('name', '')) if hasattr(self, 'get_sample_color') else "#00C7BE"
+        s_group = self._get_sample_group_name(name)
+        return self.get_sample_color(s_group) if hasattr(self, 'get_sample_color') else "#00C7BE"
 
     def _find_densitometry_roi_hit(self, cx, cy):
         self._dens_hit_handle = None
@@ -541,20 +545,54 @@ class DensitometryMixin:
         _fig_w = round(_fig_h * 1.618, 3)
         fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
+        
+        # グラフキャンバスとスクロールバーの配置
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+
+        x_scrollbar = ttk.Scrollbar(plot_frame, orient=tk.HORIZONTAL)
+        x_scrollbar.pack(fill=tk.X, side=tk.BOTTOM, pady=(2, 0))
 
         def selected_rois():
             return [r for r in self.densitometry_rois if vars_by_id[r['id']].get()]
 
+        def update_scrollbar():
+            cur_xmin, cur_xmax = ax.get_xlim()
+            first = max(0.0, min(1.0, cur_xmin))
+            last = max(0.0, min(1.0, cur_xmax))
+            x_scrollbar.set(first, last)
+
+        def on_scrollbar_scroll(*args):
+            cur_xmin, cur_xmax = ax.get_xlim()
+            w = cur_xmax - cur_xmin
+            if args[0] == 'moveto':
+                pos = float(args[1])
+            elif args[0] == 'scroll':
+                step = int(args[1])
+                pos = cur_xmin + step * w * 0.1
+            else:
+                return
+            new_xmin = max(0.0, min(1.0 - w, pos))
+            new_xmax = new_xmin + w
+            ax.set_xlim(new_xmin, new_xmax)
+            update_scrollbar()
+            canvas.draw()
+
+        x_scrollbar.config(command=on_scrollbar_scroll)
+
         def redraw(exporting=False):
+            # 現在のズーム範囲を退避
+            cur_xmin, cur_xmax = ax.get_xlim()
+            
             ax.clear()
             for roi in selected_rois():
                 corrected = self._calculate_densitometry_profile(roi)
                 if corrected:
                     y_vals = corrected['corrected']
                     x_vals = self._normalized_profile_x(len(y_vals))
-                    ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")))
+                    roi_color = self._get_densitometry_color(roi)
+                    # プロファイル線をROIの色と統一
+                    ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")), color=roi_color)
             ax.set_title(T("lane_profile_title"))
             ax.set_xlabel(T("lane_profile_x"))
             ax.set_ylabel(T("lane_profile_y"))
@@ -635,17 +673,16 @@ class DensitometryMixin:
                 ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
             fig.subplots_adjust(right=0.74)
             
-            # xlimが設定されていない（初めての描画など）場合はデフォルトを 0.0 〜 1.0 に設定する
-            # そうでなければ既存の xlim を維持する
-            cur_xmin, cur_xmax = ax.get_xlim()
-            if cur_xmin == 0.0 and cur_xmax == 1.0 and not hasattr(ax, '_xlim_initialized'):
-                ax.set_xlim(0.0, 1.0)
-                ax._xlim_initialized = True
-            elif not hasattr(ax, '_xlim_initialized'):
+            # xlimを復元または初期化
+            if hasattr(ax, '_xlim_initialized') and not exporting:
+                ax.set_xlim(cur_xmin, cur_xmax)
+            else:
                 ax.set_xlim(0.0, 1.0)
                 ax._xlim_initialized = True
             
             canvas.draw()
+            if not exporting:
+                update_scrollbar()
 
         # ドラッグ連動処理の定義
         drag_state = {
@@ -667,20 +704,18 @@ class DensitometryMixin:
             redraw()
 
         def on_press(event):
-            # 右クリック (button == 3) でパン開始
-            if event.button == 3:
-                if event.inaxes != ax:
-                    return
-                pan_state['active'] = True
-                pan_state['start_x'] = event.x
-                cur_xmin, cur_xmax = ax.get_xlim()
-                pan_state['start_xmin'] = cur_xmin
-                pan_state['start_xmax'] = cur_xmax
-                return
-
-            # 中クリック (button == 2) のダブルクリックでリセット
-            if event.button == 2 and event.dblclick:
-                reset_view()
+            # 中クリック (button == 2) でパン開始
+            if event.button == 2:
+                if event.dblclick:
+                    reset_view()
+                else:
+                    if event.inaxes != ax:
+                        return
+                    pan_state['active'] = True
+                    pan_state['start_x'] = event.x
+                    cur_xmin, cur_xmax = ax.get_xlim()
+                    pan_state['start_xmin'] = cur_xmin
+                    pan_state['start_xmax'] = cur_xmax
                 return
 
             if event.inaxes != ax or not show_lines_var.get():
@@ -758,7 +793,7 @@ class DensitometryMixin:
                     self.push_undo_state()
 
         def on_motion(event):
-            # 右ドラッグでのパン処理
+            # 中ドラッグでのパン処理
             if pan_state['active'] and pan_state['start_x'] is not None:
                 dx_pixels = event.x - pan_state['start_x']
                 bbox = ax.get_window_extent()
@@ -769,7 +804,15 @@ class DensitometryMixin:
                 new_xmin = pan_state['start_xmin'] - dx_data
                 new_xmax = pan_state['start_xmax'] - dx_data
                 
+                if new_xmin < 0.0:
+                    new_xmin = 0.0
+                    new_xmax = data_w
+                elif new_xmax > 1.0:
+                    new_xmax = 1.0
+                    new_xmin = 1.0 - data_w
+                
                 ax.set_xlim(new_xmin, new_xmax)
+                update_scrollbar()
                 canvas.draw()
                 return
 
@@ -810,7 +853,7 @@ class DensitometryMixin:
             redraw()
 
         def on_release(event):
-            if event.button == 3:
+            if event.button == 2:
                 pan_state['active'] = False
                 pan_state['start_x'] = None
                 return
@@ -838,7 +881,15 @@ class DensitometryMixin:
             new_xmin = x - rel_pos * new_w
             new_xmax = new_xmin + new_w
             
+            if new_xmin < 0.0:
+                new_xmin = 0.0
+                new_xmax = new_w
+            if new_xmax > 1.0:
+                new_xmax = 1.0
+                new_xmin = 1.0 - new_w
+                
             ax.set_xlim(new_xmin, new_xmax)
+            update_scrollbar()
             canvas.draw()
 
         fig.canvas.mpl_connect('button_press_event', on_press)

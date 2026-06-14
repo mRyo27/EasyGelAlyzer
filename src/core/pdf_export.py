@@ -413,7 +413,8 @@ class PDFExportMixin:
             if result:
                 y_vals = result['corrected']
                 x_vals = self._normalized_profile_x(len(y_vals))
-                ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")))
+                roi_color = self._get_densitometry_color(roi) if hasattr(self, '_get_densitometry_color') else None
+                ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")), color=roi_color)
         ax.set_title(T("lane_profile_title"))
         ax.set_xlabel(T("lane_profile_x"))
         ax.set_ylabel(T("lane_profile_y"))
