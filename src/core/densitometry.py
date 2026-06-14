@@ -558,7 +558,6 @@ class DensitometryMixin:
             ax.set_title(T("lane_profile_title"))
             ax.set_xlabel(T("lane_profile_x"))
             ax.set_ylabel(T("lane_profile_y"))
-            ax.set_xlim(0.0, 1.0)
             ax.grid(True, linestyle=":", alpha=0.5)
 
             # マーカー・試料ラインの描画（トグルがON、かつエクスポート中でない場合のみ）
@@ -568,12 +567,21 @@ class DensitometryMixin:
                 
                 active_rois = selected_rois()
                 
-                # 分子量マーカーのROIがアクティブか判定
+                # 分子量マーカーのROIが存在するか
+                marker_roi_exists = False
                 marker_roi_active = False
-                for roi in active_rois:
+                for roi in self.densitometry_rois:
                     if roi.get('name', '') in (T('marker_node'), "MW Markers", "分子量マーカー"):
-                        marker_roi_active = True
+                        marker_roi_exists = True
                         break
+                
+                if marker_roi_exists:
+                    for roi in active_rois:
+                        if roi.get('name', '') in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                            marker_roi_active = True
+                            break
+                else:
+                    marker_roi_active = getattr(self, 'marker_visible', True)
                 
                 # 分子量マーカー
                 if marker_roi_active:
@@ -626,6 +634,17 @@ class DensitometryMixin:
             if selected_rois():
                 ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
             fig.subplots_adjust(right=0.74)
+            
+            # xlimが設定されていない（初めての描画など）場合はデフォルトを 0.0 〜 1.0 に設定する
+            # そうでなければ既存の xlim を維持する
+            cur_xmin, cur_xmax = ax.get_xlim()
+            if cur_xmin == 0.0 and cur_xmax == 1.0 and not hasattr(ax, '_xlim_initialized'):
+                ax.set_xlim(0.0, 1.0)
+                ax._xlim_initialized = True
+            elif not hasattr(ax, '_xlim_initialized'):
+                ax.set_xlim(0.0, 1.0)
+                ax._xlim_initialized = True
+            
             canvas.draw()
 
         # ドラッグ連動処理の定義
@@ -634,72 +653,128 @@ class DensitometryMixin:
             'item_type': None,  # 'marker' or 'sample'
             'dragged': False
         }
+        
+        # パン（X軸移動）処理の定義
+        pan_state = {
+            'active': False,
+            'start_x': None,
+            'start_xmin': None,
+            'start_xmax': None
+        }
+
+        def reset_view():
+            ax.set_xlim(0.0, 1.0)
+            redraw()
 
         def on_press(event):
+            # 右クリック (button == 3) でパン開始
+            if event.button == 3:
+                if event.inaxes != ax:
+                    return
+                pan_state['active'] = True
+                pan_state['start_x'] = event.x
+                cur_xmin, cur_xmax = ax.get_xlim()
+                pan_state['start_xmin'] = cur_xmin
+                pan_state['start_xmax'] = cur_xmax
+                return
+
+            # 中クリック (button == 2) のダブルクリックでリセット
+            if event.button == 2 and event.dblclick:
+                reset_view()
+                return
+
             if event.inaxes != ax or not show_lines_var.get():
                 return
-            click_x = event.xdata
-            if click_x is None:
-                return
             
-            closest_item = None
-            min_dist = 0.025  # スナップ範囲 (Rf値の距離)
-            
-            active_rois = selected_rois()
-            
-            # 分子量マーカーのROIがアクティブか判定
-            marker_roi_active = False
-            for roi in active_rois:
-                if roi.get('name', '') in (T('marker_node'), "MW Markers", "分子量マーカー"):
-                    marker_roi_active = True
-                    break
+            # 左クリック (button == 1) でドラッグ開始
+            if event.button == 1:
+                click_x = event.xdata
+                if click_x is None:
+                    return
+                
+                closest_item = None
+                min_dist = 0.025  # スナップ範囲 (Rf値の距離)
+                
+                active_rois = selected_rois()
+                
+                # 分子量マーカーのROIが存在するか
+                marker_roi_exists = False
+                marker_roi_active = False
+                for roi in self.densitometry_rois:
+                    if roi.get('name', '') in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                        marker_roi_exists = True
+                        break
+                
+                if marker_roi_exists:
+                    for roi in active_rois:
+                        if roi.get('name', '') in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                            marker_roi_active = True
+                            break
+                else:
+                    marker_roi_active = getattr(self, 'marker_visible', True)
 
-            # マーカーから探索
-            if marker_roi_active:
-                for m in self.markers:
-                    if not self.item_visibility.get(m['id'], True):
+                # マーカーから探索
+                if marker_roi_active:
+                    for m in self.markers:
+                        if not self.item_visibility.get(m['id'], True):
+                            continue
+                        dist = abs(m.get('rf', 0.0) - click_x)
+                        if dist < min_dist:
+                            min_dist = dist
+                            closest_item = {'id': m['id'], 'type': 'marker'}
+                
+                # 試料から探索
+                for s in self.samples:
+                    if not self.item_visibility.get(s['id'], True):
                         continue
-                    dist = abs(m.get('rf', 0.0) - click_x)
+                    
+                    # この試料が属するROIがアクティブか判定
+                    sx = s.get('x', 0.0)
+                    sample_roi_active = False
+                    for roi in active_rois:
+                        x0 = roi['roi'][0]
+                        x1 = roi['roi'][2]
+                        if min(x0, x1) <= sx <= max(x0, x1):
+                            s_group = self._get_sample_group_name(s.get('name', ''))
+                            if roi.get('name', '') == s_group:
+                                sample_roi_active = True
+                                break
+                            elif roi.get('name', '') not in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                                sample_roi_active = True
+                                break
+                    
+                    if not sample_roi_active:
+                        continue
+                        
+                    dist = abs(s.get('rf', 0.0) - click_x)
                     if dist < min_dist:
                         min_dist = dist
-                        closest_item = {'id': m['id'], 'type': 'marker'}
-            
-            # 試料から探索
-            for s in self.samples:
-                if not self.item_visibility.get(s['id'], True):
-                    continue
+                        closest_item = {'id': s['id'], 'type': 'sample'}
                 
-                # この試料が属するROIがアクティブか判定
-                sx = s.get('x', 0.0)
-                sample_roi_active = False
-                for roi in active_rois:
-                    x0 = roi['roi'][0]
-                    x1 = roi['roi'][2]
-                    if min(x0, x1) <= sx <= max(x0, x1):
-                        s_group = self._get_sample_group_name(s.get('name', ''))
-                        if roi.get('name', '') == s_group:
-                            sample_roi_active = True
-                            break
-                        elif roi.get('name', '') not in (T('marker_node'), "MW Markers", "分子量マーカー"):
-                            sample_roi_active = True
-                            break
-                
-                if not sample_roi_active:
-                    continue
-                    
-                dist = abs(s.get('rf', 0.0) - click_x)
-                if dist < min_dist:
-                    min_dist = dist
-                    closest_item = {'id': s['id'], 'type': 'sample'}
-            
-            if closest_item:
-                drag_state['item_id'] = closest_item['id']
-                drag_state['item_type'] = closest_item['type']
-                drag_state['dragged'] = False
-                self.push_undo_state()
+                if closest_item:
+                    drag_state['item_id'] = closest_item['id']
+                    drag_state['item_type'] = closest_item['type']
+                    drag_state['dragged'] = False
+                    self.push_undo_state()
 
         def on_motion(event):
-            if event.inaxes != ax or drag_state['item_id'] is None:
+            # 右ドラッグでのパン処理
+            if pan_state['active'] and pan_state['start_x'] is not None:
+                dx_pixels = event.x - pan_state['start_x']
+                bbox = ax.get_window_extent()
+                ax_w_pixels = bbox.width
+                data_w = pan_state['start_xmax'] - pan_state['start_xmin']
+                
+                dx_data = (dx_pixels / ax_w_pixels) * data_w
+                new_xmin = pan_state['start_xmin'] - dx_data
+                new_xmax = pan_state['start_xmax'] - dx_data
+                
+                ax.set_xlim(new_xmin, new_xmax)
+                canvas.draw()
+                return
+
+            # 左ドラッグでの縦線移動処理
+            if drag_state['item_id'] is None or event.inaxes != ax:
                 return
             new_rf = event.xdata
             if new_rf is None:
@@ -735,14 +810,44 @@ class DensitometryMixin:
             redraw()
 
         def on_release(event):
+            if event.button == 3:
+                pan_state['active'] = False
+                pan_state['start_x'] = None
+                return
             if drag_state['item_id'] is not None:
                 drag_state['item_id'] = None
                 drag_state['item_type'] = None
                 drag_state['dragged'] = False
 
+        def on_scroll(event):
+            if event.inaxes != ax:
+                return
+            x = event.xdata
+            if x is None:
+                return
+            cur_xmin, cur_xmax = ax.get_xlim()
+            cur_w = cur_xmax - cur_xmin
+            
+            # スクロールによる拡大縮小（横方向のみ）
+            factor = 0.85 if event.button == 'up' else 1.15
+            new_w = cur_w * factor
+            if not (0.01 <= new_w <= 2.0):
+                return
+            
+            rel_pos = (x - cur_xmin) / cur_w
+            new_xmin = x - rel_pos * new_w
+            new_xmax = new_xmin + new_w
+            
+            ax.set_xlim(new_xmin, new_xmax)
+            canvas.draw()
+
         fig.canvas.mpl_connect('button_press_event', on_press)
         fig.canvas.mpl_connect('motion_notify_event', on_motion)
         fig.canvas.mpl_connect('button_release_event', on_release)
+        fig.canvas.mpl_connect('scroll_event', on_scroll)
+
+        # Shiftキーでのズームリセットをウィンドウにバインド
+        win.bind("<KeyPress>", lambda e: reset_view() if e.keysym in ('Shift_L', 'Shift_R') else None)
 
         def export_plot(fmt):
             path = filedialog.asksaveasfilename(
