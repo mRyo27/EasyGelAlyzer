@@ -220,7 +220,16 @@ class DensitometryMixin:
         top_bg = float(profile[:edge_n].mean())
         bottom_bg = float(profile[-edge_n:].mean())
         background = np.linspace(top_bg, bottom_bg, len(profile))
-        corrected = np.maximum(background - profile, 0.0)
+        
+        # 背景が明るいか暗いかを自動判定して背景補正の向きを決める
+        bg_mean = (top_bg + bottom_bg) / 2.0
+        if bg_mean < 127.0:
+            # 暗い背景に明るいバンド（例: 蛍光ゲル画像など、反転していないもの）
+            corrected = np.maximum(profile - background, 0.0)
+        else:
+            # 明るい背景に暗いバンド（例: CBB染色や銀染色など）
+            corrected = np.maximum(background - profile, 0.0)
+
         integrated = float(corrected.sum() * crop.shape[1])
         return {
             'profile': profile.tolist(),
