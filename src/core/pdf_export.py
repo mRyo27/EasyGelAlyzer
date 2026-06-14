@@ -227,11 +227,11 @@ class PDFExportMixin:
                     if resolved_ys[i] - resolved_ys[i - 1] < min_gap:
                         resolved_ys[i] = resolved_ys[i - 1] + min_gap
                 max_label_y = max(resolved_ys)
-                needed_bottom = max_label_y - (top_margin + img_h) + font_size + 20
+                needed_bottom = int(max_label_y - (top_margin + img_h) + font_size + 20)
                 if needed_bottom > bottom_margin:
                     bottom_margin = needed_bottom
-            out = Image.new("RGB", (img_w + left_margin + right_margin,
-                                    img_h + top_margin + bottom_margin), "white")
+            out = Image.new("RGB", (int(img_w + left_margin + right_margin),
+                                    int(img_h + top_margin + bottom_margin)), "white")
             out.paste(base_img, (left_margin, top_margin))
             self._draw_pdf_annotations_on_image(out, left_margin, top_margin, layout, no_margin=False)
         self._pdf_memo_image = None
@@ -336,7 +336,7 @@ class PDFExportMixin:
                               else self._get_label_color(lbl.get('name', '')))
             for i, line in enumerate(self._lane_label_display_text(lbl).splitlines()):
                 tw = draw.textlength(line, font=font)
-                draw.text((x - tw / 2, y + i * (font_size + 3)), line, fill=lbl_color, font=font)
+                draw.text((int(x - tw / 2), int(y + i * (font_size + 3))), line, fill=lbl_color, font=font)
 
     def _draw_pdf_resolved_side_labels(self, draw, items, image_left, image_right, font_size):
         min_gap = max(font_size + 6, 18)
@@ -463,5 +463,5 @@ class PDFExportMixin:
                                 else f"{int(m['size'])}")
                     label_txt = f"{m.get('name', '')} {size_val} {unit}"
                     tw = draw.textlength(label_txt, font=small_font)
-                    draw.text((out_w - tw - 4, gy - 15), label_txt, fill="#CC6600", font=small_font)
+                    draw.text((int(out_w - tw - 4), int(gy - 15)), label_txt, fill="#CC6600", font=small_font)
         return out

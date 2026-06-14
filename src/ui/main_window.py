@@ -165,16 +165,16 @@ class MainWindowMixin:
         self.lbl_r2.pack(anchor=tk.W, pady=2)
 
         self._result_table_frame = ttk.LabelFrame(self.right_frame, text=T('result_table'), padding=5)
-        self._result_table_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        self._result_table_frame.pack(fill=tk.BOTH, expand=False, pady=5)
         self._result_table_frame.pack_propagate(False)  # 最小高さを保証するため伝播を止める
-        self._result_table_frame.configure(height=140)  # クリップボードボタン含む最小高さ
+        self._result_table_frame.configure(height=180)  # クリップボードボタン含む最小高さ
 
 
         # テーブルとスクロールバーを配置するインナーフレーム
         table_container = ttk.Frame(self._result_table_frame)
         table_container.pack(fill=tk.BOTH, expand=True)
 
-        self.result_table = ttk.Treeview(table_container, columns=("Name", "Rf", "Size"), show="headings")
+        self.result_table = ttk.Treeview(table_container, columns=("Name", "Rf", "Size"), show="headings", height=5)
         self.result_table.heading("Name", text=T('xl_sample_name'))
         self.result_table.heading("Rf", text="Rf")
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')

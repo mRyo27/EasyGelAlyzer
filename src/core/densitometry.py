@@ -213,6 +213,9 @@ class DensitometryMixin:
         if crop.size == 0:
             return None
         profile = crop.mean(axis=1)
+        if self.start_line_y is not None and self.end_line_y is not None:
+            if self.start_line_y > self.end_line_y:
+                profile = profile[::-1]
         edge_n = max(1, min(5, len(profile) // 5 or 1))
         top_bg = float(profile[:edge_n].mean())
         bottom_bg = float(profile[-edge_n:].mean())
@@ -674,7 +677,11 @@ class DensitometryMixin:
             )
             if not path:
                 return
-            self._export_lane_comparison_png(path, entries, show_guides.get())
+            try:
+                self._export_lane_comparison_png(path, entries, show_guides.get())
+                messagebox.showinfo(T("ok_title"), T("ok_image"), parent=win)
+            except Exception as e:
+                messagebox.showerror(T("err_title"), str(e), parent=win)
 
         ttk.Button(controls, text=T("export_png"), command=export_png).pack(side=tk.RIGHT)
         canvas.bind("<Configure>", lambda e: redraw())
@@ -719,7 +726,7 @@ class DensitometryMixin:
                                 else f"{int(m['size'])}")
                     label_txt = f"{m.get('name', '')} {size_val} {unit}"
                     tw = draw.textlength(label_txt, font=small_font)
-                    draw.text((out_w - tw - 4, gy - 15), label_txt, fill="#CC6600", font=small_font)
+                    draw.text((int(out_w - tw - 4), int(gy - 15)), label_txt, fill="#CC6600", font=small_font)
         out.save(path)
 
     def move_densitometry_roi(self, direction):
