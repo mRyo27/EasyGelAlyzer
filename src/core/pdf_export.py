@@ -92,13 +92,13 @@ class PDFExportMixin:
                 self._pdf_image_page(pdf, page_size, memo_img, T("pdf_page_annotated") + " - Memo")
                 self._pdf_memo_image = None
             fig = Figure(figsize=page_size, dpi=150)
-            # 横幅比率0.76に対して縦幅を黄金比（1:1.618）で計算
-            # page_size=(8.27, 11.69) A4, axes座標は0-1正規化
-            # 黄金比: 縦 = 横 * (page_size[0]/page_size[1]) * 1.618
-            cal_w = 0.72
-            cal_h = cal_w * (page_size[0] / page_size[1]) * 1.618
+            # 黄金比 横1.618:縦81 (横長)
+            # A4縦横比を考慮してaxes座標を計算
+            cal_h = 0.52
+            cal_w = cal_h * (page_size[1] / page_size[0]) * 1.618
+            cal_w = min(cal_w, 0.82)
             cal_left = (1.0 - cal_w) / 2
-            cal_bottom = max(0.08, (1.0 - cal_h) / 2)
+            cal_bottom = max(0.12, (1.0 - cal_h) / 2)
             ax = fig.add_axes([cal_left, cal_bottom, cal_w, cal_h])
             self._draw_pdf_calibration_plot(ax, np)
             pdf.savefig(fig)
@@ -129,10 +129,11 @@ class PDFExportMixin:
                     [T('layer_name'), "ROI", T('dens_integrated'), T('dens_relative')]
                 )
                 fig = Figure(figsize=page_size, dpi=150)
-                dens_w = 0.62
-                dens_h = dens_w * (page_size[0] / page_size[1]) * 1.618
+                dens_h = 0.52
+                dens_w = dens_h * (page_size[1] / page_size[0]) * 1.618
+                dens_w = min(dens_w, 0.72)
                 dens_left = (1.0 - dens_w) / 2
-                dens_bottom = max(0.08, (1.0 - dens_h) / 2)
+                dens_bottom = max(0.12, (1.0 - dens_h) / 2)
                 ax = fig.add_axes([dens_left, dens_bottom, dens_w, dens_h])
                 self._draw_pdf_densitometry_profiles(ax)
                 pdf.savefig(fig)
@@ -209,6 +210,26 @@ class PDFExportMixin:
             right_margin = margin if layout in (2, 3, 4) else 20
             top_margin = max(30, int(img_h * 0.05))
             bottom_margin = max(30, int(img_h * 0.05))
+            # ラベルY座標の最大値を事前計算してbottom_marginを動的に拡張
+            font_size = max(12, int(img_h * 0.018))
+            min_gap = max(font_size + 6, 18)
+            all_ys = []
+            for m in self.markers:
+                if self.item_export_visibility.get(m['id'], True):
+                    all_ys.append(top_margin + m['y'])
+            for s in self.samples:
+                if self.item_export_visibility.get(s['id'], True):
+                    all_ys.append(top_margin + s['y'])
+            if all_ys:
+                all_ys.sort()
+                resolved_ys = list(all_ys)
+                for i in range(1, len(resolved_ys)):
+                    if resolved_ys[i] - resolved_ys[i - 1] < min_gap:
+                        resolved_ys[i] = resolved_ys[i - 1] + min_gap
+                max_label_y = max(resolved_ys)
+                needed_bottom = max_label_y - (top_margin + img_h) + font_size + 20
+                if needed_bottom > bottom_margin:
+                    bottom_margin = needed_bottom
             out = Image.new("RGB", (img_w + left_margin + right_margin,
                                     img_h + top_margin + bottom_margin), "white")
             out.paste(base_img, (left_margin, top_margin))

@@ -520,9 +520,9 @@ class DensitometryMixin:
         from matplotlib.figure import Figure
 
         configure_matplotlib_japanese_font()
-        # 黄金比 1:1.618 （縦横比）
-        _fig_w = 6
-        _fig_h = round(_fig_w * 1.618, 3)
+        # 黄金比 横1.618:縦81 (横長)
+        _fig_h = 5
+        _fig_w = round(_fig_h * 1.618, 3)
         fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
@@ -629,8 +629,11 @@ class DensitometryMixin:
             ch = max(canvas.winfo_height(), 420)
             pad = 20
             label_h = 28
-            lane_w = max(60, min(140, int((cw - pad * 2) / max(len(crops), 1)) - 12))
-            max_h = ch - label_h - pad * 2 - 20  # マーカーラベル用に余白を確保
+            # 右側にマーカーラベル用のエリアを確保
+            label_area_w = 130 if self.markers else 0
+            lane_area_w = cw - pad * 2 - label_area_w
+            lane_w = max(60, min(140, int(lane_area_w / max(len(crops), 1)) - 12))
+            max_h = ch - label_h - pad * 2
             lane_h = max(1, max(crop.height for _, _, crop in crops))
             max_crop_w = max(crop.width for _, _, crop in crops)
             common_scale = min(max_h / lane_h, lane_w / max(max_crop_w, 1))
@@ -646,17 +649,20 @@ class DensitometryMixin:
                                    fill="#111", font=(UI_FONT_FAMILY, 10, "bold"))
                 canvas.create_image(x + lane_w / 2, pad + label_h, image=tk_img, anchor="n")
                 x += lane_w + 12
-            # 分子量マーカーのラインとラベルを描画
+            # 分子量マーカーのラインとラベルを描画（ラベルは右側の専用エリアに表示）
+            lanes_right_edge = pad + len(crops) * (lane_w + 12) - 12
             if show_guides.get() and self.markers:
-                roi0_y0 = crops[0][0]['roi'][1]  # 共通のy座標基準（各ROIのy0は同じはず）
+                roi0_y0 = crops[0][0]['roi'][1]  # 共通のy座標基準
                 for m in self.markers:
                     gy = pad + label_h + (m.get('y', 0) - roi0_y0) * common_scale
                     if 0 <= gy <= ch:
-                        canvas.create_line(0, gy, cw, gy, fill="#FF9500", dash=(4, 4))
+                        # ラインはレーン画像内のみ
+                        canvas.create_line(0, gy, lanes_right_edge, gy, fill="#FF9500", dash=(4, 4))
+                        # ラベルは右側専用エリアに配置
                         size_val = (f"{m['size']:.1f}" if self.mode == "protein"
                                     else f"{int(m['size'])}")
                         label_txt = f"{m.get('name', '')} {size_val} {unit}"
-                        canvas.create_text(cw - 4, gy - 2, text=label_txt, anchor="se",
+                        canvas.create_text(lanes_right_edge + 8, gy, text=label_txt, anchor="w",
                                            fill="#CC6600", font=(UI_FONT_FAMILY, 8))
             canvas._lane_refs = rendered_refs
 
