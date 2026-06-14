@@ -479,8 +479,17 @@ class ImageManagerMixin:
             self.cancel_trimming()
             return
         self.push_undo_state(clone_image=True)
-        self.original_image = self.original_image.crop(
-             (int(left), int(top), int(right), int(bottom)))
+        # 画像調整や補正が適用されている場合は、それを焼き付けて切り取る
+        target_img = self.processed_image if self.processed_image is not None else self.original_image
+        self.original_image = target_img.crop((int(left), int(top), int(right), int(bottom)))
+        
+        # 焼き付け完了に伴い、適用中のパラメータはリセットする
+        self.brightness_val = 0
+        self.contrast_val = 0
+        self.bg_corr_radius = None
+        self.image_preset_mode = 'none'
+        self.processed_image = None
+        
         self._canvas_image_cache_key = None
         dy = int(top)
         dx = int(left)
