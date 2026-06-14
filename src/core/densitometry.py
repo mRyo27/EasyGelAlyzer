@@ -566,35 +566,62 @@ class DensitometryMixin:
                 y_lim = ax.get_ylim()
                 y_range = y_lim[1] - y_lim[0]
                 
+                active_rois = selected_rois()
+                
+                # 分子量マーカーのROIがアクティブか判定
+                marker_roi_active = False
+                for roi in active_rois:
+                    if roi.get('name', '') in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                        marker_roi_active = True
+                        break
+                
                 # 分子量マーカー
-                for m in self.markers:
-                    if not self.item_visibility.get(m['id'], True):
-                        continue
-                    rf = m.get('rf', 0.0)
-                    ax.axvline(x=rf, color='#FF9F00', linestyle='--', alpha=0.8, linewidth=1.5)
-                    # テキストラベル (上部に配置)
-                    label_y = y_lim[1] - y_range * 0.06
-                    size_val = f"{m['size']:.1f}" if self.mode == "protein" else f"{int(m['size'])}"
-                    unit = "kDa" if self.mode == "protein" else "bp"
-                    label_txt = f"{m.get('name', '')}\n{size_val} {unit}"
-                    ax.text(rf, label_y, label_txt, color='#CC6600', fontsize=8,
-                            horizontalalignment='center', verticalalignment='top',
-                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+                if marker_roi_active:
+                    for m in self.markers:
+                        if not self.item_visibility.get(m['id'], True):
+                            continue
+                        rf = m.get('rf', 0.0)
+                        ax.axvline(x=rf, color='#FF9F00', linestyle='--', alpha=0.8, linewidth=1.5)
+                        # テキストラベル (上部に配置)
+                        label_y = y_lim[1] - y_range * 0.06
+                        size_val = f"{m['size']:.1f}" if self.mode == "protein" else f"{int(m['size'])}"
+                        unit = "kDa" if self.mode == "protein" else "bp"
+                        label_txt = f"{m.get('name', '')}\n{size_val} {unit}"
+                        ax.text(rf, label_y, label_txt, color='#CC6600', fontsize=8,
+                                horizontalalignment='center', verticalalignment='top',
+                                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
 
                 # 試料
                 for s in self.samples:
                     if not self.item_visibility.get(s['id'], True):
                         continue
-                    rf = s.get('rf', 0.0)
-                    s_color = s.get('color', '#34C759')
-                    ax.axvline(x=rf, color=s_color, linestyle=':', alpha=0.8, linewidth=1.5)
-                    # テキストラベル (下部に配置)
-                    label_y = y_lim[0] + y_range * 0.06
-                    size_val = self._format_sample_size(s)
-                    label_txt = f"{s.get('name', '')}\n{size_val}"
-                    ax.text(rf, label_y, label_txt, color=s_color, fontsize=8,
-                            horizontalalignment='center', verticalalignment='bottom',
-                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+                    
+                    # この試料が属するROIがアクティブか判定
+                    sx = s.get('x', 0.0)
+                    sample_roi_active = False
+                    for roi in active_rois:
+                        x0 = roi['roi'][0]
+                        x1 = roi['roi'][2]
+                        if min(x0, x1) <= sx <= max(x0, x1):
+                            s_group = self._get_sample_group_name(s.get('name', ''))
+                            if roi.get('name', '') == s_group:
+                                sample_roi_active = True
+                                break
+                            elif roi.get('name', '') not in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                                sample_roi_active = True
+                                break
+                    
+                    if sample_roi_active:
+                        rf = s.get('rf', 0.0)
+                        s_color = s.get('color', '#34C759')
+                        ax.axvline(x=rf, color=s_color, linestyle=':', alpha=0.8, linewidth=1.5)
+                        # テキストラベル (下部に配置)
+                        label_y = y_lim[0] + y_range * 0.06
+                        size_val = self._format_sample_size(s)
+                        label_txt = f"{s.get('name', '')}\n{size_val}"
+                        ax.text(rf, label_y, label_txt, color=s_color, fontsize=8,
+                                horizontalalignment='center', verticalalignment='bottom',
+                                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
 
             if selected_rois():
                 ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
@@ -617,20 +644,49 @@ class DensitometryMixin:
             
             closest_item = None
             min_dist = 0.025  # スナップ範囲 (Rf値の距離)
+            
+            active_rois = selected_rois()
+            
+            # 分子量マーカーのROIがアクティブか判定
+            marker_roi_active = False
+            for roi in active_rois:
+                if roi.get('name', '') in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                    marker_roi_active = True
+                    break
 
             # マーカーから探索
-            for m in self.markers:
-                if not self.item_visibility.get(m['id'], True):
-                    continue
-                dist = abs(m.get('rf', 0.0) - click_x)
-                if dist < min_dist:
-                    min_dist = dist
-                    closest_item = {'id': m['id'], 'type': 'marker'}
+            if marker_roi_active:
+                for m in self.markers:
+                    if not self.item_visibility.get(m['id'], True):
+                        continue
+                    dist = abs(m.get('rf', 0.0) - click_x)
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest_item = {'id': m['id'], 'type': 'marker'}
             
             # 試料から探索
             for s in self.samples:
                 if not self.item_visibility.get(s['id'], True):
                     continue
+                
+                # この試料が属するROIがアクティブか判定
+                sx = s.get('x', 0.0)
+                sample_roi_active = False
+                for roi in active_rois:
+                    x0 = roi['roi'][0]
+                    x1 = roi['roi'][2]
+                    if min(x0, x1) <= sx <= max(x0, x1):
+                        s_group = self._get_sample_group_name(s.get('name', ''))
+                        if roi.get('name', '') == s_group:
+                            sample_roi_active = True
+                            break
+                        elif roi.get('name', '') not in (T('marker_node'), "MW Markers", "分子量マーカー"):
+                            sample_roi_active = True
+                            break
+                
+                if not sample_roi_active:
+                    continue
+                    
                 dist = abs(s.get('rf', 0.0) - click_x)
                 if dist < min_dist:
                     min_dist = dist
