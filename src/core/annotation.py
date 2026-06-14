@@ -156,6 +156,11 @@ class AnnotationMixin:
             self._begin_densitometry_roi(event)
             return
 
+        dens_roi = self._find_densitometry_roi_hit(cx, cy) if hasattr(self, '_find_densitometry_roi_hit') else None
+        if dens_roi is not None:
+            self._begin_drag_densitometry_roi(dens_roi, event)
+            return
+
         # --- ドラッグ判定（優先度順）---
 
         # 試料（クリック点(x,y)の近傍判定でドラッグ可能）
@@ -285,6 +290,9 @@ class AnnotationMixin:
         elif self.active_mode == 'densitometry_roi':
             self._drag_densitometry_roi(event)
 
+        elif self.active_mode == 'drag_densitometry_roi':
+            self._drag_existing_densitometry_roi(event)
+
     def on_left_release(self, event):
         if self.active_mode in ['drag_start', 'drag_end', 'drag_marker', 'drag_sample']:
             if getattr(self, '_drag_redraw_after_id', None) is not None:
@@ -294,6 +302,10 @@ class AnnotationMixin:
             self.drag_target = None
             self._drag_start_prev_y = None
             self.recalculate_rf_and_sizes()
+            if hasattr(self, '_recalculate_densitometry'):
+                self._recalculate_densitometry()
+                self._update_densitometry_panel()
+                self.update_layer_panel()
             self.redraw_canvas()
         elif self.active_mode == 'drag_lane_label':
             if getattr(self, '_drag_redraw_after_id', None) is not None:
@@ -311,6 +323,8 @@ class AnnotationMixin:
                 self.cancel_trimming()
         elif self.active_mode == 'densitometry_roi':
             self._end_densitometry_roi(event)
+        elif self.active_mode == 'drag_densitometry_roi':
+            self._end_drag_densitometry_roi()
 
     # ------------------------------------------------------------------ #
     #  ライン設定
@@ -790,7 +804,9 @@ class AnnotationMixin:
         return isinstance(iid, str) and iid.startswith("sample_group::")
 
     def _is_layer_parent_node(self, iid):
-        return iid in (self.marker_node, self.sample_node, self.label_node, self.line_node) or self._is_sample_group_node(iid)
+        parent_nodes = (self.marker_node, self.sample_node, self.label_node,
+                        getattr(self, 'dens_node', None), self.line_node)
+        return iid in parent_nodes or self._is_sample_group_node(iid)
 
     def _get_sample_ids_in_group_node(self, group_iid):
         if not self._is_sample_group_node(group_iid):
@@ -890,6 +906,9 @@ class AnnotationMixin:
             self.layer_tree.delete(child)
         for child in self.layer_tree.get_children(self.label_node):
             self.layer_tree.delete(child)
+        if hasattr(self, 'dens_node'):
+            for child in self.layer_tree.get_children(self.dens_node):
+                self.layer_tree.delete(child)
         for child in self.layer_tree.get_children(self.line_node):
             self.layer_tree.delete(child)
         unit = "kDa" if self.mode == "protein" else "bp"
@@ -944,6 +963,13 @@ class AnnotationMixin:
             font_size = int(lbl.get('font_size', self.lane_label_font_size))
             self.layer_tree.insert(self.label_node, "end", iid=lbl['id'],
                                    text=lbl['name'], values=(vis_icon, exp_icon, "", f"{font_size} pt"))
+        if hasattr(self, 'dens_node'):
+            for roi in getattr(self, 'densitometry_rois', []):
+                vis = self.item_visibility.get(roi['id'], True)
+                self.layer_tree.insert(self.dens_node, "end", iid=roi['id'],
+                                       text=roi.get('name', ''),
+                                       values=("👁" if vis else "🚫", "", "",
+                                               f"{roi.get('relative_density', 0.0):.3f}"))
         # Start/End line items
         if self.start_line_y is not None:
             st_vis = self.item_visibility.get(self.start_line_id, True)
@@ -1001,6 +1027,13 @@ class AnnotationMixin:
             if l_match:
                 self.lane_labels.remove(l_match[0])
                 changed_label = True
+        changed_dens = False
+        for iid in targets:
+            d_match = [d for d in getattr(self, 'densitometry_rois', []) if d['id'] == iid]
+            if d_match:
+                self.densitometry_rois.remove(d_match[0])
+                self.item_visibility.pop(iid, None)
+                changed_dens = True
         changed_line = False
         for iid in targets:
             if iid == self.start_line_id:
@@ -1013,7 +1046,10 @@ class AnnotationMixin:
                 self.item_visibility.pop(self.end_line_id, None)
                 self.item_export_visibility.pop(self.end_line_id, None)
                 changed_line = True
-        if changed_marker or changed_sample or changed_label or changed_line:
+        if changed_dens and hasattr(self, '_recalculate_densitometry'):
+            self._recalculate_densitometry()
+            self._update_densitometry_panel()
+        if changed_marker or changed_sample or changed_label or changed_line or changed_dens:
             self.update_layer_panel()
             self.update_result_table()
             self.redraw_canvas()
@@ -1092,6 +1128,22 @@ class AnnotationMixin:
             ids.append(s['id'])
         for lbl in self.lane_labels:
             ids.append(lbl['id'])
+        for roi in getattr(self, 'densitometry_rois', []):
+            ids.append(roi['id'])
+        if self.start_line_y is not None:
+            ids.append(self.start_line_id)
+        if self.end_line_y is not None:
+            ids.append(self.end_line_id)
+        return ids
+
+    def _get_export_item_ids(self):
+        ids = []
+        for m in self.markers:
+            ids.append(m['id'])
+        for s in self.samples:
+            ids.append(s['id'])
+        for lbl in self.lane_labels:
+            ids.append(lbl['id'])
         if self.start_line_y is not None:
             ids.append(self.start_line_id)
         if self.end_line_y is not None:
@@ -1119,7 +1171,7 @@ class AnnotationMixin:
         """📷 ヘッダークリック: 全レイヤーの画像出力時の表示/非表示を一括トグル
         いずれか1つでも表示中なら全非表示、全非表示なら全表示。
         """
-        all_ids = self._get_all_item_ids()
+        all_ids = self._get_export_item_ids()
         if not all_ids:
             return
         any_visible = any(self.item_export_visibility.get(iid, True) for iid in all_ids)
@@ -1171,11 +1223,16 @@ class AnnotationMixin:
         else:
             selected = set(self.layer_tree.selection())
         selected.add(item_id)
+        if hasattr(self, '_is_densitometry_roi_id') and self._is_densitometry_roi_id(item_id):
+            return
         group_child_ids = []
         if self._is_sample_group_node(item_id):
             group_child_ids = self._get_sample_ids_in_group_node(item_id)
             selected.update(group_child_ids)
-        target_ids = [iid for iid in selected if not self._is_layer_parent_node(iid)]
+        target_ids = [iid for iid in selected
+                      if not self._is_layer_parent_node(iid)
+                      and not (hasattr(self, '_is_densitometry_roi_id')
+                               and self._is_densitometry_roi_id(iid))]
         if not target_ids:
             return
         if group_child_ids:

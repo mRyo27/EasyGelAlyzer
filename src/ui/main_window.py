@@ -20,13 +20,13 @@ class MainWindowMixin:
         self._file_menu.add_command(label=f"{T('menu_excel')} (Ctrl+E)", command=self.export_to_excel)
         self._file_menu.add_command(label=f"{T('btn_csv')} (Ctrl+Shift+E)", command=self.export_to_csv)
         self._file_menu.add_command(label=f"{T('menu_image')} (Ctrl+I)", command=self.export_annotated_image)
-        self._file_menu.add_command(label="PDF Export", command=self.export_analysis_pdf)
+        self._file_menu.add_command(label=T("pdf_export_title"), command=self.export_analysis_pdf)
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_quit'), command=self.on_app_close)
 
         self._view_menu = tk.Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="表示", menu=self._view_menu)
-        self._view_menu.add_command(label="レーン比較モード", command=self.open_lane_comparison_mode)
+        self.menubar.add_cascade(label=T("menu_view"), menu=self._view_menu)
+        self._view_menu.add_command(label=T("menu_lane_compare"), command=self.open_lane_comparison_mode)
 
         edit_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label='Edit', menu=edit_menu)
@@ -87,6 +87,7 @@ class MainWindowMixin:
         self.marker_node = self.layer_tree.insert("", "end", text=T('marker_node'), open=True)
         self.sample_node = self.layer_tree.insert("", "end", text=T('sample_node'), open=True)
         self.label_node  = self.layer_tree.insert("", "end", text=T('label_node'),  open=True)
+        self.dens_node   = self.layer_tree.insert("", "end", text=T('dens_panel'),   open=True)
         self.line_node   = self.layer_tree.insert("", "end", text=T('line_node'),   open=True)
 
         # 選択アイテムのプロパティ（ラベル項目選択時にフォントサイズを変更）
@@ -227,56 +228,61 @@ class MainWindowMixin:
 
         # === 左グループ: 測定・分析 ===
         self._analysis_frame = ttk.LabelFrame(tb_row3, text=T('tb_measure'), padding=2)
-        self._analysis_frame.pack(side=tk.LEFT, padx=4)
+        self._analysis_frame.pack(side=tk.LEFT, padx=4, fill=tk.X, expand=True)
+        for _col in range(8):
+            self._analysis_frame.columnconfigure(_col, weight=0)
         self.btn_start_line = tk.Button(self._analysis_frame, text=T('btn_start_line'),
-                        fg="#007AFF", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
+                        fg="#007AFF", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                         command=self.set_start_line)
-        self.btn_start_line.pack(side=tk.LEFT, padx=2)
+        self.btn_start_line.grid(row=0, column=0, padx=2, pady=1)
         self.btn_end_line = tk.Button(self._analysis_frame, text=T('btn_end_line'),
-                          fg="#FF3B30", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
+                          fg="#FF3B30", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                           command=self.set_end_line)
-        self.btn_end_line.pack(side=tk.LEFT, padx=2)
+        self.btn_end_line.grid(row=0, column=1, padx=2, pady=1)
         self.btn_add_marker = tk.Button(self._analysis_frame, text=T('btn_add_marker'),
-                        fg="#B044FF", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
+                        fg="#B044FF", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                         command=self.start_marker_measurement)
-        self.btn_add_marker.pack(side=tk.LEFT, padx=2)
+        self.btn_add_marker.grid(row=0, column=2, padx=2, pady=1)
 
         self.preset_mode_var = tk.StringVar(value="manual")
         self.radio_manual = ttk.Radiobutton(self._analysis_frame, text=T('lbl_manual_mode'),
                                             variable=self.preset_mode_var, value="manual",
                                             command=self._on_preset_mode_toggle)
-        self.radio_manual.pack(side=tk.LEFT, padx=3)
+        self.radio_manual.grid(row=0, column=3, padx=2, pady=1)
         self.radio_preset = ttk.Radiobutton(self._analysis_frame, text=T('lbl_preset_mode'),
                                             variable=self.preset_mode_var, value="preset",
                                             command=self._on_preset_mode_toggle)
-        self.radio_preset.pack(side=tk.LEFT, padx=3)
+        self.radio_preset.grid(row=0, column=4, padx=2, pady=1)
         
-        self.combo_presets = ttk.Combobox(self._analysis_frame, width=15, state="readonly")
-        self.combo_presets.pack(side=tk.LEFT, padx=3)
+        self.combo_presets = ttk.Combobox(self._analysis_frame, width=12, state="readonly")
+        self.combo_presets.grid(row=0, column=5, padx=2, pady=1)
         self.combo_presets.bind("<<ComboboxSelected>>", self._on_preset_selection_changed)
         
         self.btn_manage_presets = ttk.Button(self._analysis_frame, text=T('btn_manage_presets'),
                                              command=self.open_preset_manager)
-        self.btn_manage_presets.pack(side=tk.LEFT, padx=3)
+        self.btn_manage_presets.grid(row=0, column=6, padx=2, pady=1)
         
         self.update_preset_combobox()
         self._update_preset_controls_state()
 
         self.btn_add_sample = tk.Button(self._analysis_frame, text=T('btn_add_sample'),
-                        fg="#34C759", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
+                        fg="#34C759", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                         command=self.start_sample_measurement)
-        self.btn_add_sample.pack(side=tk.LEFT, padx=2)
-        self.btn_densitometry = tk.Button(self._analysis_frame, text="Densitometry",
-                          fg="#00C7BE", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
+        self.btn_add_sample.grid(row=1, column=0, padx=2, pady=1)
+        self.btn_densitometry = tk.Button(self._analysis_frame, text=T("btn_densitometry"),
+                          fg="#00C7BE", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                           command=self.start_densitometry_roi_mode)
-        self.btn_densitometry.pack(side=tk.LEFT, padx=2)
+        self.btn_densitometry.grid(row=1, column=1, padx=2, pady=1)
         self.btn_add_lane = tk.Button(self._analysis_frame, text=T('btn_add_lane'),
-                          fg="#FF9500", font=(UI_FONT_FAMILY, 11, "bold"), width=14,
+                          fg="#FF9500", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                           command=self.add_lane_label)
-        self.btn_add_lane.pack(side=tk.LEFT, padx=2)
+        self.btn_add_lane.grid(row=1, column=2, padx=2, pady=1)
+        self.btn_lane_compare = ttk.Button(self._analysis_frame, text=T("btn_lane_compare"),
+                           command=self.open_lane_comparison_mode, width=14)
+        self.btn_lane_compare.grid(row=1, column=3, padx=2, pady=1)
         self.btn_end_mode = ttk.Button(self._analysis_frame, text=T('btn_end_mode'),
                            command=self.end_measurement_mode, width=16)
-        self.btn_end_mode.pack(side=tk.LEFT, padx=2)
+        self.btn_end_mode.grid(row=1, column=4, padx=2, pady=1)
 
         # === 右グループ: 出力 ===
         self._output_frame = ttk.LabelFrame(tb_row3, text=T('tb_output'), padding=2)
@@ -294,7 +300,7 @@ class MainWindowMixin:
         self.btn_image = ttk.Button(self._output_frame, text=T('btn_image'),
                     command=self.export_annotated_image, width=14)
         self.btn_image.pack(side=tk.LEFT, padx=6)
-        self.btn_pdf = ttk.Button(self._output_frame, text="PDF",
+        self.btn_pdf = ttk.Button(self._output_frame, text=T("btn_pdf"),
                     command=self.export_analysis_pdf, width=10)
         self.btn_pdf.pack(side=tk.LEFT, padx=6)
 
@@ -485,12 +491,14 @@ class MainWindowMixin:
         if region == "cell" and row:
             if col == "#1":
                 # Vis カラム（👁 / 🚫）クリックで表示トグル
-                if row not in (self.marker_node, self.sample_node, self.label_node, self.line_node):
+                if row not in (self.marker_node, self.sample_node, self.label_node, self.dens_node, self.line_node):
                     saved_sel = getattr(self, '_pre_click_selection', set())
                     self._toggle_item_visibility(row, saved_sel)
             elif col == "#2":
                 # Exp カラム（☑ / ☐）クリックで出力時の表示トグル
-                if row not in (self.marker_node, self.sample_node, self.label_node, self.line_node):
+                if row not in (self.marker_node, self.sample_node, self.label_node, self.dens_node, self.line_node):
+                    if hasattr(self, '_is_densitometry_roi_id') and self._is_densitometry_roi_id(row):
+                        return
                     saved_sel = getattr(self, '_pre_click_selection', set())
                     self._toggle_item_export_visibility(row, saved_sel)
 
@@ -821,9 +829,14 @@ class MainWindowMixin:
             self._file_menu.entryconfig(6, label=f"{T('menu_excel')} (Ctrl+E)")
             self._file_menu.entryconfig(7, label=f"{T('btn_csv')} (Ctrl+Shift+E)")
             self._file_menu.entryconfig(8, label=f"{T('menu_image')} (Ctrl+I)")
-            self._file_menu.entryconfig(9, label="PDF Export")
+            self._file_menu.entryconfig(9, label=T("pdf_export_title"))
             # index 10 = separator
             self._file_menu.entryconfig(11, label=T('menu_quit'))
+        except Exception:
+            LOGGER.exception("Unexpected error")
+        try:
+            self.menubar.entryconfig(1, label=T("menu_view"))
+            self._view_menu.entryconfig(0, label=T("menu_lane_compare"))
         except Exception:
             LOGGER.exception("Unexpected error")
         # ---- 編集メニュー ----
@@ -855,6 +868,8 @@ class MainWindowMixin:
         self.layer_tree.item(self.sample_node, text=T('sample_node'))
         try:
             self.layer_tree.item(self.label_node, text=T('label_node'))
+            if hasattr(self, 'dens_node'):
+                self.layer_tree.item(self.dens_node, text=T('dens_panel'))
             self.layer_tree.item(self.line_node, text=T('line_node'))
         except Exception:
             LOGGER.exception("Unexpected error")
@@ -883,6 +898,11 @@ class MainWindowMixin:
             LOGGER.exception("Unexpected error")
         try:
             self._coeff_frame.config(text=T('coeff_frame'))
+        except Exception:
+            LOGGER.exception("Unexpected error")
+        try:
+            if hasattr(self, '_update_densitometry_language'):
+                self._update_densitometry_language()
         except Exception:
             LOGGER.exception("Unexpected error")
         self.btn_apply_coeff.config(text=T('btn_apply'))
@@ -922,7 +942,9 @@ class MainWindowMixin:
         self.btn_end_line.config(text=T('btn_end_line'))
         self.btn_add_marker.config(text=T('btn_add_marker'))
         self.btn_add_sample.config(text=T('btn_add_sample'))
+        self.btn_densitometry.config(text=T('btn_densitometry'))
         self.btn_add_lane.config(text=T('btn_add_lane'))
+        self.btn_lane_compare.config(text=T('btn_lane_compare'))
         self.btn_end_mode.config(text=T('btn_end_mode'))
         try:
             self.radio_manual.config(text=T('lbl_manual_mode'))
@@ -941,6 +963,7 @@ class MainWindowMixin:
             self.btn_excel.config(text=T('btn_excel'))
             self.btn_csv.config(text=T('btn_csv'))
             self.btn_image.config(text=T('btn_image'))
+            self.btn_pdf.config(text=T('btn_pdf'))
         except Exception:
             LOGGER.exception("Unexpected error")
         # ---- ステータス ----
