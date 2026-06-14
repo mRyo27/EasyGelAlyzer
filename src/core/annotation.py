@@ -1081,6 +1081,20 @@ class AnnotationMixin:
                 self.update_result_table()
                 self.layer_tree.selection_set(iid)
                 self.redraw_canvas()
+            return
+        d_idx = next((i for i, d in enumerate(self.densitometry_rois) if d['id'] == iid), None)
+        if d_idx is not None:
+            new_idx = d_idx + direction
+            if 0 <= new_idx < len(self.densitometry_rois):
+                self.push_undo_state()
+                self.densitometry_rois[d_idx], self.densitometry_rois[new_idx] = \
+                    self.densitometry_rois[new_idx], self.densitometry_rois[d_idx]
+                self.update_layer_panel()
+                if hasattr(self, '_update_densitometry_panel'):
+                    self._update_densitometry_panel(select_id=iid)
+                self.layer_tree.selection_set(iid)
+                self.redraw_canvas()
+            return
 
     def _toggle_selected_visibility(self):
         """選択中のアイテムの表示/非表示をトグル"""

@@ -48,9 +48,8 @@ class MainWindowMixin:
 
 
         
-        # メインペイン
+        # メインペイン (packは最下部のツールバー構築後に行う)
         self.main_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        self.main_pane.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # 左パネル
         self.left_frame = ttk.LabelFrame(self.main_pane, text=T('layer_panel'), padding=5)
@@ -167,7 +166,12 @@ class MainWindowMixin:
 
         self._result_table_frame = ttk.LabelFrame(self.right_frame, text=T('result_table'), padding=5)
         self._result_table_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.result_table = ttk.Treeview(self._result_table_frame, columns=("Name", "Rf", "Size"), show="headings")
+
+        # テーブルとスクロールバーを配置するインナーフレーム
+        table_container = ttk.Frame(self._result_table_frame)
+        table_container.pack(fill=tk.BOTH, expand=True)
+
+        self.result_table = ttk.Treeview(table_container, columns=("Name", "Rf", "Size"), show="headings")
         self.result_table.heading("Name", text=T('xl_sample_name'))
         self.result_table.heading("Rf", text="Rf")
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')
@@ -175,7 +179,12 @@ class MainWindowMixin:
         self.result_table.column("Name", width=100, anchor="center")
         self.result_table.column("Rf", width=80, anchor="center")
         self.result_table.column("Size", width=120, anchor="center")
-        self.result_table.pack(fill=tk.BOTH, expand=True)
+
+        table_scroll_y = ttk.Scrollbar(table_container, orient=tk.VERTICAL, command=self.result_table.yview)
+        self.result_table.configure(yscrollcommand=table_scroll_y.set)
+
+        self.result_table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        table_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.btn_copy_clipboard = ttk.Button(self._result_table_frame, text=T('btn_clipboard_copy'),
                                              command=self.copy_results_to_clipboard)
@@ -305,6 +314,10 @@ class MainWindowMixin:
                                     text=T('status_init'),
                                     font=(UI_FONT_FAMILY, 9, "italic"))
         self.lbl_status.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+
+        # ツールバー配置後、余った上部領域いっぱいにメインペインを配置
+        self.main_pane.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
         self.root.bind("<Configure>", self._on_main_layout_configure, add="+")
 
     def _init_dnd(self):

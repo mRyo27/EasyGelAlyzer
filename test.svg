@@ -1,0 +1,594 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="460.8pt" height="345.6pt" viewBox="0 0 460.8 345.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-06-14T15:34:32.556558</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.5, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 345.6 
+L 460.8 345.6 
+L 460.8 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 57.6 307.584 
+L 414.72 307.584 
+L 414.72 41.472 
+L 57.6 41.472 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="mf8e896b1d2" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#mf8e896b1d2" x="73.832727" y="307.584" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <!-- 0.0 -->
+      <g transform="translate(65.876477 322.269937) scale(0.1 -0.1)">
+       <defs>
+        <path id="Meiryo-30" d="M 1991 -97 
+Q 1159 -97 768 497 
+Q 378 1091 378 2350 
+Q 378 3609 770 4206 
+Q 1163 4803 1991 4803 
+Q 2813 4803 3206 4204 
+Q 3600 3606 3600 2356 
+Q 3600 1094 3209 498 
+Q 2819 -97 1991 -97 
+z
+M 1991 4325 
+Q 1456 4325 1215 3901 
+Q 975 3478 975 2350 
+Q 975 1231 1215 806 
+Q 1456 381 1991 381 
+Q 2525 381 2764 806 
+Q 3003 1231 3003 2356 
+Q 3003 3459 2765 3892 
+Q 2528 4325 1991 4325 
+z
+" transform="scale(0.015625)"/>
+        <path id="Meiryo-2e" d="M 1472 0 
+L 763 0 
+L 763 853 
+L 1472 853 
+L 1472 0 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-30" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#mf8e896b1d2" x="138.763636" y="307.584" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <!-- 0.2 -->
+      <g transform="translate(130.807386 322.269937) scale(0.1 -0.1)">
+       <defs>
+        <path id="Meiryo-32" d="M 3606 0 
+L 456 0 
+L 456 609 
+Q 956 1041 1579 1612 
+Q 2203 2184 2506 2618 
+Q 2809 3053 2809 3488 
+Q 2809 3872 2554 4087 
+Q 2300 4303 1863 4303 
+Q 1222 4303 603 3897 
+L 572 3897 
+L 572 4506 
+Q 1203 4806 1878 4806 
+Q 2591 4806 3000 4461 
+Q 3409 4116 3409 3519 
+Q 3409 3200 3304 2909 
+Q 3200 2619 2978 2344 
+Q 2756 2069 2447 1759 
+Q 2138 1450 1025 503 
+L 3606 503 
+L 3606 0 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-32" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#mf8e896b1d2" x="203.694545" y="307.584" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <!-- 0.4 -->
+      <g transform="translate(195.738295 322.269937) scale(0.1 -0.1)">
+       <defs>
+        <path id="Meiryo-34" d="M 3713 1356 
+L 3022 1356 
+L 3022 0 
+L 2459 0 
+L 2459 1356 
+L 194 1356 
+L 194 2013 
+L 2484 4709 
+L 3022 4709 
+L 3022 1819 
+L 3713 1819 
+L 3713 1356 
+z
+M 2459 1819 
+L 2459 4022 
+L 588 1819 
+L 2459 1819 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-34" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#mf8e896b1d2" x="268.625455" y="307.584" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <!-- 0.6 -->
+      <g transform="translate(260.669205 322.269937) scale(0.1 -0.1)">
+       <defs>
+        <path id="Meiryo-36" d="M 3222 4722 
+L 3222 4169 
+L 3184 4169 
+Q 2922 4297 2572 4297 
+Q 1881 4297 1468 3858 
+Q 1056 3419 988 2638 
+Q 1578 2991 2138 2991 
+Q 2822 2991 3248 2611 
+Q 3675 2231 3675 1522 
+Q 3675 816 3212 359 
+Q 2750 -97 2063 -97 
+Q 1266 -97 823 458 
+Q 381 1013 381 2066 
+Q 381 3363 973 4080 
+Q 1566 4797 2666 4797 
+Q 2997 4797 3222 4722 
+z
+M 988 2238 
+Q 975 1981 975 1928 
+Q 975 1184 1265 779 
+Q 1556 375 2069 375 
+Q 2541 375 2809 670 
+Q 3078 966 3078 1497 
+Q 3078 1938 2825 2225 
+Q 2572 2513 1984 2513 
+Q 1475 2513 988 2238 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-36" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#mf8e896b1d2" x="333.556364" y="307.584" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <!-- 0.8 -->
+      <g transform="translate(325.600114 322.269937) scale(0.1 -0.1)">
+       <defs>
+        <path id="Meiryo-38" d="M 1206 2497 
+L 1206 2534 
+Q 459 2941 459 3588 
+Q 459 4122 890 4469 
+Q 1322 4816 1988 4816 
+Q 2678 4816 3097 4487 
+Q 3516 4159 3516 3628 
+Q 3516 3284 3308 2982 
+Q 3100 2681 2731 2513 
+L 2731 2472 
+Q 3641 2081 3641 1303 
+Q 3641 697 3169 295 
+Q 2697 -106 1988 -106 
+Q 1234 -106 784 280 
+Q 334 666 334 1291 
+Q 334 2106 1206 2497 
+z
+M 2938 3625 
+Q 2938 3963 2678 4178 
+Q 2419 4394 1984 4394 
+Q 1572 4394 1311 4192 
+Q 1050 3991 1050 3663 
+Q 1050 3300 1375 3065 
+Q 1700 2831 2363 2628 
+Q 2938 3000 2938 3625 
+z
+M 1588 2384 
+Q 928 2013 928 1334 
+Q 928 881 1228 601 
+Q 1528 322 1994 322 
+Q 2472 322 2753 567 
+Q 3034 813 3034 1241 
+Q 3034 1531 2906 1707 
+Q 2778 1884 2533 2006 
+Q 2288 2128 1588 2384 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-38" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#mf8e896b1d2" x="398.487273" y="307.584" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <!-- 1.0 -->
+      <g transform="translate(390.531023 322.269937) scale(0.1 -0.1)">
+       <defs>
+        <path id="Meiryo-31" d="M 3338 0 
+L 831 0 
+L 831 431 
+L 1813 431 
+L 1813 3669 
+L 831 3669 
+L 831 4050 
+Q 1406 4053 1653 4214 
+Q 1900 4375 1931 4725 
+L 2375 4725 
+L 2375 431 
+L 3338 431 
+L 3338 0 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Meiryo-31"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-30" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_7">
+      <defs>
+       <path id="m0bc658c112" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m0bc658c112" x="57.6" y="295.488" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <!-- 0.0 -->
+      <g transform="translate(34.6875 299.330969) scale(0.1 -0.1)">
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-30" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m0bc658c112" x="57.6" y="247.104" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <!-- 0.2 -->
+      <g transform="translate(34.6875 250.946969) scale(0.1 -0.1)">
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-32" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_9">
+      <g>
+       <use xlink:href="#m0bc658c112" x="57.6" y="198.72" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <!-- 0.4 -->
+      <g transform="translate(34.6875 202.562969) scale(0.1 -0.1)">
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-34" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m0bc658c112" x="57.6" y="150.336" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <!-- 0.6 -->
+      <g transform="translate(34.6875 154.178969) scale(0.1 -0.1)">
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-36" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#m0bc658c112" x="57.6" y="101.952" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <!-- 0.8 -->
+      <g transform="translate(34.6875 105.794969) scale(0.1 -0.1)">
+       <use xlink:href="#Meiryo-30"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-38" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m0bc658c112" x="57.6" y="53.568" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <!-- 1.0 -->
+      <g transform="translate(34.6875 57.410969) scale(0.1 -0.1)">
+       <use xlink:href="#Meiryo-31"/>
+       <use xlink:href="#Meiryo-2e" transform="translate(62.109375 0)"/>
+       <use xlink:href="#Meiryo-30" transform="translate(97.021484 0)"/>
+      </g>
+     </g>
+    </g>
+   </g>
+   <g id="line2d_13">
+    <path d="M 73.832727 295.488 
+L 398.487273 53.568 
+" clip-path="url(#pf7e4fe8e91)" style="fill: none; stroke: #1f77b4; stroke-width: 1.5; stroke-linecap: square"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 57.6 307.584 
+L 57.6 41.472 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 414.72 307.584 
+L 414.72 41.472 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 57.6 307.584 
+L 414.72 307.584 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 57.6 41.472 
+L 414.72 41.472 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="legend_1">
+    <g id="patch_7">
+     <path d="M 64.6 64.193875 
+L 126.6 64.193875 
+Q 128.6 64.193875 128.6 62.193875 
+L 128.6 48.472 
+Q 128.6 46.472 126.6 46.472 
+L 64.6 46.472 
+Q 62.6 46.472 62.6 48.472 
+L 62.6 62.193875 
+Q 62.6 64.193875 64.6 64.193875 
+z
+" style="fill: #ffffff; opacity: 0.8; stroke: #cccccc; stroke-linejoin: miter"/>
+    </g>
+    <g id="line2d_14">
+     <path d="M 66.6 54.657938 
+L 76.6 54.657938 
+L 86.6 54.657938 
+" style="fill: none; stroke: #1f77b4; stroke-width: 1.5; stroke-linecap: square"/>
+    </g>
+    <g id="text_13">
+     <!-- 日本語 -->
+     <g transform="translate(94.6 58.157938) scale(0.1 -0.1)">
+      <defs>
+       <path id="Meiryo-65e5" d="M 4944 44 
+L 1372 44 
+L 1372 -269 
+L 897 -269 
+L 897 4959 
+L 5434 4959 
+L 5434 -269 
+L 4944 -269 
+L 4944 44 
+z
+M 4944 2778 
+L 4944 4569 
+L 1372 4569 
+L 1372 2778 
+L 4944 2778 
+z
+M 1372 441 
+L 4944 441 
+L 4944 2400 
+L 1372 2400 
+L 1372 441 
+z
+" transform="scale(0.015625)"/>
+       <path id="Meiryo-672c" d="M 269 466 
+L 34 813 
+Q 800 1253 1542 2017 
+Q 2284 2781 2753 3697 
+L 341 3697 
+L 341 4103 
+L 2900 4103 
+L 2900 5272 
+L 3409 5272 
+L 3409 4103 
+L 6019 4103 
+L 6019 3697 
+L 3497 3697 
+Q 4659 1891 6366 891 
+L 6084 478 
+Q 5269 966 4551 1686 
+Q 3834 2406 3397 3066 
+L 3397 1225 
+L 4584 1225 
+L 4584 819 
+L 3397 819 
+L 3397 -388 
+L 2913 -388 
+L 2913 819 
+L 1731 819 
+L 1731 1225 
+L 2913 1225 
+L 2913 3038 
+Q 2322 2069 1523 1383 
+Q 725 697 269 466 
+z
+" transform="scale(0.015625)"/>
+       <path id="Meiryo-8a9e" d="M 531 4719 
+L 531 5066 
+L 2266 5066 
+L 2266 4719 
+L 531 4719 
+z
+M 2572 2244 
+L 2572 2609 
+L 3294 2609 
+L 3541 3575 
+L 2834 3575 
+L 2834 3941 
+L 3634 3941 
+L 3822 4681 
+L 2750 4681 
+L 2750 5053 
+L 5941 5053 
+L 5941 4681 
+L 4306 4681 
+L 4116 3941 
+L 5616 3941 
+L 5616 2609 
+L 6106 2609 
+L 6106 2244 
+L 2572 2244 
+z
+M 3772 2609 
+L 5144 2609 
+L 5144 3575 
+L 4022 3575 
+L 3772 2609 
+z
+M 309 3850 
+L 309 4203 
+L 2428 4203 
+L 2428 3850 
+L 309 3850 
+z
+M 538 3003 
+L 538 3353 
+L 2228 3353 
+L 2228 3003 
+L 538 3003 
+z
+M 538 2153 
+L 538 2506 
+L 2228 2506 
+L 2228 2153 
+L 538 2153 
+z
+M 5288 -125 
+L 3375 -125 
+L 3375 -334 
+L 2906 -334 
+L 2906 1703 
+L 5766 1703 
+L 5766 -322 
+L 5288 -322 
+L 5288 -125 
+z
+M 3375 241 
+L 5288 241 
+L 5288 1338 
+L 3375 1338 
+L 3375 241 
+z
+M 909 -113 
+L 909 -353 
+L 459 -353 
+L 459 1600 
+L 2259 1600 
+L 2259 -113 
+L 909 -113 
+z
+M 1809 1259 
+L 909 1259 
+L 909 228 
+L 1809 228 
+L 1809 1259 
+z
+" transform="scale(0.015625)"/>
+      </defs>
+      <use xlink:href="#Meiryo-65e5"/>
+      <use xlink:href="#Meiryo-672c" transform="translate(100 0)"/>
+      <use xlink:href="#Meiryo-8a9e" transform="translate(200 0)"/>
+     </g>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pf7e4fe8e91">
+   <rect x="57.6" y="41.472" width="357.12" height="266.112"/>
+  </clipPath>
+ </defs>
+</svg>

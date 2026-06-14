@@ -142,6 +142,11 @@ class EasyGelAlyzerApp(
         self._trackpad_pan_y = 0
 
         self.show_mode_selection_dialog()
+
+        # --- バージョン表示ラベル（ステータスバー） ---
+        version_label = ttk.Label(self.root, text=f"EasyGelAlyzer v{VERSION}", anchor="e")
+        version_label.pack(fill=tk.X, side=tk.BOTTOM)
+
         self.create_widgets()
 
         # ウィンドウ初期配置時にペイン比率を1:2:1にする
@@ -155,9 +160,6 @@ class EasyGelAlyzerApp(
                     self._adjust_main_pane_layout()
         except Exception:
             LOGGER.exception("Unexpected error")
-        # --- バージョン表示ラベル（ステータスバー） ---
-        version_label = ttk.Label(self.root, text=f"EasyGelAlyzer v{VERSION}", anchor="e")
-        version_label.pack(fill=tk.X, side=tk.BOTTOM)
         
         self.setup_bindings()
         self.update_window_title()

@@ -33,6 +33,7 @@ def configure_matplotlib_japanese_font():
     matplotlib.rcParams["axes.unicode_minus"] = False
     matplotlib.rcParams["pdf.fonttype"] = 42
     matplotlib.rcParams["ps.fonttype"] = 42
+    matplotlib.rcParams["svg.fonttype"] = "none"
 
 
 __all__ = ["get_japanese_font", "get_japanese_font_path", "configure_matplotlib_japanese_font"]

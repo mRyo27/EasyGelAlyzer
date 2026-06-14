@@ -65,10 +65,8 @@ class DensitometryMixin:
 
     def _densitometry_name_candidates(self):
         names = []
-        for m in self.markers:
-            name = m.get('name', '')
-            if name and name not in names:
-                names.append(name)
+        if self.markers:
+            names.append(T('marker_node'))
         for s in self.samples:
             base = self._get_sample_group_name(s.get('name', ''))
             if base and base not in names:
@@ -282,6 +280,14 @@ class DensitometryMixin:
         self._dens_delete_btn = ttk.Button(btns, text=T("dens_delete_roi"),
                                            command=self.delete_selected_densitometry_roi)
         self._dens_delete_btn.pack(side=tk.LEFT, padx=2)
+        
+        self._dens_up_btn = ttk.Button(btns, text="↑", width=3,
+                                       command=lambda: self.move_densitometry_roi(-1))
+        self._dens_up_btn.pack(side=tk.LEFT, padx=2)
+        self._dens_down_btn = ttk.Button(btns, text="↓", width=3,
+                                         command=lambda: self.move_densitometry_roi(1))
+        self._dens_down_btn.pack(side=tk.LEFT, padx=2)
+        
         self._dens_panel_created = True
 
     def _update_densitometry_language(self):
@@ -494,7 +500,7 @@ class DensitometryMixin:
         win = tk.Toplevel(self.root)
         self._lane_profile_window = win
         win.title(T("lane_profile_title"))
-        win.geometry("780x560")
+        self._center_dialog(win, 1000, 560)
         win.transient(self.root)
         win.protocol("WM_DELETE_WINDOW", lambda: (setattr(self, '_lane_profile_window', None), win.destroy()))
 
@@ -695,3 +701,21 @@ class DensitometryMixin:
             for gy in guide_ys:
                 draw.line((0, int(gy), out_w, int(gy)), fill="#FF9500", width=1)
         out.save(path)
+
+    def move_densitometry_roi(self, direction):
+        if not getattr(self, '_dens_tree', None):
+            return
+        selected = self._dens_tree.selection()
+        if not selected:
+            return
+        roi_id = selected[0]
+        d_idx = next((i for i, d in enumerate(self.densitometry_rois) if d['id'] == roi_id), None)
+        if d_idx is not None:
+            new_idx = d_idx + direction
+            if 0 <= new_idx < len(self.densitometry_rois):
+                self.push_undo_state()
+                self.densitometry_rois[d_idx], self.densitometry_rois[new_idx] = \
+                    self.densitometry_rois[new_idx], self.densitometry_rois[d_idx]
+                self.update_layer_panel()
+                self._update_densitometry_panel(select_id=roi_id)
+                self.redraw_canvas()

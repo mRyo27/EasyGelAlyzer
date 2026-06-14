@@ -138,21 +138,33 @@ class PDFExportMixin:
     def _pdf_table_page(self, pdf, page_size, title, rows, headers):
         from matplotlib.figure import Figure
 
-        fig = Figure(figsize=page_size, dpi=150)
-        ax = fig.add_subplot(111)
-        ax.axis("off")
-        ax.set_title(title, pad=16)
-        table = ax.table(
-            cellText=rows or [[T("dens_no_data") for _ in headers]],
-            colLabels=headers,
-            loc="center",
-            cellLoc="center"
-        )
-        table.auto_set_font_size(False)
-        table.set_fontsize(9)
-        table.scale(1, 1.35)
-        fig.tight_layout()
-        pdf.savefig(fig)
+        max_rows_per_page = 25
+        if not rows:
+            rows_chunks = [[[T("dens_no_data") for _ in headers]]]
+        else:
+            rows_chunks = [rows[i:i + max_rows_per_page] for i in range(0, len(rows), max_rows_per_page)]
+
+        for idx, chunk in enumerate(rows_chunks):
+            fig = Figure(figsize=page_size, dpi=150)
+            ax = fig.add_subplot(111)
+            ax.axis("off")
+            
+            page_title = title
+            if len(rows_chunks) > 1:
+                page_title = f"{title} ({idx + 1}/{len(rows_chunks)})"
+                
+            ax.set_title(page_title, pad=16)
+            table = ax.table(
+                cellText=chunk,
+                colLabels=headers,
+                loc="center",
+                cellLoc="center"
+            )
+            table.auto_set_font_size(False)
+            table.set_fontsize(9)
+            table.scale(1, 1.35)
+            fig.tight_layout()
+            pdf.savefig(fig)
 
     def _format_marker_size(self, m):
         unit = "kDa" if self.mode == "protein" else "bp"
@@ -201,7 +213,7 @@ class PDFExportMixin:
         unit = "kDa" if self.mode == "protein" else "bp"
 
         def color(c):
-            return self._annot_bw_color() if self.grayscale else c
+            return "#000000" if self.grayscale else c
 
         def tx(x):
             return int(ox + x)
