@@ -605,7 +605,7 @@ class DensitometryMixin:
                     roi_color = self._get_densitometry_color(roi)
                     # プロファイル線をROIの色と統一
                     ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")), color=roi_color)
-            ax.set_title(T("lane_profile_title"))
+            ax.set_title(T("lane_profile_title"), y=1.15)
             ax.set_xlabel(T("lane_profile_x"))
             ax.set_ylabel(T("lane_profile_y"))
             ax.grid(True, linestyle=":", alpha=0.5)
@@ -679,8 +679,8 @@ class DensitometryMixin:
                         # テキストラベル (下部に配置)
                         size_val = self._format_sample_size(s)
                         label_txt = f"{s.get('name', '')}\n{size_val}"
-                        txt = ax.text(rf, -0.02, label_txt, color=s_color, fontsize=8,
-                                horizontalalignment='center', verticalalignment='top',
+                        txt = ax.text(rf, 1.02, label_txt, color=s_color, fontsize=8,
+                                horizontalalignment='center', verticalalignment='bottom',
                                 bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'),
                                 transform=ax.get_xaxis_transform(), clip_on=True)
                         if not exporting:
@@ -689,7 +689,7 @@ class DensitometryMixin:
 
             if selected_rois():
                 ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
-            fig.subplots_adjust(right=0.74, top=0.90, bottom=0.12)
+            fig.subplots_adjust(right=0.74, top=0.82, bottom=0.12)
             
             # xlimを復元または初期化
             if hasattr(ax, '_xlim_initialized') and not exporting:
