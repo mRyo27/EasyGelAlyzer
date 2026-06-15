@@ -1086,11 +1086,27 @@ class MainWindowMixin:
         PresetManagerWindow.show(self.root, on_change_callback=self.update_preset_combobox)
 
     def update_preset_combobox(self):
+        """Refresh the preset dropdown.
+
+        Handles both the current list-of-dicts format and legacy list-of-name strings.
+        """
         import core.marker_presets as mp
         presets = mp.list_presets()
-        names = [p["name"] for p in presets]
+        # Preserve backward compatibility: items may be plain strings or dicts with a "name" key.
+        names = []
+        for p in presets:
+            if isinstance(p, dict):
+                name = p.get("name")
+                if name:
+                    names.append(name)
+            elif isinstance(p, str):
+                names.append(p)
+        # Remove duplicates while preserving order
+        seen = set()
+        names = [x for x in names if not (x in seen or seen.add(x))]
         self.combo_presets.config(values=names)
         if names:
+            # If the current selection is invalid, default to the first preset.
             if self.combo_presets.get() not in names:
                 self.combo_presets.set(names[0])
         else:
