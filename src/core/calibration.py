@@ -10,9 +10,9 @@ class CalibrationMixin:
         matplotlib.use("TkAgg")
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         from matplotlib.figure import Figure
-        import matplotlib.pyplot as plt
+        from graphics.fonts import configure_matplotlib_japanese_font
 
-        plt.rcParams['font.family'] = 'MS Gothic'
+        configure_matplotlib_japanese_font()
         self.fig = Figure(figsize=(4, 3), dpi=100, facecolor="#F0F0F0")
         self.ax = self.fig.add_subplot(111)
         self.fig_canvas = FigureCanvasTkAgg(self.fig, master=self.right_frame)
@@ -21,8 +21,38 @@ class CalibrationMixin:
                 self._plot_placeholder.destroy()
                 self._plot_placeholder = None
         except Exception:
-            pass
+            LOGGER.exception("Failed to remove calibration plot placeholder")
         self.fig_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=5, before=self._coeff_frame)
+
+    def _marker_arrays_for_calibration(self):
+        import numpy as np
+
+        rf_arr = np.asarray([m.get('rf', 0.0) for m in self.markers], dtype=float)
+        size_arr = np.asarray([m.get('size', 0.0) for m in self.markers], dtype=float)
+        invalid = (~np.isfinite(size_arr)) | (size_arr <= 0)
+        if np.any(invalid):
+            bad_names = [
+                self.markers[i].get('name', f"Marker-{i + 1}")
+                for i in np.flatnonzero(invalid)
+            ]
+            raise ValueError(
+                f"Marker sizes must be positive numbers: {', '.join(bad_names)}"
+            )
+        return rf_arr, size_arr
+
+    def _clear_calibration_values(self, message=None):
+        self.calibration_a = 0.0
+        self.calibration_b = 0.0
+        self.calibration_r2 = 0.0
+        self.entry_a.delete(0, tk.END)
+        self.entry_a.insert(0, "0.000000")
+        self.entry_b.delete(0, tk.END)
+        self.entry_b.insert(0, "0.000000")
+        self.lbl_r2.config(text=T('r2_na'), foreground="")
+        for s in self.samples:
+            s['size'] = 0.0
+        if message:
+            self.lbl_status.config(text=message)
 
     def update_result_table(self):
         for child in self.result_table.get_children():
@@ -59,10 +89,21 @@ class CalibrationMixin:
                 self._plot_placeholder.config(text=T('plot_add_markers'))
             self._update_manual_coeff_ui()
             return
-        rf_arr = np.array([m['rf'] for m in self.markers])
-        size_arr = np.array([m['size'] for m in self.markers])
+        try:
+            rf_arr, size_arr = self._marker_arrays_for_calibration()
+        except ValueError as e:
+            LOGGER.warning("Invalid marker data for calibration: %s", e)
+            self._clear_calibration_values(str(e))
+            self.update_result_table()
+            return
         log_size_arr = np.log10(size_arr)
-        a, b = np.polyfit(rf_arr, log_size_arr, 1)
+        try:
+            a, b = np.polyfit(rf_arr, log_size_arr, 1)
+        except Exception as e:
+            LOGGER.exception("Failed to calculate calibration curve")
+            self._clear_calibration_values(str(e))
+            self.update_result_table()
+            return
         self.calibration_a = float(a)
         self.calibration_b = float(b)
         preds = a * rf_arr + b
@@ -93,8 +134,15 @@ class CalibrationMixin:
             return
         self._ensure_calibration_plot()
         self.ax.clear()
-        rf_list = [m['rf'] for m in self.markers]
-        log_size_list = np.log10([m['size'] for m in self.markers])
+        try:
+            rf_arr, size_arr = self._marker_arrays_for_calibration()
+        except ValueError as e:
+            LOGGER.warning("Invalid marker data for calibration plot: %s", e)
+            if getattr(self, 'lbl_status', None) is not None:
+                self.lbl_status.config(text=str(e))
+            return
+        rf_list = rf_arr.tolist()
+        log_size_list = np.log10(size_arr)
         self.ax.scatter(rf_list, log_size_list, color='blue', label='Marker', zorder=5)
         x_line = np.linspace(0.0, 1.0, 100)
         y_line = self.calibration_a * x_line + self.calibration_b
@@ -136,7 +184,7 @@ class CalibrationMixin:
             self.entry_b.config(state=state)
             self.btn_apply_coeff.config(state=state)
         except Exception:
-            pass
+            LOGGER.exception("Failed to update manual coefficient controls")
 
     # ------------------------------------------------------------------ #
     #  Canvas再描画

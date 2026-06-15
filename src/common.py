@@ -9,8 +9,16 @@ import time
 from version import VERSION
 import json
 import sys
+import logging
 
 import ctypes
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s"
+)
+LOGGER = logging.getLogger("EasyGelAlyzer")
+UI_FONT_FAMILY = "TkDefaultFont"
 
 # Optional drag & drop support: tkinterdnd2 may not be installed in all environments.
 # Provide a safe fallback so static analysis tools don't report a missing import.
@@ -19,6 +27,7 @@ try:
     tkinterdnd2 = __import__("tkinterdnd2")
     DND_FILES = tkinterdnd2.DND_FILES
 except Exception:
+    LOGGER.debug("tkinterdnd2 is not available", exc_info=True)
     DND_FILES = None
 
 MARKER_LINE_COLOR = "#FF9F00"
@@ -41,7 +50,10 @@ def _load_config():
     try:
         with open(_CONFIG_PATH, 'r', encoding='utf-8') as _f:
             return json.load(_f)
+    except FileNotFoundError:
+        return {}
     except Exception:
+        LOGGER.exception("Failed to load config from %s", _CONFIG_PATH)
         return {}
 
 def _save_config(data):
@@ -49,7 +61,7 @@ def _save_config(data):
         with open(_CONFIG_PATH, 'w', encoding='utf-8') as _f:
             json.dump(data, _f, ensure_ascii=False, indent=2)
     except Exception:
-        pass
+        LOGGER.exception("Failed to save config to %s", _CONFIG_PATH)
 
 _config = _load_config()
 _LANG = _config.get('language', 'en')  # デフォルト英語
@@ -73,8 +85,8 @@ def get_japanese_font(size=12):
         if os.path.exists(path):
             try:
                 return ImageFont.truetype(path, size)
-            except:
-                pass
+            except Exception:
+                LOGGER.debug("Failed to load font %s", path, exc_info=True)
     return ImageFont.load_default()
 
 

@@ -55,7 +55,7 @@ class UIDialogMixin:
         dialog.geometry(f"+{x}+{y}")
 
         ttk.Label(dialog, text=T('dlg_mode_prompt'),
-                  font=("Helvetica", 12, "bold")).pack(pady=15)
+                  font=(UI_FONT_FAMILY, 12, "bold")).pack(pady=15)
         btn_frame = ttk.Frame(dialog)
         btn_frame.pack(pady=10)
         mode_var = tk.StringVar(value="protein")
@@ -96,7 +96,7 @@ class UIDialogMixin:
         result_val = [None]
 
         ttk.Label(dialog, text=T('dlg_marker_rf').format(rf=rf),
-                  font=("Helvetica", 9, "italic")).pack(pady=6)
+                  font=(UI_FONT_FAMILY, 9, "italic")).pack(pady=6)
 
         frame = ttk.Frame(dialog)
         frame.pack(fill=tk.X, padx=15)
@@ -162,7 +162,7 @@ class UIDialogMixin:
                  if get_language() == 'en' else
                  T('dlg_sample_hint'))
         ttk.Label(dialog, text=_hint,
-                  font=("Helvetica", 8), foreground="#555555").pack(pady=2)
+                  font=(UI_FONT_FAMILY, 8), foreground="#555555").pack(pady=2)
 
         frame = ttk.Frame(dialog)
         frame.pack(fill=tk.X, padx=15)
@@ -306,14 +306,14 @@ class UIDialogMixin:
         nb.add(info_frame, text="Version Info" if get_language() == 'en' else "バージョン情報")
 
         ttk.Label(info_frame, text="EasyGelAlyzer",
-                  font=("Helvetica", 20, "bold")).pack(pady=(28, 6))
+                  font=(UI_FONT_FAMILY, 20, "bold")).pack(pady=(28, 6))
         ttk.Label(info_frame, text=f"Version  {VERSION}",
-                  font=("Helvetica", 13)).pack(pady=4)
+                  font=(UI_FONT_FAMILY, 13)).pack(pady=4)
         ttk.Separator(info_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=40, pady=14)
         ttk.Label(info_frame,
                   text="Gel electrophoresis analysis tool" if get_language() == 'en'
                        else "ゲル電気泳動解析ツール",
-                  font=("Helvetica", 10), foreground="#555555").pack(pady=4)
+                  font=(UI_FONT_FAMILY, 10), foreground="#555555").pack(pady=4)
 
         # ---- Tab 2: LICENSE ----
         lic_frame = ttk.Frame(nb)
@@ -348,21 +348,18 @@ class UIDialogMixin:
         try:
             _candidate_dirs.append(PROJECT_ROOT)
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # 候補2: exe と同じフォルダ（PyInstaller: EasyGelAlyzer.exeの隣）
         try:
             _exe_dir = os.path.dirname(os.path.abspath(sys.executable))
             _candidate_dirs.append(_exe_dir)
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # 候補3: exe の1つ上のフォルダ（dist/EasyGelAlyzer.exe → EasyGelAlyzer/）
         try:
             _candidate_dirs.append(os.path.normpath(os.path.join(_exe_dir, '..')))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         _license_text = None
         _found_path = None
         for _d in _candidate_dirs:

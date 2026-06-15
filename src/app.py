@@ -7,6 +7,8 @@ from core.calibration import CalibrationMixin
 from core.project_io import ProjectIOMixin
 from core.excel_export import ExcelExportMixin
 from core.image_export import ImageExportMixin
+from core.pdf_export import PDFExportMixin
+from core.densitometry import DensitometryMixin
 
 
 class EasyGelAlyzerApp(
@@ -18,6 +20,8 @@ class EasyGelAlyzerApp(
     ProjectIOMixin,
     ExcelExportMixin,
     ImageExportMixin,
+    PDFExportMixin,
+    DensitometryMixin,
 ):
     def __init__(self, root):
         self.root = root
@@ -44,7 +48,7 @@ class EasyGelAlyzerApp(
                         self.root.iconphoto(True, _icon_img)
                         self._icon_img = _icon_img  # GC防止
                 except Exception:
-                    pass
+                    LOGGER.exception("Unexpected error")
                 break
 
         self.mode = None
@@ -108,6 +112,9 @@ class EasyGelAlyzerApp(
         # x: 横位置(元画像系), y_above_start: 開始ラインより上に表示(固定値, キャンバスオフセット)
         self.lane_labels = []
         self.lane_label_font_size = 11  # ラベルフォントサイズ（スライダーで変更可）
+        self.densitometry_rois = []
+        self._dens_roi_start = None
+        self._dens_roi_rect_id = None
         self.image_preset_mode = 'none'
 
         # アイテムごとの表示/非表示 (id -> bool)
@@ -117,6 +124,10 @@ class EasyGelAlyzerApp(
         # 中ボタンダブルクリック判定用
         self._last_middle_click_time = 0.0
         self._tree_drag_anchor = None
+        self._tree_rows_cache = None
+        self._tree_drag_last_row = None
+        self._tree_drag_last_selection = ()
+        self._drag_redraw_after_id = None
         self._native_dnd_proc = None
         self._native_dnd_original_wndproc = None
 
@@ -131,6 +142,11 @@ class EasyGelAlyzerApp(
         self._trackpad_pan_y = 0
 
         self.show_mode_selection_dialog()
+
+        # --- バージョン表示ラベル（ステータスバー） ---
+        version_label = ttk.Label(self.root, text=f"EasyGelAlyzer v{VERSION}", anchor="e")
+        version_label.pack(fill=tk.X, side=tk.BOTTOM)
+
         self.create_widgets()
 
         # ウィンドウ初期配置時にペイン比率を1:2:1にする
@@ -140,12 +156,10 @@ class EasyGelAlyzerApp(
             if total_w > 10:
                 self.main_pane.sashpos(0, int(total_w * 0.25))
                 self.main_pane.sashpos(1, int(total_w * 0.75))
+                if hasattr(self, '_adjust_main_pane_layout'):
+                    self._adjust_main_pane_layout()
         except Exception:
-            pass
-
-        # --- バージョン表示ラベル（ステータスバー） ---
-        version_label = ttk.Label(self.root, text=f"EasyGelAlyzer v{VERSION}", anchor="e")
-        version_label.pack(fill=tk.X, side=tk.BOTTOM)
+            LOGGER.exception("Unexpected error")
         
         self.setup_bindings()
         self.update_window_title()

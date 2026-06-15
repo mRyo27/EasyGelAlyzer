@@ -77,7 +77,7 @@ class ImageExportMixin:
         y = self.root.winfo_screenheight() // 2 - 125
         layout_win.geometry(f"+{x}+{y}")
         ttk.Label(layout_win, text=T('dlg_layout_prompt'),
-                  font=("Helvetica", 10, "bold")).pack(pady=10)
+                  font=(UI_FONT_FAMILY, 10, "bold")).pack(pady=10)
         layout_var = tk.IntVar(value=1)
         ttk.Radiobutton(layout_win, text=T('dlg_layout_1'),
                         variable=layout_var, value=1).pack(anchor=tk.W, padx=20, pady=2)
@@ -90,7 +90,7 @@ class ImageExportMixin:
 
         ttk.Separator(layout_win, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=10, pady=8)
         ttk.Label(layout_win, text=T('dlg_annot_style'),
-                  font=("Helvetica", 10, "bold")).pack(anchor=tk.W, padx=20)
+                  font=(UI_FONT_FAMILY, 10, "bold")).pack(anchor=tk.W, padx=20)
         no_margin_var = tk.BooleanVar(value=False)
         ttk.Radiobutton(layout_win, text=T('dlg_margin_yes'),
                          variable=no_margin_var, value=False).pack(anchor=tk.W, padx=20, pady=2)
@@ -141,7 +141,7 @@ class ImageExportMixin:
             color_win.geometry(f"+{cx_pos}+{cy_pos}")
 
             ttk.Label(color_win, text=T('dlg_bw_prompt'),
-                      font=("Helvetica", 10, "bold")).pack(pady=10)
+                      font=(UI_FONT_FAMILY, 10, "bold")).pack(pady=10)
 
             # プレビュー用キャンバス（開始・終了・マーカー・サンプルのイメージ）
             preview_c = tk.Canvas(color_win, width=300, height=90, bg="#808080")
@@ -153,19 +153,19 @@ class ImageExportMixin:
                 # 開始ライン
                 preview_c.create_line(0, 25, 300, 25, fill=c, width=2)
                 preview_c.create_text(8, 14, text=T("out_start"), fill=c, anchor="w",
-                                      font=("Helvetica", 8, "bold"))
+                                      font=(UI_FONT_FAMILY, 8, "bold"))
                 # 終了ライン
                 preview_c.create_line(0, 65, 300, 65, fill=c, width=2)
                 preview_c.create_text(8, 54, text=T("out_end"), fill=c, anchor="w",
-                                      font=("Helvetica", 8, "bold"))
+                                      font=(UI_FONT_FAMILY, 8, "bold"))
                 # マーカー線（破線風）
                 preview_c.create_line(0, 45, 300, 45, fill=c, dash=(4,4), width=1)
                 preview_c.create_text(292, 37, text=T("lbl_marker_node"), fill=c, anchor="e",
-                                      font=("Helvetica", 7))
+                                      font=(UI_FONT_FAMILY, 7))
                 # サンプル点
                 preview_c.create_oval(148, 40, 156, 48, fill=c, outline=c)
                 preview_c.create_text(160, 38, text=T("lbl_sample_node"), fill=c, anchor="w",
-                                      font=("Helvetica", 7))
+                                      font=(UI_FONT_FAMILY, 7))
 
             _draw_annot_preview()
 

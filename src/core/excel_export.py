@@ -3,9 +3,28 @@ import csv
 
 
 class ExcelExportMixin:
+    def _validate_marker_sizes_for_export(self):
+        invalid = []
+        for i, m in enumerate(self.markers):
+            try:
+                size = float(m.get('size'))
+                if not math.isfinite(size) or size <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                invalid.append(m.get('name', f"Marker-{i + 1}"))
+        if invalid:
+            messagebox.showwarning(
+                T("warn_title"),
+                "Marker sizes must be positive numbers: " + ", ".join(invalid)
+            )
+            return False
+        return True
+
     def export_to_excel(self):
         if not self.markers:
             messagebox.showwarning(T("warn_title"), T("warn_no_markers"))
+            return
+        if not self._validate_marker_sizes_for_export():
             return
         path = filedialog.asksaveasfilename(
             title=T("dlg_save_excel"),
@@ -31,6 +50,60 @@ class ExcelExportMixin:
             ws2.append([T('xl_sample_no'), T('xl_sample_name'), T('xl_rf'), size_header])
             for i, s in enumerate(self.samples, 1):
                 ws2.append([i, s['name'], s['rf'], s['size'] if s['size'] > 0 else "N/A"])
+
+            if getattr(self, 'densitometry_rois', None):
+                self._recalculate_densitometry()
+                ws_den = wb.create_sheet(title="Densitometry")
+                ws_den.append([
+                    "No.", "Lane/Sample", "X1", "Y1", "X2", "Y2",
+                    "Integrated Density", "Relative to Max"
+                ])
+                for i, roi in enumerate(self.densitometry_rois, 1):
+                    x0, y0, x1, y1 = roi.get('roi', [0, 0, 0, 0])
+                    ws_den.append([
+                        i,
+                        roi.get('name', ''),
+                        float(x0), float(y0), float(x1), float(y1),
+                        float(roi.get('integrated_density', 0.0)),
+                        float(roi.get('relative_density', 0.0)),
+                    ])
+                profile_start_col = 10
+                max_len = 0
+                for idx, roi in enumerate(self.densitometry_rois):
+                    result = self._calculate_densitometry_profile(roi)
+                    if not result:
+                        continue
+                    corrected = result.get('corrected', [])
+                    max_len = max(max_len, len(corrected))
+                    col_x = profile_start_col + idx * 2
+                    col_y = col_x + 1
+                    ws_den.cell(row=1, column=col_x, value=f"{roi.get('name', '')} X")
+                    ws_den.cell(row=1, column=col_y, value=f"{roi.get('name', '')} Density")
+                    xs = self._normalized_profile_x(len(corrected)) if hasattr(self, '_normalized_profile_x') else [
+                        j / max(len(corrected) - 1, 1) for j in range(len(corrected))]
+                    for row_idx, (xv, yv) in enumerate(zip(xs, corrected), start=2):
+                        ws_den.cell(row=row_idx, column=col_x, value=float(xv))
+                        ws_den.cell(row=row_idx, column=col_y, value=float(yv))
+                if max_len:
+                    dens_chart = ScatterChart()
+                    dens_chart.title = T("lane_profile_title")
+                    dens_chart.x_axis.title = T("lane_profile_x")
+                    dens_chart.y_axis.title = T("lane_profile_y")
+                    dens_chart.x_axis.scaling.min = 0.0
+                    dens_chart.x_axis.scaling.max = 1.0
+                    for idx, roi in enumerate(self.densitometry_rois):
+                        col_x = profile_start_col + idx * 2
+                        col_y = col_x + 1
+                        if ws_den.cell(row=2, column=col_y).value is None:
+                            continue
+                        xvalues = Reference(ws_den, min_col=col_x, min_row=2, max_row=max_len + 1)
+                        yvalues = Reference(ws_den, min_col=col_y, min_row=2, max_row=max_len + 1)
+                        series = Series(yvalues, xvalues, title=roi.get('name', ''))
+                        series.marker.symbol = "none"
+                        dens_chart.series.append(series)
+                    dens_chart.width = 18
+                    dens_chart.height = 10
+                    ws_den.add_chart(dens_chart, "J8")
 
             ws3 = wb.create_sheet(title=T('xl_sheet_graph'))
 
@@ -135,6 +208,8 @@ class ExcelExportMixin:
         """Export marker and sample data to CSV file."""
         if not self.markers:
             messagebox.showwarning(T("warn_title"), T("warn_no_markers"))
+            return
+        if not self._validate_marker_sizes_for_export():
             return
         path = filedialog.asksaveasfilename(
             title=T("dlg_save_csv"),

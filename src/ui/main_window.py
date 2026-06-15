@@ -20,6 +20,7 @@ class MainWindowMixin:
         self._file_menu.add_command(label=f"{T('menu_excel')} (Ctrl+E)", command=self.export_to_excel)
         self._file_menu.add_command(label=f"{T('btn_csv')} (Ctrl+Shift+E)", command=self.export_to_csv)
         self._file_menu.add_command(label=f"{T('menu_image')} (Ctrl+I)", command=self.export_annotated_image)
+        self._file_menu.add_command(label=T("pdf_export_title"), command=self.export_analysis_pdf)
         self._file_menu.add_separator()
         self._file_menu.add_command(label=T('menu_quit'), command=self.on_app_close)
 
@@ -47,9 +48,8 @@ class MainWindowMixin:
 
 
         
-        # メインペイン
+        # メインペイン (packは最下部のツールバー構築後に行う)
         self.main_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        self.main_pane.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # 左パネル
         self.left_frame = ttk.LabelFrame(self.main_pane, text=T('layer_panel'), padding=5)
@@ -82,6 +82,7 @@ class MainWindowMixin:
         self.marker_node = self.layer_tree.insert("", "end", text=T('marker_node'), open=True)
         self.sample_node = self.layer_tree.insert("", "end", text=T('sample_node'), open=True)
         self.label_node  = self.layer_tree.insert("", "end", text=T('label_node'),  open=True)
+        self.dens_node   = self.layer_tree.insert("", "end", text=T('dens_panel'),   open=True)
         self.line_node   = self.layer_tree.insert("", "end", text=T('line_node'),   open=True)
 
         # 選択アイテムのプロパティ（ラベル項目選択時にフォントサイズを変更）
@@ -115,7 +116,7 @@ class MainWindowMixin:
         self.memo_frame = ttk.LabelFrame(self.left_frame, text=T('lbl_memo'), padding=3)
         self.memo_frame.pack(fill=tk.BOTH, expand=False, pady=4)
         
-        self.memo_text = tk.Text(self.memo_frame, height=4, wrap=tk.WORD, font=("Helvetica", 9))
+        self.memo_text = tk.Text(self.memo_frame, height=4, wrap=tk.WORD, font=(UI_FONT_FAMILY, 9))
         self.memo_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         memo_scroll = ttk.Scrollbar(self.memo_frame, orient=tk.VERTICAL, command=self.memo_text.yview)
@@ -160,12 +161,23 @@ class MainWindowMixin:
         self.btn_apply_coeff.grid(row=0, column=4, padx=5)
         self._update_manual_coeff_ui()
         self.lbl_r2 = ttk.Label(self._coeff_frame, text="R² = 0.0000",
-                                font=("Helvetica", 10, "bold"))
+                                font=(UI_FONT_FAMILY, 10, "bold"))
         self.lbl_r2.pack(anchor=tk.W, pady=2)
 
         self._result_table_frame = ttk.LabelFrame(self.right_frame, text=T('result_table'), padding=5)
         self._result_table_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.result_table = ttk.Treeview(self._result_table_frame, columns=("Name", "Rf", "Size"), show="headings")
+        self._result_table_frame.pack_propagate(False)  # 最小高さを保証するため伝播を止める
+        self._result_table_frame.configure(height=180)  # クリップボードボタン含む最小高さ
+
+        self.btn_copy_clipboard = ttk.Button(self._result_table_frame, text=T('btn_clipboard_copy'),
+                                             command=self.copy_results_to_clipboard)
+        self.btn_copy_clipboard.pack(side=tk.BOTTOM, fill=tk.X, pady=2)
+
+        # テーブルとスクロールバーを配置するインナーフレーム
+        table_container = ttk.Frame(self._result_table_frame)
+        table_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        self.result_table = ttk.Treeview(table_container, columns=("Name", "Rf", "Size"), show="headings", height=4)
         self.result_table.heading("Name", text=T('xl_sample_name'))
         self.result_table.heading("Rf", text="Rf")
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')
@@ -173,15 +185,17 @@ class MainWindowMixin:
         self.result_table.column("Name", width=100, anchor="center")
         self.result_table.column("Rf", width=80, anchor="center")
         self.result_table.column("Size", width=120, anchor="center")
-        self.result_table.pack(fill=tk.BOTH, expand=True)
 
-        self.btn_copy_clipboard = ttk.Button(self._result_table_frame, text=T('btn_clipboard_copy'),
-                                             command=self.copy_results_to_clipboard)
-        self.btn_copy_clipboard.pack(fill=tk.X, pady=2)
+        table_scroll_y = ttk.Scrollbar(table_container, orient=tk.VERTICAL, command=self.result_table.yview)
+        self.result_table.configure(yscrollcommand=table_scroll_y.set)
+
+        self.result_table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        table_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
 
         # ツールバー
         toolbar_container = ttk.Frame(self.root, padding=5)
-        toolbar_container.pack(fill=tk.X, side=tk.TOP)
+        toolbar_container.pack(fill=tk.X, side=tk.BOTTOM)
+        self._toolbar_container = toolbar_container
 
         tb_row1 = ttk.Frame(toolbar_container)
         tb_row1.pack(fill=tk.X, pady=2)
@@ -222,52 +236,70 @@ class MainWindowMixin:
 
         # === 左グループ: 測定・分析 ===
         self._analysis_frame = ttk.LabelFrame(tb_row3, text=T('tb_measure'), padding=2)
-        self._analysis_frame.pack(side=tk.LEFT, padx=4)
+        self._analysis_frame.pack(side=tk.LEFT, padx=4, fill=tk.X, expand=True)
+        for _col in range(8):
+            self._analysis_frame.columnconfigure(_col, weight=0)
         self.btn_start_line = tk.Button(self._analysis_frame, text=T('btn_start_line'),
-                        fg="#007AFF", font=("Helvetica", 11, "bold"), width=14,
+                        fg="#007AFF", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                         command=self.set_start_line)
-        self.btn_start_line.pack(side=tk.LEFT, padx=2)
+        self.btn_start_line.grid(row=0, column=0, padx=2, pady=1)
         self.btn_end_line = tk.Button(self._analysis_frame, text=T('btn_end_line'),
-                          fg="#FF3B30", font=("Helvetica", 11, "bold"), width=14,
+                          fg="#FF3B30", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                           command=self.set_end_line)
-        self.btn_end_line.pack(side=tk.LEFT, padx=2)
+        self.btn_end_line.grid(row=0, column=1, padx=2, pady=1)
         self.btn_add_marker = tk.Button(self._analysis_frame, text=T('btn_add_marker'),
-                        fg="#B044FF", font=("Helvetica", 11, "bold"), width=14,
+                        fg="#B044FF", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                         command=self.start_marker_measurement)
-        self.btn_add_marker.pack(side=tk.LEFT, padx=2)
+        self.btn_add_marker.grid(row=0, column=2, padx=2, pady=1)
 
         self.preset_mode_var = tk.StringVar(value="manual")
         self.radio_manual = ttk.Radiobutton(self._analysis_frame, text=T('lbl_manual_mode'),
                                             variable=self.preset_mode_var, value="manual",
                                             command=self._on_preset_mode_toggle)
-        self.radio_manual.pack(side=tk.LEFT, padx=3)
+        self.radio_manual.grid(row=0, column=3, padx=2, pady=1)
         self.radio_preset = ttk.Radiobutton(self._analysis_frame, text=T('lbl_preset_mode'),
                                             variable=self.preset_mode_var, value="preset",
                                             command=self._on_preset_mode_toggle)
-        self.radio_preset.pack(side=tk.LEFT, padx=3)
+        self.radio_preset.grid(row=0, column=4, padx=2, pady=1)
         
-        self.combo_presets = ttk.Combobox(self._analysis_frame, width=15, state="readonly")
-        self.combo_presets.pack(side=tk.LEFT, padx=3)
+        self.combo_presets = ttk.Combobox(self._analysis_frame, width=12, state="readonly")
+        self.combo_presets.grid(row=0, column=5, padx=2, pady=1)
         self.combo_presets.bind("<<ComboboxSelected>>", self._on_preset_selection_changed)
         
         self.btn_manage_presets = ttk.Button(self._analysis_frame, text=T('btn_manage_presets'),
                                              command=self.open_preset_manager)
-        self.btn_manage_presets.pack(side=tk.LEFT, padx=3)
+        self.btn_manage_presets.grid(row=0, column=6, padx=2, pady=1)
         
         self.update_preset_combobox()
         self._update_preset_controls_state()
 
         self.btn_add_sample = tk.Button(self._analysis_frame, text=T('btn_add_sample'),
-                        fg="#34C759", font=("Helvetica", 11, "bold"), width=14,
+                        fg="#34C759", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                         command=self.start_sample_measurement)
-        self.btn_add_sample.pack(side=tk.LEFT, padx=2)
+        self.btn_add_sample.grid(row=1, column=0, padx=2, pady=1)
+        self.btn_densitometry = tk.Button(self._analysis_frame, text=T("btn_densitometry"),
+                          fg="#00C7BE", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          command=self.start_densitometry_roi_mode)
+        self.btn_densitometry.grid(row=1, column=1, padx=2, pady=1)
         self.btn_add_lane = tk.Button(self._analysis_frame, text=T('btn_add_lane'),
-                          fg="#FF9500", font=("Helvetica", 11, "bold"), width=14,
+                          fg="#FF9500", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
                           command=self.add_lane_label)
-        self.btn_add_lane.pack(side=tk.LEFT, padx=2)
+        self.btn_add_lane.grid(row=1, column=2, padx=2, pady=1)
+        self.btn_lane_compare = ttk.Button(self._analysis_frame, text=T("btn_lane_compare"),
+                           command=self.open_lane_comparison_mode, width=14)
+        self.btn_lane_compare.grid(row=1, column=3, padx=2, pady=1)
         self.btn_end_mode = ttk.Button(self._analysis_frame, text=T('btn_end_mode'),
                            command=self.end_measurement_mode, width=16)
-        self.btn_end_mode.pack(side=tk.LEFT, padx=2)
+        self.btn_end_mode.grid(row=1, column=4, padx=2, pady=1)
+
+        self.btn_auto_marker = tk.Button(self._analysis_frame, text=T('btn_auto_marker'),
+                          fg="#8E44AD", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          command=self.start_auto_detect_marker)
+        self.btn_auto_marker.grid(row=2, column=0, padx=2, pady=1)
+        self.btn_auto_sample = tk.Button(self._analysis_frame, text=T('btn_auto_sample'),
+                          fg="#27AE60", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          command=self.start_auto_detect_sample)
+        self.btn_auto_sample.grid(row=2, column=1, padx=2, pady=1)
 
         # === 右グループ: 出力 ===
         self._output_frame = ttk.LabelFrame(tb_row3, text=T('tb_output'), padding=2)
@@ -285,11 +317,19 @@ class MainWindowMixin:
         self.btn_image = ttk.Button(self._output_frame, text=T('btn_image'),
                     command=self.export_annotated_image, width=14)
         self.btn_image.pack(side=tk.LEFT, padx=6)
+        self.btn_pdf = ttk.Button(self._output_frame, text=T("btn_pdf"),
+                    command=self.export_analysis_pdf, width=10)
+        self.btn_pdf.pack(side=tk.LEFT, padx=6)
 
         self.lbl_status = ttk.Label(tb_row3,
                                     text=T('status_init'),
-                                    font=("Helvetica", 9, "italic"))
+                                    font=(UI_FONT_FAMILY, 9, "italic"))
         self.lbl_status.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+
+        # ツールバー配置後、余った上部領域いっぱいにメインペインを配置
+        self.main_pane.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.root.bind("<Configure>", self._on_main_layout_configure, add="+")
 
     def _init_dnd(self):
         """ウィンドウハンドルが確定した後にDnDを初期化する"""
@@ -301,11 +341,13 @@ class MainWindowMixin:
                 self.root.dnd_bind('<<Drop>>', self._on_drop)
                 self._dnd_available = True
             except Exception:
+                LOGGER.exception("Failed to initialize tkinterdnd2 drag and drop")
                 self._dnd_available = False
         elif sys.platform == 'win32':
             try:
                 self._dnd_available = self._register_native_windows_dnd()
             except Exception:
+                LOGGER.exception("Failed to initialize native Windows drag and drop")
                 self._dnd_available = False
         # ステータスバーを更新
         if not self._dnd_available:
@@ -405,27 +447,36 @@ class MainWindowMixin:
         self._tree_drag_start_x = event.x
         self._tree_drag_start_y = event.y
         self._tree_drag_box_borders = []
+        self._tree_rows_cache = self._all_tree_rows()
+        self._tree_drag_last_row = row
+        self._tree_drag_last_selection = tuple(self.layer_tree.selection())
 
     def _tree_drag_motion(self, event):
         if self.layer_tree.identify_region(event.x, event.y) == "separator":
             return "break"
 
+        self._update_tree_drag_box(event)
         row = self.layer_tree.identify_row(event.y)
         if not row or not self._tree_drag_anchor:
             return
+        if row == getattr(self, '_tree_drag_last_row', None):
+            return
+        self._tree_drag_last_row = row
         # anchor から現在行までの全行を選択
-        all_rows = self._all_tree_rows()
+        all_rows = getattr(self, '_tree_rows_cache', None) or self._all_tree_rows()
         try:
             a = all_rows.index(self._tree_drag_anchor)
             b = all_rows.index(row)
         except ValueError:
             return
         start, end = min(a, b), max(a, b)
-        target_rows = [r for r in all_rows[start:end + 1]
-                       if not self._is_layer_parent_node(r)]
-        self.layer_tree.selection_set(target_rows)
+        target_rows = tuple(r for r in all_rows[start:end + 1]
+                            if not self._is_layer_parent_node(r))
+        if target_rows != getattr(self, '_tree_drag_last_selection', ()):
+            self.layer_tree.selection_set(target_rows)
+            self._tree_drag_last_selection = target_rows
 
-        # ドラッグ選択範囲ボックスの描画
+    def _update_tree_drag_box(self, event):
         if not hasattr(self, '_tree_drag_box_borders') or not self._tree_drag_box_borders:
             self._tree_drag_box_borders = [
                 tk.Frame(self.layer_tree, bg='#FF9500'),  # 上
@@ -448,6 +499,9 @@ class MainWindowMixin:
 
     def _tree_drag_end(self, event):
         self._tree_drag_anchor = None
+        self._tree_rows_cache = None
+        self._tree_drag_last_row = None
+        self._tree_drag_last_selection = ()
         if hasattr(self, '_tree_drag_box_borders') and self._tree_drag_box_borders:
             for border in self._tree_drag_box_borders:
                 border.destroy()
@@ -459,12 +513,14 @@ class MainWindowMixin:
         if region == "cell" and row:
             if col == "#1":
                 # Vis カラム（👁 / 🚫）クリックで表示トグル
-                if row not in (self.marker_node, self.sample_node, self.label_node, self.line_node):
+                if row not in (self.marker_node, self.sample_node, self.label_node, self.dens_node, self.line_node):
                     saved_sel = getattr(self, '_pre_click_selection', set())
                     self._toggle_item_visibility(row, saved_sel)
             elif col == "#2":
                 # Exp カラム（☑ / ☐）クリックで出力時の表示トグル
-                if row not in (self.marker_node, self.sample_node, self.label_node, self.line_node):
+                if row not in (self.marker_node, self.sample_node, self.label_node, self.dens_node, self.line_node):
+                    if hasattr(self, '_is_densitometry_roi_id') and self._is_densitometry_roi_id(row):
+                        return
                     saved_sel = getattr(self, '_pre_click_selection', set())
                     self._toggle_item_export_visibility(row, saved_sel)
 
@@ -493,7 +549,7 @@ class MainWindowMixin:
                 self._selected_label_font_slider.state(['disabled'])
                 self._selected_label_font_label.config(text=T('lbl_font_size_prefix') + "-")
             except Exception:
-                pass
+                LOGGER.exception("Unexpected error")
             self._current_label_selections = []
             return
 
@@ -513,13 +569,13 @@ class MainWindowMixin:
                 self._selected_label_font_slider.set(first_fs)
                 self._selected_label_font_label.config(text=T('lbl_font_size_prefix') + str(first_fs))
             except Exception:
-                pass
+                LOGGER.exception("Unexpected error")
         else:
             try:
                 self._selected_label_font_slider.state(['disabled'])
                 self._selected_label_font_label.config(text=T('lbl_font_size_prefix') + "-")
             except Exception:
-                pass
+                LOGGER.exception("Unexpected error")
             self._current_label_selections = []
 
     def _on_escape(self, event):
@@ -540,7 +596,7 @@ class MainWindowMixin:
                     return   # 左パネル内 → 選択解除しない
                 w = w.master
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         # それ以外（キャンバス・右パネル等）をクリックしたら選択解除
         self.layer_tree.selection_remove(self.layer_tree.selection())
 
@@ -795,11 +851,11 @@ class MainWindowMixin:
             self._file_menu.entryconfig(6, label=f"{T('menu_excel')} (Ctrl+E)")
             self._file_menu.entryconfig(7, label=f"{T('btn_csv')} (Ctrl+Shift+E)")
             self._file_menu.entryconfig(8, label=f"{T('menu_image')} (Ctrl+I)")
-            # index 9 = separator
-            self._file_menu.entryconfig(10, label=T('menu_quit'))
+            self._file_menu.entryconfig(9, label=T("pdf_export_title"))
+            # index 10 = separator
+            self._file_menu.entryconfig(11, label=T('menu_quit'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- 編集メニュー ----
         try:
             self._edit_menu.entryconfig(0, label=T('menu_switch_mode'))
@@ -811,19 +867,17 @@ class MainWindowMixin:
             lang_label = T('menu_lang_en') if get_language() == 'ja' else T('menu_lang_ja')
             self._edit_menu.entryconfig(6, label=lang_label)
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ヘルプメニュー ----
         try:
             self._help_menu.entryconfig(0, label=T('menu_how'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- 左パネル ----
         try:
             self.left_frame.config(text=T('layer_panel'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.layer_tree.heading("#0", text=T('layer_name'))
         self.layer_tree.heading("Rf", text=T('layer_rf'))
         self.layer_tree.heading("Size", text=T('layer_size'))
@@ -831,37 +885,43 @@ class MainWindowMixin:
         self.layer_tree.item(self.sample_node, text=T('sample_node'))
         try:
             self.layer_tree.item(self.label_node, text=T('label_node'))
+            if hasattr(self, 'dens_node'):
+                self.layer_tree.item(self.dens_node, text=T('dens_panel'))
             self.layer_tree.item(self.line_node, text=T('line_node'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.btn_delete.config(text=T('btn_delete'))
         self.btn_toggle_marker.config(
             text=T('btn_show_marker') if not self.marker_visible else T('btn_toggle_marker'))
         try:
             self.memo_frame.config(text=T('lbl_memo'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- 右パネル ----
         try:
             self.right_frame.config(text=T('analysis_panel'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         try:
             self._result_table_frame.config(text=T('result_table'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.result_table.heading("Name", text=T('xl_sample_name'))
         size_heading = T('result_size_kda') if self.mode == "protein" else T('result_size_bp')
         self.result_table.heading("Size", text=size_heading)
         try:
             self.btn_copy_clipboard.config(text=T('btn_clipboard_copy'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         try:
             self._coeff_frame.config(text=T('coeff_frame'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
+        try:
+            if hasattr(self, '_update_densitometry_language'):
+                self._update_densitometry_language()
+        except Exception:
+            LOGGER.exception("Unexpected error")
         self.btn_apply_coeff.config(text=T('btn_apply'))
 
         # R2ラベルの言語更新
@@ -883,46 +943,46 @@ class MainWindowMixin:
             self.btn_undo.config(text=T('tb_undo'))
             self.btn_redo.config(text=T('tb_redo'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         # ---- ツールバー行2 ----
         try:
             self.lbl_rotate.config(text=T('tb_rotate_label'))
             self.btn_rotate_confirm.config(text=T('tb_rotate_confirm'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ツールバー解析グループ ----
         try:
             self._analysis_frame.config(text=T('tb_measure'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.btn_start_line.config(text=T('btn_start_line'))
         self.btn_end_line.config(text=T('btn_end_line'))
         self.btn_add_marker.config(text=T('btn_add_marker'))
         self.btn_add_sample.config(text=T('btn_add_sample'))
+        self.btn_densitometry.config(text=T('btn_densitometry'))
         self.btn_add_lane.config(text=T('btn_add_lane'))
+        self.btn_lane_compare.config(text=T('btn_lane_compare'))
         self.btn_end_mode.config(text=T('btn_end_mode'))
         try:
             self.radio_manual.config(text=T('lbl_manual_mode'))
             self.radio_preset.config(text=T('lbl_preset_mode'))
             self.btn_manage_presets.config(text=T('btn_manage_presets'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ツールバー出力グループ ----
         try:
             self._output_frame.config(text=T('tb_output'))
         except Exception:
-            pass
+            LOGGER.exception("Unexpected error")
         self.btn_color_bw_toggle.config(
             text=T('btn_bw') if self.grayscale else T('btn_color'))
         try:
             self.btn_excel.config(text=T('btn_excel'))
             self.btn_csv.config(text=T('btn_csv'))
             self.btn_image.config(text=T('btn_image'))
+            self.btn_pdf.config(text=T('btn_pdf'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
         # ---- ステータス ----
         self.lbl_status.config(text=T('status_init'))
 
@@ -941,8 +1001,7 @@ class MainWindowMixin:
             elif getattr(self, '_plot_placeholder', None) is not None:
                 self._plot_placeholder.config(text=T('plot_add_markers'))
         except Exception:
-            pass
-
+            LOGGER.exception("Unexpected error")
     def switch_mode_via_menu(self):
         if not messagebox.askyesno(T("confirm_mode_title"), T("confirm_mode_body")):
             return
@@ -950,6 +1009,7 @@ class MainWindowMixin:
         self.markers.clear()
         self.samples.clear()
         self.lane_labels = []
+        self.densitometry_rois = []
         self.start_line_y = None
         self.end_line_y = None
         self.calibration_a = 0.0
@@ -964,6 +1024,40 @@ class MainWindowMixin:
             "Size", text=T('col_size_kda') if self.mode == 'protein' else T('col_size_bp'))
         self.update_layer_panel()
         self.calculate_calibration_curve()
+
+    def _on_main_layout_configure(self, event=None):
+        if event is not None and event.widget is not self.root:
+            return
+        if getattr(self, '_layout_adjust_after_id', None):
+            try:
+                self.root.after_cancel(self._layout_adjust_after_id)
+            except Exception:
+                LOGGER.exception("Failed to cancel layout adjustment")
+        self._layout_adjust_after_id = self.root.after(120, self._adjust_main_pane_layout)
+
+    def _adjust_main_pane_layout(self):
+        self._layout_adjust_after_id = None
+        try:
+            total_w = self.main_pane.winfo_width()
+            total_h = self.main_pane.winfo_height()
+            if total_w <= 300 or total_h <= 200:
+                return
+            aspect = total_w / max(total_h, 1)
+            if aspect >= 1.55:
+                left_ratio, right_ratio = 0.24, 0.24
+            else:
+                left_ratio, right_ratio = 0.28, 0.28
+            left_w = max(220, int(total_w * left_ratio))
+            right_w = max(260, int(total_w * right_ratio))
+            center_min = 360
+            if left_w + right_w + center_min > total_w:
+                overflow = left_w + right_w + center_min - total_w
+                left_w = max(190, left_w - overflow // 2)
+                right_w = max(220, right_w - overflow + overflow // 2)
+            self.main_pane.sashpos(0, left_w)
+            self.main_pane.sashpos(1, max(left_w + center_min, total_w - right_w))
+        except Exception:
+            LOGGER.exception("Failed to adjust main pane layout")
 
     def copy_results_to_clipboard(self):
         """結果テーブルのデータをクリップボードにコピーする"""
@@ -992,11 +1086,27 @@ class MainWindowMixin:
         PresetManagerWindow.show(self.root, on_change_callback=self.update_preset_combobox)
 
     def update_preset_combobox(self):
+        """Refresh the preset dropdown.
+
+        Handles both the current list-of-dicts format and legacy list-of-name strings.
+        """
         import core.marker_presets as mp
         presets = mp.list_presets()
-        names = [p["name"] for p in presets]
+        # Preserve backward compatibility: items may be plain strings or dicts with a "name" key.
+        names = []
+        for p in presets:
+            if isinstance(p, dict):
+                name = p.get("name")
+                if name:
+                    names.append(name)
+            elif isinstance(p, str):
+                names.append(p)
+        # Remove duplicates while preserving order
+        seen = set()
+        names = [x for x in names if not (x in seen or seen.add(x))]
         self.combo_presets.config(values=names)
         if names:
+            # If the current selection is invalid, default to the first preset.
             if self.combo_presets.get() not in names:
                 self.combo_presets.set(names[0])
         else:
@@ -1029,7 +1139,7 @@ class MainWindowMixin:
         self.guide_overlay.place(relx=0.5, y=10, anchor="n", width=420, height=70)
         
         lbl = tk.Label(self.guide_overlay, text=text, bg="#FFF3CD", fg="#856404",
-                       font=("Helvetica", 11, "bold"))
+                       font=(UI_FONT_FAMILY, 11, "bold"))
         lbl.pack(pady=(5, 2))
         
         btn_frame = tk.Frame(self.guide_overlay, bg="#FFF3CD")
