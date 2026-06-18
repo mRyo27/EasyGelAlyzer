@@ -378,12 +378,13 @@ class ImageExportMixin:
                     lbl = make_marker_text(m)
                     lbl_w = int(temp_draw.textlength(lbl, font=font))
                     if it['side'] == 'left':
-                        # 左側: ラベルを左端に配置
+                        # 左側: ラベルを左端に配置（画像左端からの余白4px）
+                        x_pos = min(lbl_w + 4, img_w - 4)
                         draw.text((4, my_px - font_size - 2), lbl, fill=color, font=font)
                     else:
-                        # 右側: ラベルを右端に配置
-                        draw.text((img_w - lbl_w - 4, my_px - font_size - 2),
-                                  lbl, fill=color, font=font)
+                        # 右側: ラベルを右端に配置。右端から lbl_w+4 の位置に描画し、はみ出さないように調整
+                        x_pos = max(img_w - lbl_w - 4, 4)
+                        draw.text((x_pos, my_px - font_size - 2), lbl, fill=color, font=font)
 
                 # 試料（操作画面上と同様に点とデータを表示、引き出し線なし）
                 for s in sample_list:
@@ -455,7 +456,8 @@ class ImageExportMixin:
                         mw = w
                 return mw
 
-            left_margin = 0
+            # 追加パディング (px) を定義
+            EXTRA_MARGIN_PAD = 20  # 余白に加えるピクセル数
             right_margin = 0
             padding = 40
             # 右側ラベルの描画開始位置は img_w の右端から引き出し線オフセット(20*export_scale)分
@@ -467,14 +469,14 @@ class ImageExportMixin:
                     max_text_width(left_markers, make_marker_text),
                     max_text_width(left_samples, make_sample_text)
                 )
-                left_margin = int(mw) + padding
+                left_margin = int(mw) + padding + EXTRA_MARGIN_PAD
 
             if right_markers or right_samples:
                 mw = max(
                     max_text_width(right_markers, make_marker_text),
                     max_text_width(right_samples, make_sample_text)
                 )
-                right_margin = int(mw) + right_leader_offset + padding
+                right_margin = int(mw) + right_leader_offset + padding + EXTRA_MARGIN_PAD
 
             # 左右のアイテムをそれぞれ統合してY座標を解決する
             left_items = []
