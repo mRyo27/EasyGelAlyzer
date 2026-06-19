@@ -224,9 +224,15 @@ class ImageExportMixin:
 
             img_w, img_h = base_img.size
             font_size = max(12, int(img_h * 0.015))
-            line_w1 = max(1, int(round(export_scale)))
-            line_w2 = max(2, int(round(2 * export_scale)))
-            line_w3 = max(3, int(round(3 * export_scale)))
+            EXTRA_MARGIN_PAD = max(5, int(round(5 * export_scale)))
+            # ライン幅は画像サイズに依存せず、固定値を使用
+            base_line_w1 = 1
+            base_line_w2 = 2
+            base_line_w3 = 3
+            # 余白なしモードで使用する幅
+            line_w1 = base_line_w1
+            line_w2 = base_line_w2
+            line_w3 = base_line_w3
             gap4 = max(4, int(round(4 * export_scale)))
             gap6 = max(6, int(round(6 * export_scale)))
             pad10 = max(10, int(round(10 * export_scale)))
@@ -375,15 +381,7 @@ class ImageExportMixin:
                     color = get_annot_color_for(MARKER_LINE_COLOR)
                     my_px = int(it['draw_y'])
                     self._draw_antialiased_line(out_img, [(0, my_px), (img_w, my_px)], fill=color, width=line_w1)
-                    lbl = make_marker_text(m)
-                    lbl_w = int(temp_draw.textlength(lbl, font=font))
-                    if it['side'] == 'left':
-                        # 左側: ラベルを左端に配置
-                        draw.text((4, my_px - font_size - 2), lbl, fill=color, font=font)
-                    else:
-                        # 右側: ラベルを右端に配置
-                        draw.text((img_w - lbl_w - 4, my_px - font_size - 2),
-                                  lbl, fill=color, font=font)
+
 
                 # 試料（操作画面上と同様に点とデータを表示、引き出し線なし）
                 for s in sample_list:
@@ -455,6 +453,8 @@ class ImageExportMixin:
                         mw = w
                 return mw
 
+            # 追加パディング (px) を定義
+            EXTRA_MARGIN_PAD = 40  # 余白に加えるピクセル数
             left_margin = 0
             right_margin = 0
             padding = 40
@@ -467,14 +467,14 @@ class ImageExportMixin:
                     max_text_width(left_markers, make_marker_text),
                     max_text_width(left_samples, make_sample_text)
                 )
-                left_margin = int(mw) + padding
+                left_margin = int(mw) + padding + EXTRA_MARGIN_PAD
 
             if right_markers or right_samples:
                 mw = max(
                     max_text_width(right_markers, make_marker_text),
                     max_text_width(right_samples, make_sample_text)
                 )
-                right_margin = int(mw) + right_leader_offset + padding
+                right_margin = int(mw) + right_leader_offset + padding + EXTRA_MARGIN_PAD
 
             # 左右のアイテムをそれぞれ統合してY座標を解決する
             left_items = []
