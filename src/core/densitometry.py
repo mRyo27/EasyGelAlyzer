@@ -5,6 +5,12 @@ from graphics.fonts import configure_matplotlib_japanese_font
 
 
 class DensitometryMixin:
+    def _translated_roi_name(self, name):
+        """マーカーレーン由来のROI名は、保存時の言語に関わらず現在の言語で表示する。"""
+        if name in ("MW Markers", "分子量マーカー", T('marker_node')):
+            return T('marker_node')
+        return name
+
     def start_densitometry_roi_mode(self):
         if self.original_image is None:
             messagebox.showwarning(T("warn_title"), T("warn_no_image"))
@@ -349,6 +355,8 @@ class DensitometryMixin:
                 self._right_notebook.tab(self._densitometry_tab, text=T('tab_densitometry'))
             except Exception:
                 LOGGER.exception("Failed to update notebook tab labels")
+        # ROI名（マーカーレーン由来）とプロファイルキャンバスの文言（積分値ラベル等）を再描画
+        self._update_densitometry_panel()
 
     def _update_densitometry_preview(self, profile_result):
         self._ensure_densitometry_panel()
@@ -366,7 +374,7 @@ class DensitometryMixin:
             self._dens_tree.insert(
                 "", "end", iid=roi['id'],
                 values=(
-                    roi.get('name', ''),
+                    self._translated_roi_name(roi.get('name', '')),
                     f"{roi.get('integrated_density', 0.0):.1f}",
                     f"{roi.get('relative_density', 0.0):.3f}",
                 )
@@ -535,7 +543,7 @@ class DensitometryMixin:
             )
             self.canvas.create_text(
                 c0x + 4, c0y + 4,
-                text=roi.get('name', ''),
+                text=self._translated_roi_name(roi.get('name', '')),
                 anchor="nw", fill=color,
                 font=(UI_FONT_FAMILY, 9, "bold"),
                 tags=("dens_roi",)
@@ -578,7 +586,7 @@ class DensitometryMixin:
         for roi in self.densitometry_rois:
             var = tk.BooleanVar(value=True)
             vars_by_id[roi['id']] = var
-            ttk.Checkbutton(left, text=roi.get('name', ''), variable=var,
+            ttk.Checkbutton(left, text=self._translated_roi_name(roi.get('name', '')), variable=var,
                             command=lambda: redraw()).pack(anchor=tk.W)
 
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -642,7 +650,7 @@ class DensitometryMixin:
                     x_vals = self._normalized_profile_x(len(y_vals))
                     roi_color = self._get_densitometry_color(roi)
                     # プロファイル線をROIの色と統一
-                    ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")), color=roi_color)
+                    ax.plot(x_vals, y_vals, label=self._translated_roi_name(roi.get('name', T("dens_lane_prefix"))), color=roi_color)
             ax.set_title(T("lane_profile_title"), y=1.15)
             ax.set_xlabel(T("lane_profile_x"))
             ax.set_ylabel(T("lane_profile_y"))
@@ -1126,7 +1134,7 @@ class DensitometryMixin:
         entry_frame = ttk.Frame(win, padding=6)
         entry_frame.pack(fill=tk.X)
         for roi in self.densitometry_rois:
-            var = tk.StringVar(value=roi.get('name', T("dens_lane_prefix")))
+            var = tk.StringVar(value=self._translated_roi_name(roi.get('name', T("dens_lane_prefix"))))
             entries.append((roi, var))
             ttk.Entry(entry_frame, textvariable=var, width=14).pack(side=tk.LEFT, padx=3)
 

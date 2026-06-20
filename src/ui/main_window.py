@@ -216,7 +216,7 @@ class MainWindowMixin:
         self.btn_trim = ttk.Button(tb_row1, text=T('tb_trim'), command=self.start_trimming, width=14)
         self.btn_trim.pack(side=tk.LEFT, padx=3)
         self.btn_adjust = ttk.Button(tb_row1, text=T('tb_adjust'), command=self.show_adjustment_panel, width=14)
-        self.btn_bg_corr = ttk.Button(tb_row1, text='背景補正', command=self.show_background_correction_panel, width=14)
+        self.btn_bg_corr = ttk.Button(tb_row1, text=T('tb_bg_corr'), command=self.show_background_correction_panel, width=16)
         self.btn_bg_corr.pack(side=tk.LEFT, padx=3)
         self.btn_adjust.pack(side=tk.LEFT, padx=3)
         self.btn_undo = ttk.Button(tb_row1, text=T('tb_undo'), command=self.undo, width=14)
@@ -305,11 +305,11 @@ class MainWindowMixin:
         self.btn_end_mode.grid(row=1, column=4, padx=2, pady=1)
 
         self.btn_auto_marker = tk.Button(self._analysis_frame, text=T('btn_auto_marker'),
-                          fg="#8E44AD", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          fg="#8E44AD", font=(UI_FONT_FAMILY, 10, "bold"), width=20,
                           command=self.start_auto_detect_marker)
         self.btn_auto_marker.grid(row=2, column=0, padx=2, pady=1)
         self.btn_auto_sample = tk.Button(self._analysis_frame, text=T('btn_auto_sample'),
-                          fg="#27AE60", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          fg="#27AE60", font=(UI_FONT_FAMILY, 10, "bold"), width=20,
                           command=self.start_auto_detect_sample)
         self.btn_auto_sample.grid(row=2, column=1, padx=2, pady=1)
 
@@ -735,9 +735,9 @@ class MainWindowMixin:
 
         btn_frame = ttk.Frame(panel)
         btn_frame.pack(pady=12)
-        ttk.Button(btn_frame, text='適用', command=on_confirm).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text='リセット', command=on_reset).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('btn_apply'), command=on_confirm).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('bg_corr_reset'), command=on_reset).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('dlg_cancel'), command=on_cancel).pack(side=tk.LEFT, padx=5)
         panel.protocol('WM_DELETE_WINDOW', on_cancel)
 
     def show_background_correction_panel(self):
@@ -746,7 +746,7 @@ class MainWindowMixin:
             return
         from core.image_proc import rolling_ball_background
         panel = tk.Toplevel(self.root)
-        panel.title('背景補正')
+        panel.title(T('bg_corr_panel_title'))
         panel.resizable(False, False)
         # 画面中央に配置
         panel.update_idletasks()
@@ -798,12 +798,12 @@ class MainWindowMixin:
             self.bg_corr_radius = int(radius_slider.get())
             self.apply_image_adjustments()
             panel.destroy()
-            self.lbl_status.config(text='背景補正適用完了')
+            self.lbl_status.config(text=T('status_bg_corr_applied'))
 
         def on_reset():
             # スライダー位置を初期値（50）に戻すだけ
             radius_slider.set(50)
-            self.lbl_status.config(text='背景補正をリセットしました')
+            self.lbl_status.config(text=T('status_bg_corr_reset'))
 
         def on_remove():
             # 背景補正を削除（無効化）して閉じる
@@ -813,7 +813,7 @@ class MainWindowMixin:
             self.bg_corr_radius = None
             self.apply_image_adjustments()
             panel.destroy()
-            self.lbl_status.config(text='背景補正を削除しました')
+            self.lbl_status.config(text=T('status_bg_corr_removed'))
 
         def on_cancel():
             if self._bg_corr_timer:
@@ -824,10 +824,10 @@ class MainWindowMixin:
 
         btn_frame = ttk.Frame(panel)
         btn_frame.pack(pady=12)
-        ttk.Button(btn_frame, text='適用', command=on_confirm).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text='背景補正を削除', command=on_remove).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text='リセット', command=on_reset).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text='キャンセル', command=on_cancel).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('btn_apply'), command=on_confirm).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('bg_corr_remove'), command=on_remove).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('bg_corr_reset'), command=on_reset).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=T('dlg_cancel'), command=on_cancel).pack(side=tk.LEFT, padx=5)
         panel.protocol('WM_DELETE_WINDOW', on_cancel)
 
     def switch_language(self):
@@ -963,6 +963,7 @@ class MainWindowMixin:
             self.btn_load.config(text=T('tb_load'))
             self.btn_trim.config(text=T('tb_trim'))
             self.btn_adjust.config(text=T('tb_adjust'))
+            self.btn_bg_corr.config(text=T('tb_bg_corr'))
             self.btn_undo.config(text=T('tb_undo'))
             self.btn_redo.config(text=T('tb_redo'))
         except Exception:
@@ -986,6 +987,11 @@ class MainWindowMixin:
         self.btn_add_lane.config(text=T('btn_add_lane'))
         self.btn_lane_compare.config(text=T('btn_lane_compare'))
         self.btn_end_mode.config(text=T('btn_end_mode'))
+        try:
+            self.btn_auto_marker.config(text=T('btn_auto_marker'))
+            self.btn_auto_sample.config(text=T('btn_auto_sample'))
+        except Exception:
+            LOGGER.exception("Unexpected error")
         try:
             self.radio_manual.config(text=T('lbl_manual_mode'))
             self.radio_preset.config(text=T('lbl_preset_mode'))

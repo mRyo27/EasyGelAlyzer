@@ -44,6 +44,14 @@ TRANSLATIONS = {
         "en": "Switch Mode",
         "ja": "モード切替"
     },
+    "confirm_mode_title": {
+        "en": "Confirm Mode Switch",
+        "ja": "モード切替の確認"
+    },
+    "confirm_mode_body": {
+        "en": "Switching mode (Protein/DNA) will discard current measurement data. Continue?",
+        "ja": "モード（タンパク質/DNA）を切り替えると現在の測定データは破棄されます。続行しますか？"
+    },
     "menu_undo": {
         "en": "Undo (Ctrl+Z)",
         "ja": "元に戻す (Ctrl+Z)"
@@ -240,6 +248,34 @@ TRANSLATIONS = {
         "en": "Regression (y = ax + b)",
         "ja": "回帰式 (y = ax + b)"
     },
+    "tb_bg_corr": {
+        "en": "Background Corr.",
+        "ja": "背景補正"
+    },
+    "bg_corr_panel_title": {
+        "en": "Background Correction",
+        "ja": "背景補正"
+    },
+    "bg_corr_remove": {
+        "en": "Remove Correction",
+        "ja": "背景補正を削除"
+    },
+    "bg_corr_reset": {
+        "en": "Reset",
+        "ja": "リセット"
+    },
+    "status_bg_corr_applied": {
+        "en": "Background correction applied.",
+        "ja": "背景補正適用完了"
+    },
+    "status_bg_corr_reset": {
+        "en": "Background correction reset.",
+        "ja": "背景補正をリセットしました"
+    },
+    "status_bg_corr_removed": {
+        "en": "Background correction removed.",
+        "ja": "背景補正を削除しました"
+    },
     "btn_apply": {
         "en": "Apply",
         "ja": "適用"
@@ -415,6 +451,14 @@ TRANSLATIONS = {
     "warn_angle_invalid": {
         "en": "Please enter a valid number.",
         "ja": "有効な数値を入力してください"
+    },
+    "warn_preset_name_empty": {
+        "en": "Please enter a preset name.",
+        "ja": "プリセット名を入力してください"
+    },
+    "warn_preset_name_dup": {
+        "en": "Preset name already exists.",
+        "ja": "そのプリセット名は既に存在します"
     },
     "warn_no_lines": {
         "en": "Please set Start and End lines first.",
@@ -916,6 +960,26 @@ TRANSLATIONS = {
         "en": "Warning",
         "ja": "警告"
     },
+    "warn_input": {
+        "en": "Invalid Input",
+        "ja": "入力エラー"
+    },
+    "warn_dup": {
+        "en": "Duplicate Value",
+        "ja": "重複"
+    },
+    "warn_dup_marker": {
+        "en": "{v} {unit} marker already exists.",
+        "ja": "{v} {unit} のマーカーは既に存在します"
+    },
+    "warn_inv_marker": {
+        "en": "Please enter a valid {unit} value.",
+        "ja": "有効な {unit} 値を入力してください"
+    },
+    "warn_sample_name": {
+        "en": "Invalid Sample Name",
+        "ja": "試料名エラー"
+    },
     "info_title": {
         "en": "Info",
         "ja": "情報"
@@ -971,6 +1035,14 @@ TRANSLATIONS = {
     "mode_dna_short": {
         "en": "DNA",
         "ja": "DNA"
+    },
+    "preset_mode_protein_unit": {
+        "en": "Protein (kDa)",
+        "ja": "タンパク質 (kDa)"
+    },
+    "preset_mode_dna_unit": {
+        "en": "DNA (bp)",
+        "ja": "DNA (bp)"
     },
     "col_size_bp": {
         "en": "Size (bp)",

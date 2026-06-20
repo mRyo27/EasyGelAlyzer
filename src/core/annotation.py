@@ -1049,8 +1049,10 @@ class AnnotationMixin:
         if hasattr(self, 'dens_node'):
             for roi in getattr(self, 'densitometry_rois', []):
                 vis = self.item_visibility.get(roi['id'], True)
+                display_name = (self._translated_roi_name(roi.get('name', ''))
+                                 if hasattr(self, '_translated_roi_name') else roi.get('name', ''))
                 self.layer_tree.insert(self.dens_node, "end", iid=roi['id'],
-                                       text=roi.get('name', ''),
+                                       text=display_name,
                                        values=("👁" if vis else "🚫", "", "", ""))
         # Start/End line items
         if self.start_line_y is not None:
