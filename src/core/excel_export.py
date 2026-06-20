@@ -38,6 +38,12 @@ class ExcelExportMixin:
             from openpyxl.chart import ScatterChart, Reference, Series
             from openpyxl.chart.shapes import GraphicalProperties
             from openpyxl.drawing.line import LineProperties
+            from openpyxl.chart.layout import Layout, ManualLayout
+
+            def get_translated_roi_name(name):
+                if name in ("MW Markers", "分子量マーカー", T('marker_node')):
+                    return T('marker_node')
+                return name
 
             wb = openpyxl.Workbook()
             ws1 = wb.active
@@ -64,7 +70,7 @@ class ExcelExportMixin:
                     x0, y0, x1, y1 = roi.get('roi', [0, 0, 0, 0])
                     ws_den.append([
                         i,
-                        roi.get('name', ''),
+                        get_translated_roi_name(roi.get('name', '')),
                         float(x0), float(y0), float(x1), float(y1),
                         float(roi.get('integrated_density', 0.0)),
                         float(roi.get('relative_density', 0.0)),
@@ -79,8 +85,9 @@ class ExcelExportMixin:
                     max_len = max(max_len, len(corrected))
                     col_x = profile_start_col + idx * 2
                     col_y = col_x + 1
-                    ws_den.cell(row=1, column=col_x, value=f"{roi.get('name', '')} X")
-                    ws_den.cell(row=1, column=col_y, value=f"{roi.get('name', '')} Density")
+                    roi_name = get_translated_roi_name(roi.get('name', ''))
+                    ws_den.cell(row=1, column=col_x, value=f"{roi_name} X")
+                    ws_den.cell(row=1, column=col_y, value=f"{roi_name} Density")
                     xs = self._normalized_profile_x(len(corrected)) if hasattr(self, '_normalized_profile_x') else [
                         j / max(len(corrected) - 1, 1) for j in range(len(corrected))]
                     for row_idx, (xv, yv) in enumerate(zip(xs, corrected), start=2):
@@ -89,9 +96,26 @@ class ExcelExportMixin:
                 if max_len:
                     dens_chart = ScatterChart()
                     dens_chart.title = T("lane_profile_title")
+                    dens_chart.title.overlay = False
+                    
+                    # 凡例を重ねて表示
+                    dens_chart.legend.position = 'tr'
+                    dens_chart.legend.overlay = True
+                    
+                    # プロットエリアを左下から右上に少し小さく配置（余白を確保して被りを防止）
+                    dens_chart.plot_area.layout = Layout(
+                        manualLayout=ManualLayout(
+                            xMode="edge",
+                            yMode="edge",
+                            x=0.25,
+                            y=0.20,
+                            w=0.60,
+                            h=0.60
+                        )
+                    )
                     
                     # グラフの枠線を非表示にする
-                    dens_chart.graphicalProperties.line.noFill = True
+                    dens_chart.graphical_properties = GraphicalProperties(ln=LineProperties(noFill=True))
 
                     dens_chart.x_axis.title = T("lane_profile_x")
                     dens_chart.y_axis.title = T("lane_profile_y")
@@ -100,11 +124,12 @@ class ExcelExportMixin:
 
                     # 軸の設定（目盛り内向き、目盛り線非表示、縦軸・横軸の追加、軸ラベルはlowに）
                     for axis in (dens_chart.x_axis, dens_chart.y_axis):
+                        axis.graphicalProperties = GraphicalProperties(ln=LineProperties(solidFill="000000", w=12700))
+                        axis.delete = False
                         axis.tickLblPos = "low"
                         axis.majorTickMark = "in"
                         axis.minorTickMark = "none"
                         axis.majorGridlines = None
-                        axis.graphicalProperties = GraphicalProperties(ln=LineProperties(solidFill="000000", w=12700))
 
                     for idx, roi in enumerate(self.densitometry_rois):
                         col_x = profile_start_col + idx * 2
@@ -113,7 +138,8 @@ class ExcelExportMixin:
                             continue
                         xvalues = Reference(ws_den, min_col=col_x, min_row=2, max_row=max_len + 1)
                         yvalues = Reference(ws_den, min_col=col_y, min_row=2, max_row=max_len + 1)
-                        series = Series(yvalues, xvalues, title=roi.get('name', ''))
+                        roi_name = get_translated_roi_name(roi.get('name', ''))
+                        series = Series(yvalues, xvalues, title=roi_name)
                         series.marker.symbol = "none"
                         
                         # アプリの線の色と同期
@@ -123,8 +149,8 @@ class ExcelExportMixin:
                         series.graphicalProperties.line.width = 19050  # 1.5pt
 
                         dens_chart.series.append(series)
-                    dens_chart.width = 18
-                    dens_chart.height = 10
+                    dens_chart.width = 16.18
+                    dens_chart.height = 10.0
                     ws_den.add_chart(dens_chart, "J8")
 
             ws3 = wb.create_sheet(title=T('xl_sheet_graph'))
@@ -152,12 +178,29 @@ class ExcelExportMixin:
             # ---- ScatterChart を作成 ----
             chart = ScatterChart()
             chart.title = T('xl_cal_curve')
+            chart.title.overlay = False
+            
+            # 凡例を重ねて表示
+            chart.legend.position = 'tr'
+            chart.legend.overlay = True
+
+            # プロットエリアを左下から右上に少し小さく配置（余白を確保して被りを防止）
+            chart.plot_area.layout = Layout(
+                manualLayout=ManualLayout(
+                    xMode="edge",
+                    yMode="edge",
+                    x=0.15,
+                    y=0.10,
+                    w=0.70,
+                    h=0.70
+                )
+            )
 
             # style=2: 白背景・テーマカラー非依存のシンプルスタイル
-            chart.style = 2
+            # chart.style = 2
 
             # グラフの枠線を非表示にする
-            chart.graphicalProperties.line.noFill = True
+            chart.graphical_properties = GraphicalProperties(ln=LineProperties(noFill=True))
 
             chart.x_axis.title = T('xl_xlabel')
             chart.y_axis.title = (T('xl_ylabel_kda') if self.mode == "protein"
@@ -169,11 +212,12 @@ class ExcelExportMixin:
 
             # ---- 軸: 目盛りあり（内向き）・グリッド線なし・軸線の追加 ----
             for axis in (chart.x_axis, chart.y_axis):
+                axis.graphicalProperties = GraphicalProperties(ln=LineProperties(solidFill="000000", w=12700))
+                axis.delete = False
                 axis.tickLblPos = "low"       # 軸ラベルを軸の外側に配置
                 axis.majorTickMark = "in"     # 目盛りを内側に表示
                 axis.minorTickMark = "none"
                 axis.majorGridlines = None    # 主目盛り線（グリッド）を非表示
-                axis.graphicalProperties = GraphicalProperties(ln=LineProperties(solidFill="000000", w=12700))
 
             # 凡例を右上に配置（回帰直線と被らない）
             chart.legend.position = 'tr'
@@ -220,8 +264,8 @@ class ExcelExportMixin:
             # ================================================================
             # グラフサイズ
             # ================================================================
-            chart.width = 18    # cm
-            chart.height = 12   # cm
+            chart.width = 16.18
+            chart.height = 10.0
 
             ws3.add_chart(chart, "A1")
 
