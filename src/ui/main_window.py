@@ -249,69 +249,74 @@ class MainWindowMixin:
         # === 左グループ: 測定・分析 ===
         self._analysis_frame = ttk.LabelFrame(tb_row3, text=T('tb_measure'), padding=2)
         self._analysis_frame.pack(side=tk.LEFT, padx=4, fill=tk.X, expand=True)
-        for _col in range(8):
+        # 列0〜2（開始/終了ライン・マーカー追加 や 試料追加/輝度定量・ラベル追加）は
+        # 同じ "measure_btn" グループで幅を揃え、自動検出ボタン(列0-1, 列1-3)が
+        # 1.5列ぶんの幅でぴったり揃うようにする。
+        for _col in range(6):
+            self._analysis_frame.columnconfigure(_col, weight=1, uniform="measure_btn")
+        for _col in range(6, 8):
             self._analysis_frame.columnconfigure(_col, weight=0)
         self.btn_start_line = tk.Button(self._analysis_frame, text=T('btn_start_line'),
-                        fg="#007AFF", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                        fg="#007AFF", font=(UI_FONT_FAMILY, 10, "bold"),
                         command=self.set_start_line)
-        self.btn_start_line.grid(row=0, column=0, padx=2, pady=1)
+        self.btn_start_line.grid(row=0, column=0, columnspan=2, padx=2, pady=1, sticky="ew")
         self.btn_end_line = tk.Button(self._analysis_frame, text=T('btn_end_line'),
-                          fg="#FF3B30", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          fg="#FF3B30", font=(UI_FONT_FAMILY, 10, "bold"),
                           command=self.set_end_line)
-        self.btn_end_line.grid(row=0, column=1, padx=2, pady=1)
+        self.btn_end_line.grid(row=0, column=2, columnspan=2, padx=2, pady=1, sticky="ew")
         self.btn_add_marker = tk.Button(self._analysis_frame, text=T('btn_add_marker'),
-                        fg="#B044FF", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                        fg="#B044FF", font=(UI_FONT_FAMILY, 10, "bold"),
                         command=self.start_marker_measurement)
-        self.btn_add_marker.grid(row=0, column=2, padx=2, pady=1)
+        self.btn_add_marker.grid(row=0, column=4, columnspan=2, padx=2, pady=1, sticky="ew")
 
         self.preset_mode_var = tk.StringVar(value="manual")
         self.radio_manual = ttk.Radiobutton(self._analysis_frame, text=T('lbl_manual_mode'),
                                             variable=self.preset_mode_var, value="manual",
                                             command=self._on_preset_mode_toggle)
-        self.radio_manual.grid(row=0, column=3, padx=2, pady=1)
+        self.radio_manual.grid(row=0, column=6, padx=2, pady=1)
         self.radio_preset = ttk.Radiobutton(self._analysis_frame, text=T('lbl_preset_mode'),
                                             variable=self.preset_mode_var, value="preset",
                                             command=self._on_preset_mode_toggle)
-        self.radio_preset.grid(row=0, column=4, padx=2, pady=1)
+        self.radio_preset.grid(row=0, column=7, padx=2, pady=1)
         
         self.combo_presets = ttk.Combobox(self._analysis_frame, width=12, state="readonly")
-        self.combo_presets.grid(row=0, column=5, padx=2, pady=1)
+        self.combo_presets.grid(row=0, column=8, padx=2, pady=1)
         self.combo_presets.bind("<<ComboboxSelected>>", self._on_preset_selection_changed)
         
         self.btn_manage_presets = ttk.Button(self._analysis_frame, text=T('btn_manage_presets'),
                                              command=self.open_preset_manager)
-        self.btn_manage_presets.grid(row=0, column=6, padx=2, pady=1)
+        self.btn_manage_presets.grid(row=0, column=9, padx=2, pady=1)
         
         self.update_preset_combobox()
         self._update_preset_controls_state()
 
         self.btn_add_sample = tk.Button(self._analysis_frame, text=T('btn_add_sample'),
-                        fg="#34C759", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                        fg="#34C759", font=(UI_FONT_FAMILY, 10, "bold"),
                         command=self.start_sample_measurement)
-        self.btn_add_sample.grid(row=1, column=0, padx=2, pady=1)
+        self.btn_add_sample.grid(row=1, column=0, columnspan=2, padx=2, pady=1, sticky="ew")
         self.btn_densitometry = tk.Button(self._analysis_frame, text=T("btn_densitometry"),
-                          fg="#00C7BE", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          fg="#00C7BE", font=(UI_FONT_FAMILY, 10, "bold"),
                           command=self.start_densitometry_roi_mode)
-        self.btn_densitometry.grid(row=1, column=1, padx=2, pady=1)
+        self.btn_densitometry.grid(row=1, column=2, columnspan=2, padx=2, pady=1, sticky="ew")
         self.btn_add_lane = tk.Button(self._analysis_frame, text=T('btn_add_lane'),
-                          fg="#FF9500", font=(UI_FONT_FAMILY, 10, "bold"), width=12,
+                          fg="#FF9500", font=(UI_FONT_FAMILY, 10, "bold"),
                           command=self.add_lane_label)
-        self.btn_add_lane.grid(row=1, column=2, padx=2, pady=1)
+        self.btn_add_lane.grid(row=1, column=4, columnspan=2, padx=2, pady=1, sticky="ew")
         self.btn_lane_compare = ttk.Button(self._analysis_frame, text=T("btn_lane_compare"),
                            command=self.open_lane_comparison_mode, width=14)
-        self.btn_lane_compare.grid(row=1, column=3, padx=2, pady=1)
+        self.btn_lane_compare.grid(row=1, column=6, columnspan=2, padx=2, pady=1)
         self.btn_end_mode = ttk.Button(self._analysis_frame, text=T('btn_end_mode'),
                            command=self.end_measurement_mode, width=16)
-        self.btn_end_mode.grid(row=1, column=4, padx=2, pady=1)
+        self.btn_end_mode.grid(row=1, column=8, columnspan=2, padx=2, pady=1)
 
         self.btn_auto_marker = tk.Button(self._analysis_frame, text=T('btn_auto_marker'),
-                          fg="#8E44AD", font=(UI_FONT_FAMILY, 10, "bold"), width=20,
+                          fg="#8E44AD", font=(UI_FONT_FAMILY, 10, "bold"),
                           command=self.start_auto_detect_marker)
-        self.btn_auto_marker.grid(row=2, column=0, padx=2, pady=1)
+        self.btn_auto_marker.grid(row=2, column=0, columnspan=3, padx=2, pady=1, sticky="ew")
         self.btn_auto_sample = tk.Button(self._analysis_frame, text=T('btn_auto_sample'),
-                          fg="#27AE60", font=(UI_FONT_FAMILY, 10, "bold"), width=20,
+                          fg="#27AE60", font=(UI_FONT_FAMILY, 10, "bold"),
                           command=self.start_auto_detect_sample)
-        self.btn_auto_sample.grid(row=2, column=1, padx=2, pady=1)
+        self.btn_auto_sample.grid(row=2, column=3, columnspan=3, padx=2, pady=1, sticky="ew")
 
         # === 右グループ: 出力 ===
         self._output_frame = ttk.LabelFrame(tb_row3, text=T('tb_output'), padding=2)
