@@ -680,6 +680,10 @@ TRANSLATIONS = {
         "en": "Calibration Graph",
         "ja": "検量線グラフ"
     },
+    "xl_sheet_dens": {
+        "en": "Densitometry",
+        "ja": "輝度プロファイル"
+    },
     "xl_marker_name": {
         "en": "Marker Name",
         "ja": "マーカー名"

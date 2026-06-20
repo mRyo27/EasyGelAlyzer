@@ -36,6 +36,8 @@ class ExcelExportMixin:
         try:
             import openpyxl
             from openpyxl.chart import ScatterChart, Reference, Series
+            from openpyxl.chart.shapes import GraphicalProperties
+            from openpyxl.drawing.line import LineProperties
 
             wb = openpyxl.Workbook()
             ws1 = wb.active
@@ -53,7 +55,7 @@ class ExcelExportMixin:
 
             if getattr(self, 'densitometry_rois', None):
                 self._recalculate_densitometry()
-                ws_den = wb.create_sheet(title="Densitometry")
+                ws_den = wb.create_sheet(title=T('xl_sheet_dens'))
                 ws_den.append([
                     "No.", "Lane/Sample", "X1", "Y1", "X2", "Y2",
                     "Integrated Density", "Relative to Max"
@@ -87,10 +89,23 @@ class ExcelExportMixin:
                 if max_len:
                     dens_chart = ScatterChart()
                     dens_chart.title = T("lane_profile_title")
+                    
+                    # グラフの枠線を非表示にする
+                    dens_chart.graphicalProperties.line.noFill = True
+
                     dens_chart.x_axis.title = T("lane_profile_x")
                     dens_chart.y_axis.title = T("lane_profile_y")
                     dens_chart.x_axis.scaling.min = 0.0
                     dens_chart.x_axis.scaling.max = 1.0
+
+                    # 軸の設定（目盛り内向き、目盛り線非表示、縦軸・横軸の追加、軸ラベルはlowに）
+                    for axis in (dens_chart.x_axis, dens_chart.y_axis):
+                        axis.tickLblPos = "low"
+                        axis.majorTickMark = "in"
+                        axis.minorTickMark = "none"
+                        axis.majorGridlines = None
+                        axis.graphicalProperties = GraphicalProperties(ln=LineProperties(solidFill="000000", w=12700))
+
                     for idx, roi in enumerate(self.densitometry_rois):
                         col_x = profile_start_col + idx * 2
                         col_y = col_x + 1
@@ -100,6 +115,13 @@ class ExcelExportMixin:
                         yvalues = Reference(ws_den, min_col=col_y, min_row=2, max_row=max_len + 1)
                         series = Series(yvalues, xvalues, title=roi.get('name', ''))
                         series.marker.symbol = "none"
+                        
+                        # アプリの線の色と同期
+                        roi_color = self._get_densitometry_color(roi)
+                        rgb_hex = roi_color.lstrip('#') if roi_color.startswith('#') else roi_color
+                        series.graphicalProperties.line.solidFill = rgb_hex
+                        series.graphicalProperties.line.width = 19050  # 1.5pt
+
                         dens_chart.series.append(series)
                     dens_chart.width = 18
                     dens_chart.height = 10
@@ -134,6 +156,9 @@ class ExcelExportMixin:
             # style=2: 白背景・テーマカラー非依存のシンプルスタイル
             chart.style = 2
 
+            # グラフの枠線を非表示にする
+            chart.graphicalProperties.line.noFill = True
+
             chart.x_axis.title = T('xl_xlabel')
             chart.y_axis.title = (T('xl_ylabel_kda') if self.mode == "protein"
                                   else T('xl_ylabel_bp'))
@@ -142,12 +167,13 @@ class ExcelExportMixin:
             chart.x_axis.scaling.min = 0.0
             chart.x_axis.scaling.max = 1.05
 
-            # ---- 軸: 目盛りあり・グリッド線なし ----
+            # ---- 軸: 目盛りあり（内向き）・グリッド線なし・軸線の追加 ----
             for axis in (chart.x_axis, chart.y_axis):
                 axis.tickLblPos = "low"       # 軸ラベルを軸の外側に配置
-                axis.majorTickMark = "out"    # 目盛りを外側に表示
+                axis.majorTickMark = "in"     # 目盛りを内側に表示
                 axis.minorTickMark = "none"
                 axis.majorGridlines = None    # 主目盛り線（グリッド）を非表示
+                axis.graphicalProperties = GraphicalProperties(ln=LineProperties(solidFill="000000", w=12700))
 
             # 凡例を右上に配置（回帰直線と被らない）
             chart.legend.position = 'tr'
