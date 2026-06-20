@@ -108,9 +108,9 @@ class ExcelExportMixin:
                             xMode="edge",
                             yMode="edge",
                             x=0.05,
-                            y=0.30,
+                            y=0.00,
                             w=0.90,
-                            h=0.95,
+                            h=0.85,
                         )
                     )
                     
