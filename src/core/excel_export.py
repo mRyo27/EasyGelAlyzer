@@ -110,7 +110,7 @@ class ExcelExportMixin:
                             x=0.05,
                             y=0.05,
                             w=0.90,
-                            h=0.90,
+                            h=0.89,
                         )
                     )
                     
