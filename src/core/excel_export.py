@@ -107,8 +107,8 @@ class ExcelExportMixin:
                         manualLayout=ManualLayout(
                             xMode="edge",
                             yMode="edge",
-                            x=0.00,
-                            y=0.00,
+                            x=0.50,
+                            y=0.50,
                             w=1.00,
                             h=1.00,
                         )
