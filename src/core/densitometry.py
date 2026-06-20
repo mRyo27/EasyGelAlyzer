@@ -909,6 +909,8 @@ class DensitometryMixin:
         def on_scroll(event):
             if event.inaxes != ax:
                 return
+            if event.key is not None and 'shift' in event.key:
+                return
             x = event.xdata
             if x is None:
                 return
@@ -951,14 +953,56 @@ class DensitometryMixin:
                 except Exception:
                     pass
 
+        def on_shift_wheel(event):
+            cur_xmin, cur_xmax = ax.get_xlim()
+            w = cur_xmax - cur_xmin
+            
+            # スクロール量（ピクセル数相当）を決定
+            if hasattr(event, 'num') and event.num in (4, 5):
+                dx_pixels = 20 if event.num == 4 else -20
+            else:
+                dx_pixels = -(event.delta / 4)
+            
+            bbox = ax.get_window_extent()
+            ax_w_pixels = bbox.width
+            if ax_w_pixels <= 0:
+                return "break"
+            
+            # ピクセル移動量をデータ空間の移動量に変換
+            dx_data = (dx_pixels / ax_w_pixels) * w
+            
+            new_xmin = max(0.0, min(1.0 - w, cur_xmin + dx_data))
+            new_xmax = new_xmin + w
+            ax.set_xlim(new_xmin, new_xmax)
+            update_scrollbar()
+            canvas.draw_idle()
+            return "break"
+
+        tk_canvas = canvas.get_tk_widget()
+        tk_canvas.bind("<Shift-MouseWheel>", on_shift_wheel)
+        tk_canvas.bind("<Shift-Button-4>", on_shift_wheel)
+        tk_canvas.bind("<Shift-Button-5>", on_shift_wheel)
+
         fig.canvas.mpl_connect('button_press_event', on_press)
         fig.canvas.mpl_connect('motion_notify_event', on_motion)
         fig.canvas.mpl_connect('button_release_event', on_release)
         fig.canvas.mpl_connect('scroll_event', on_scroll)
         fig.canvas.mpl_connect('draw_event', on_draw)
 
-        # Shiftキーでのズームリセットをウィンドウにバインド
-        win.bind("<KeyPress>", lambda e: reset_view() if e.keysym in ('Shift_L', 'Shift_R') else None)
+        # Shiftキーダブルプレスでズーム・位置リセットをウィンドウにバインド
+        last_shift_press_time = 0.0
+
+        def on_profile_shift_press(event):
+            nonlocal last_shift_press_time
+            if event.keysym in ('Shift_L', 'Shift_R'):
+                now = time.time()
+                if now - last_shift_press_time < 0.5:
+                    last_shift_press_time = 0.0
+                    reset_view()
+                else:
+                    last_shift_press_time = now
+
+        win.bind("<KeyPress>", on_profile_shift_press)
 
         def export_plot(fmt):
             path = filedialog.asksaveasfilename(
