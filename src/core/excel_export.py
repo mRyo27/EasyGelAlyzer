@@ -103,14 +103,14 @@ class ExcelExportMixin:
                     dens_chart.legend.overlay = True
                     
                     # プロットエリアを左下から右上に少し小さく配置（余白を確保して被りを防止）
-                    dens_chart.plot_area.layout = Layout(
+                    dens_chart.layout = Layout(
                         manualLayout=ManualLayout(
                             xMode="edge",
                             yMode="edge",
-                            x=0.50,
-                            y=0.50,
-                            w=1.00,
-                            h=1.00,
+                            x=0.15,
+                            y=0.10,
+                            w=0.70,
+                            h=0.70
                         )
                     )
                     
@@ -185,7 +185,7 @@ class ExcelExportMixin:
             chart.legend.overlay = True
 
             # プロットエリアを左下から右上に少し小さく配置（余白を確保して被りを防止）
-            chart.plot_area.layout = Layout(
+            chart.layout = Layout(
                 manualLayout=ManualLayout(
                     xMode="edge",
                     yMode="edge",
