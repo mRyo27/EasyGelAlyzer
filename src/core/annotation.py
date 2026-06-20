@@ -1833,6 +1833,38 @@ class AnnotationMixin:
             messagebox.showwarning(T('warn_title'), "承認されたバンドがありません" if get_language() == "ja" else "No accepted bands.")
             return
 
+        group_base = None
+        if self._auto_detect_target == 'sample':
+            import re
+            existing_indices = []
+            for s in self.samples:
+                m = re.match(r'^SampleAuto(\d+)', s['name'])
+                if m:
+                    existing_indices.append(int(m.group(1)))
+            next_idx = 1
+            while next_idx in existing_indices:
+                next_idx += 1
+            default_group_base = f"SampleAuto{next_idx}"
+
+            # 既存試料グループ名（手動測定と同じ命名規則・候補）
+            existing_groups = self._get_sample_base_names()
+            label_names = self._get_lane_label_sample_names()
+            all_groups = []
+            for n in label_names:
+                if n not in all_groups:
+                    all_groups.append(n)
+            for n in existing_groups:
+                if n not in all_groups:
+                    all_groups.append(n)
+
+            group_base = self._show_sample_name_dialog(default_group_base, all_groups)
+            if group_base is None:
+                # キャンセル時は何も変更せず、自動検出モードを継続する
+                return
+            group_base = group_base.strip() or default_group_base
+            # 末尾の "-数字" は測定番号サフィックスと衝突するため除去する
+            group_base = re.sub(r'-\d+$', '', group_base) or default_group_base
+
         self.push_undo_state()
 
         denom = self.end_line_y - self.start_line_y
@@ -1861,17 +1893,6 @@ class AnnotationMixin:
             self.calculate_calibration_curve()
             self.update_sample_sizes()
         else:
-            import re
-            existing_indices = []
-            for s in self.samples:
-                m = re.match(r'^SampleAuto(\d+)', s['name'])
-                if m:
-                    existing_indices.append(int(m.group(1)))
-            next_idx = 1
-            while next_idx in existing_indices:
-                next_idx += 1
-            group_base = f"SampleAuto{next_idx}"
-
             accepted.sort(key=lambda c: c['y'])
             for i, c in enumerate(accepted):
                 rf = (c['y'] - self.start_line_y) / denom

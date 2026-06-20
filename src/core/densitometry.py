@@ -19,6 +19,15 @@ class DensitometryMixin:
         self._switch_mode('densitometry_roi')
         self.canvas.config(cursor="crosshair")
         self.lbl_status.config(text=T("dens_status_pick"))
+        self._show_densitometry_tab()
+
+    def _show_densitometry_tab(self):
+        self._ensure_densitometry_panel()
+        if getattr(self, '_right_notebook', None) is not None:
+            try:
+                self._right_notebook.select(self._densitometry_tab)
+            except Exception:
+                LOGGER.exception("Failed to switch to densitometry tab")
 
     def _ask_densitometry_name(self):
         candidates = self._densitometry_name_candidates()
@@ -283,15 +292,13 @@ class DensitometryMixin:
     def _ensure_densitometry_panel(self):
         if getattr(self, '_dens_panel_created', False):
             return
-        self._dens_frame = ttk.LabelFrame(self.right_frame, text=T("dens_panel"), padding=5)
-        pack_kwargs = {'fill': tk.BOTH, 'expand': False, 'pady': 5}
-        if getattr(self, '_result_table_frame', None) is not None:
-            pack_kwargs['before'] = self._result_table_frame
-        self._dens_frame.pack(**pack_kwargs)
+        dens_master = getattr(self, '_densitometry_tab', None) or self.right_frame
+        self._dens_frame = ttk.Frame(dens_master, padding=5)
+        self._dens_frame.pack(fill=tk.BOTH, expand=True)
         self._dens_profile_canvas = tk.Canvas(self._dens_frame, height=110, bg="white", highlightthickness=1)
         self._dens_profile_canvas.pack(fill=tk.X, expand=True)
         tree_wrap = ttk.Frame(self._dens_frame)
-        tree_wrap.pack(fill=tk.X, pady=3)
+        tree_wrap.pack(fill=tk.BOTH, expand=True, pady=3)
         self._dens_tree = ttk.Treeview(
             tree_wrap,
             columns=("Name", "Integrated", "Relative"),
@@ -307,7 +314,7 @@ class DensitometryMixin:
                 ("Relative", T("dens_relative"), 70)):
             self._dens_tree.heading(col, text=text)
             self._dens_tree.column(col, width=width, anchor="center")
-        self._dens_tree.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self._dens_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         dens_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
         self._dens_tree.bind("<<TreeviewSelect>>", self._on_densitometry_panel_select)
         btns = ttk.Frame(self._dens_frame)
@@ -331,12 +338,17 @@ class DensitometryMixin:
     def _update_densitometry_language(self):
         if not getattr(self, '_dens_panel_created', False):
             return
-        self._dens_frame.config(text=T("dens_panel"))
         self._dens_tree.heading("Name", text=T("layer_name"))
         self._dens_tree.heading("Integrated", text=T("dens_integrated"))
         self._dens_tree.heading("Relative", text=T("dens_relative"))
         self._dens_overlay_btn.config(text=T("dens_overlay_plot"))
         self._dens_delete_btn.config(text=T("dens_delete_roi"))
+        if getattr(self, '_right_notebook', None) is not None:
+            try:
+                self._right_notebook.tab(self._calibration_tab, text=T('tab_calibration'))
+                self._right_notebook.tab(self._densitometry_tab, text=T('tab_densitometry'))
+            except Exception:
+                LOGGER.exception("Failed to update notebook tab labels")
 
     def _update_densitometry_preview(self, profile_result):
         self._ensure_densitometry_panel()

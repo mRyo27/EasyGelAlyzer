@@ -88,6 +88,14 @@ TRANSLATIONS = {
         "en": "Analysis Panel",
         "ja": "解析パネル"
     },
+    "tab_calibration": {
+        "en": "Calibration Curve",
+        "ja": "検量線"
+    },
+    "tab_densitometry": {
+        "en": "Densitometry",
+        "ja": "輝度定量"
+    },
     "layer_name": {
         "en": "Layer Name",
         "ja": "レイヤー名"

@@ -15,7 +15,8 @@ class CalibrationMixin:
         configure_matplotlib_japanese_font()
         self.fig = Figure(figsize=(4, 3), dpi=100, facecolor="#F0F0F0")
         self.ax = self.fig.add_subplot(111)
-        self.fig_canvas = FigureCanvasTkAgg(self.fig, master=self.right_frame)
+        plot_master = getattr(self, '_calibration_tab', None) or self.right_frame
+        self.fig_canvas = FigureCanvasTkAgg(self.fig, master=plot_master)
         try:
             if getattr(self, '_plot_placeholder', None) is not None:
                 self._plot_placeholder.destroy()

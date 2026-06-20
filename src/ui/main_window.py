@@ -135,18 +135,26 @@ class MainWindowMixin:
         self.right_frame = ttk.LabelFrame(self.main_pane, text=T('analysis_panel'), padding=5)
         self.main_pane.add(self.right_frame, weight=1)
 
+        # 検量線グラフと輝度定量をタブ切り替えで統合
+        self._right_notebook = ttk.Notebook(self.right_frame)
+        self._right_notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
+
+        # --- タブ1: 検量線グラフ ---
+        self._calibration_tab = ttk.Frame(self._right_notebook)
+        self._right_notebook.add(self._calibration_tab, text=T('tab_calibration'))
+
         self.fig = None
         self.ax = None
         self.fig_canvas = None
         self._plot_placeholder = ttk.Label(
-            self.right_frame,
+            self._calibration_tab,
             text=T('plot_add_markers'),
             anchor="center",
             background="#F0F0F0"
         )
         self._plot_placeholder.pack(fill=tk.BOTH, expand=True, pady=5)
 
-        self._coeff_frame = ttk.LabelFrame(self.right_frame, text=T('coeff_frame'), padding=5)
+        self._coeff_frame = ttk.LabelFrame(self._calibration_tab, text=T('coeff_frame'), padding=5)
         self._coeff_frame.pack(fill=tk.X, pady=5)
         coeff_grid = ttk.Frame(self._coeff_frame)
         coeff_grid.pack(fill=tk.X)
@@ -163,6 +171,10 @@ class MainWindowMixin:
         self.lbl_r2 = ttk.Label(self._coeff_frame, text="R² = 0.0000",
                                 font=(UI_FONT_FAMILY, 10, "bold"))
         self.lbl_r2.pack(anchor=tk.W, pady=2)
+
+        # --- タブ2: 輝度定量 ---
+        self._densitometry_tab = ttk.Frame(self._right_notebook)
+        self._right_notebook.add(self._densitometry_tab, text=T('tab_densitometry'))
 
         self._result_table_frame = ttk.LabelFrame(self.right_frame, text=T('result_table'), padding=5)
         self._result_table_frame.pack(fill=tk.BOTH, expand=True, pady=5)
@@ -562,6 +574,11 @@ class MainWindowMixin:
                 if first_fs is None:
                     first_fs = int(lbl_match.get('font_size', self.lane_label_font_size))
 
+        if hasattr(self, '_is_densitometry_roi_id') and any(
+                self._is_densitometry_roi_id(iid) for iid in selected):
+            if hasattr(self, '_show_densitometry_tab'):
+                self._show_densitometry_tab()
+
         if selected_lbl_ids:
             self._current_label_selections = selected_lbl_ids
             try:
@@ -922,6 +939,12 @@ class MainWindowMixin:
                 self._update_densitometry_language()
         except Exception:
             LOGGER.exception("Unexpected error")
+        try:
+            if getattr(self, '_right_notebook', None) is not None:
+                self._right_notebook.tab(self._calibration_tab, text=T('tab_calibration'))
+                self._right_notebook.tab(self._densitometry_tab, text=T('tab_densitometry'))
+        except Exception:
+            LOGGER.exception("Unexpected error")
         self.btn_apply_coeff.config(text=T('btn_apply'))
 
         # R2ラベルの言語更新
@@ -1015,6 +1038,8 @@ class MainWindowMixin:
         self.calibration_a = 0.0
         self.calibration_b = 0.0
         self.calibration_r2 = 0.0
+        if hasattr(self, '_update_densitometry_panel'):
+            self._update_densitometry_panel()
         self.update_ui_units()
         self.redraw_canvas()
 
