@@ -231,6 +231,18 @@ class MainWindowMixin:
                    command=self.confirm_rotation)
         self.btn_rotate_confirm.pack(side=tk.LEFT, padx=3)
 
+        # Transformation buttons (Rotation 90 deg & Flip)
+        transform_frame = ttk.Frame(tb_row2)
+        transform_frame.pack(side=tk.LEFT, padx=5)
+        self.btn_rotate_left = ttk.Button(transform_frame, text="⟲", width=4, command=lambda: self.rotate_image(-90))
+        self.btn_rotate_left.pack(side=tk.LEFT, padx=2)
+        self.btn_rotate_right = ttk.Button(transform_frame, text="⟳", width=4, command=lambda: self.rotate_image(90))
+        self.btn_rotate_right.pack(side=tk.LEFT, padx=2)
+        self.btn_flip_h = ttk.Button(transform_frame, text="↔", width=4, command=lambda: self.flip_image('horizontal'))
+        self.btn_flip_h.pack(side=tk.LEFT, padx=2)
+        self.btn_flip_v = ttk.Button(transform_frame, text="↕", width=4, command=lambda: self.flip_image('vertical'))
+        self.btn_flip_v.pack(side=tk.LEFT, padx=2)
+
         tb_row3 = ttk.Frame(toolbar_container)
         tb_row3.pack(fill=tk.X, pady=2)
 
