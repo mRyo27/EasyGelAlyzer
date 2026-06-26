@@ -223,7 +223,19 @@ class ImageExportMixin:
             end_line_y = self.end_line_y * export_scale
 
             img_w, img_h = base_img.size
-            font_size = max(12, int(img_h * 0.015))
+            # ---- 物理サイズ基準のフォントサイズ計算 ----
+            # 短辺1200px を 300 DPI 相当とみなし、ポイント → ピクセルに換算する。
+            # pt_to_px(pt) = pt / 72 * DPI  → DPI = 300 * (short_side / 1200)
+            short_side = min(img_w, img_h)
+            virtual_dpi = 300.0 * short_side / 1200.0
+            def pt_to_px(pt):
+                """ポイントサイズを仮想DPI基準のピクセル数に換算する（最小24px保証）"""
+                return max(24, int(round(pt / 72.0 * virtual_dpi)))
+            # マーカー/サンプルラベル: 9pt 相当
+            font_size = pt_to_px(9)
+            # 開始/終了ラインラベル: 11pt 相当
+            line_font_size = pt_to_px(11)
+            # ---- ここまで ----
             EXTRA_MARGIN_PAD = max(5, int(round(5 * export_scale)))
             # ライン幅は画像サイズに依存せず、固定値を使用
             base_line_w1 = 1
@@ -238,13 +250,13 @@ class ImageExportMixin:
             pad10 = max(10, int(round(10 * export_scale)))
             memo_pad_default_x = max(20, int(round(20 * export_scale)))
             memo_pad_default_y = max(15, int(round(15 * export_scale)))
-            
+
             # 操作画面と同じ基準: ラベル設定値を出力倍率ぶんだけ拡大する
             lane_label_font_size_px = max(6, int(round(self.lane_label_font_size * export_scale)))
-            
+
             font = get_japanese_font(size=font_size)
             lane_label_font = get_japanese_font(size=lane_label_font_size_px)
-            line_font = get_japanese_font(size=max(14, int(img_h * 0.02)))
+            line_font = get_japanese_font(size=line_font_size)
 
             temp_img = Image.new("RGB", (10, 10))
             temp_draw = ImageDraw.Draw(temp_img)

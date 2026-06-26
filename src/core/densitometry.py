@@ -5,6 +5,12 @@ from graphics.fonts import configure_matplotlib_japanese_font
 
 
 class DensitometryMixin:
+    def _translated_roi_name(self, name):
+        """マーカーレーン由来のROI名は、保存時の言語に関わらず現在の言語で表示する。"""
+        if name in ("MW Markers", "分子量マーカー", T('marker_node')):
+            return T('marker_node')
+        return name
+
     def start_densitometry_roi_mode(self):
         if self.original_image is None:
             messagebox.showwarning(T("warn_title"), T("warn_no_image"))
@@ -19,6 +25,16 @@ class DensitometryMixin:
         self._switch_mode('densitometry_roi')
         self.canvas.config(cursor="crosshair")
         self.lbl_status.config(text=T("dens_status_pick"))
+        self._show_densitometry_tab()
+
+
+    def _show_densitometry_tab(self):
+        self._ensure_densitometry_panel()
+        if getattr(self, '_right_notebook', None) is not None:
+            try:
+                self._right_notebook.select(self._densitometry_tab)
+            except Exception:
+                LOGGER.exception("Failed to switch to densitometry tab")
 
     def _ask_densitometry_name(self):
         candidates = self._densitometry_name_candidates()
@@ -283,15 +299,13 @@ class DensitometryMixin:
     def _ensure_densitometry_panel(self):
         if getattr(self, '_dens_panel_created', False):
             return
-        self._dens_frame = ttk.LabelFrame(self.right_frame, text=T("dens_panel"), padding=5)
-        pack_kwargs = {'fill': tk.BOTH, 'expand': False, 'pady': 5}
-        if getattr(self, '_result_table_frame', None) is not None:
-            pack_kwargs['before'] = self._result_table_frame
-        self._dens_frame.pack(**pack_kwargs)
+        dens_master = getattr(self, '_densitometry_tab', None) or self.right_frame
+        self._dens_frame = ttk.Frame(dens_master, padding=5)
+        self._dens_frame.pack(fill=tk.BOTH, expand=True)
         self._dens_profile_canvas = tk.Canvas(self._dens_frame, height=110, bg="white", highlightthickness=1)
         self._dens_profile_canvas.pack(fill=tk.X, expand=True)
         tree_wrap = ttk.Frame(self._dens_frame)
-        tree_wrap.pack(fill=tk.X, pady=3)
+        tree_wrap.pack(fill=tk.BOTH, expand=True, pady=3)
         self._dens_tree = ttk.Treeview(
             tree_wrap,
             columns=("Name", "Integrated", "Relative"),
@@ -307,7 +321,7 @@ class DensitometryMixin:
                 ("Relative", T("dens_relative"), 70)):
             self._dens_tree.heading(col, text=text)
             self._dens_tree.column(col, width=width, anchor="center")
-        self._dens_tree.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self._dens_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         dens_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
         self._dens_tree.bind("<<TreeviewSelect>>", self._on_densitometry_panel_select)
         btns = ttk.Frame(self._dens_frame)
@@ -331,12 +345,19 @@ class DensitometryMixin:
     def _update_densitometry_language(self):
         if not getattr(self, '_dens_panel_created', False):
             return
-        self._dens_frame.config(text=T("dens_panel"))
         self._dens_tree.heading("Name", text=T("layer_name"))
         self._dens_tree.heading("Integrated", text=T("dens_integrated"))
         self._dens_tree.heading("Relative", text=T("dens_relative"))
         self._dens_overlay_btn.config(text=T("dens_overlay_plot"))
         self._dens_delete_btn.config(text=T("dens_delete_roi"))
+        if getattr(self, '_right_notebook', None) is not None:
+            try:
+                self._right_notebook.tab(self._calibration_tab, text=T('tab_calibration'))
+                self._right_notebook.tab(self._densitometry_tab, text=T('tab_densitometry'))
+            except Exception:
+                LOGGER.exception("Failed to update notebook tab labels")
+        # ROI名（マーカーレーン由来）とプロファイルキャンバスの文言（積分値ラベル等）を再描画
+        self._update_densitometry_panel()
 
     def _update_densitometry_preview(self, profile_result):
         self._ensure_densitometry_panel()
@@ -354,7 +375,7 @@ class DensitometryMixin:
             self._dens_tree.insert(
                 "", "end", iid=roi['id'],
                 values=(
-                    roi.get('name', ''),
+                    self._translated_roi_name(roi.get('name', '')),
                     f"{roi.get('integrated_density', 0.0):.1f}",
                     f"{roi.get('relative_density', 0.0):.3f}",
                 )
@@ -523,7 +544,7 @@ class DensitometryMixin:
             )
             self.canvas.create_text(
                 c0x + 4, c0y + 4,
-                text=roi.get('name', ''),
+                text=self._translated_roi_name(roi.get('name', '')),
                 anchor="nw", fill=color,
                 font=(UI_FONT_FAMILY, 9, "bold"),
                 tags=("dens_roi",)
@@ -562,23 +583,36 @@ class DensitometryMixin:
         ttk.Checkbutton(left, text=T("dens_show_lines"), variable=show_lines_var,
                         command=lambda: redraw()).pack(anchor=tk.W, pady=6)
 
+        # ---- ROI チェックボックス ----
         vars_by_id = {}
         for roi in self.densitometry_rois:
             var = tk.BooleanVar(value=True)
             vars_by_id[roi['id']] = var
-            ttk.Checkbutton(left, text=roi.get('name', ''), variable=var,
+            ttk.Checkbutton(left, text=self._translated_roi_name(roi.get('name', '')), variable=var,
                             command=lambda: redraw()).pack(anchor=tk.W)
+
+        # ---- 一括表示/非表示ボタン ----
+        bulk_btn_frame = ttk.Frame(left)
+        bulk_btn_frame.pack(fill=tk.X, pady=(4, 2))
+        ttk.Button(bulk_btn_frame, text=T('area_all_show'),
+                   command=lambda: [v.set(True) for v in vars_by_id.values()] or redraw()
+                   ).pack(side=tk.LEFT, padx=(0, 2))
+        ttk.Button(bulk_btn_frame, text=T('area_all_hide'),
+                   command=lambda: [v.set(False) for v in vars_by_id.values()] or redraw()
+                   ).pack(side=tk.LEFT)
+
 
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         from matplotlib.figure import Figure
 
         configure_matplotlib_japanese_font()
         # 黄金比 横1.618:縦1 (横長)
-        _fig_h = 5
+        _fig_h = 4.2
         _fig_w = round(_fig_h * 1.618, 3)
         fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
-        
+        self._lane_profile_ax = ax  # 面積算出クロージャから参照するために保存
+
         # グラフキャンバスとスクロールバーの配置
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
         self._lane_profile_canvas = canvas
@@ -586,6 +620,28 @@ class DensitometryMixin:
 
         x_scrollbar = ttk.Scrollbar(plot_frame, orient=tk.HORIZONTAL)
         x_scrollbar.pack(fill=tk.X, side=tk.BOTTOM, pady=(2, 0))
+
+        # ---- 面積算出結果テーブル ----
+        result_table_frame = ttk.LabelFrame(plot_frame, text=T('area_result_table_title'))
+        result_table_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(4, 0))
+        area_cols = ('roi', 'range', 'area', 'pct')
+        area_tree = ttk.Treeview(result_table_frame, columns=area_cols, show='headings', height=4)
+        area_tree.heading('roi',   text=T('area_col_roi'))
+        area_tree.heading('range', text=T('area_col_range'))
+        area_tree.heading('area',  text=T('area_col_area'))
+        area_tree.heading('pct',   text=T('area_col_pct'))
+        area_tree.column('roi',   width=120, anchor='w')
+        area_tree.column('range', width=150, anchor='center')
+        area_tree.column('area',  width=100, anchor='e')
+        area_tree.column('pct',   width=80,  anchor='e')
+        area_tree_scroll = ttk.Scrollbar(result_table_frame, orient=tk.VERTICAL, command=area_tree.yview)
+        area_tree.configure(yscrollcommand=area_tree_scroll.set)
+        area_tree.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        area_tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        # テーブルクリアボタン
+        ttk.Button(result_table_frame, text=T('area_result_clear'),
+                   command=lambda: [area_tree.delete(i) for i in area_tree.get_children()]
+                   ).pack(side=tk.RIGHT, padx=4, pady=2)
 
         def selected_rois():
             return [r for r in self.densitometry_rois if vars_by_id[r['id']].get()]
@@ -630,7 +686,7 @@ class DensitometryMixin:
                     x_vals = self._normalized_profile_x(len(y_vals))
                     roi_color = self._get_densitometry_color(roi)
                     # プロファイル線をROIの色と統一
-                    ax.plot(x_vals, y_vals, label=roi.get('name', T("dens_lane_prefix")), color=roi_color)
+                    ax.plot(x_vals, y_vals, label=self._translated_roi_name(roi.get('name', T("dens_lane_prefix"))), color=roi_color)
             ax.set_title(T("lane_profile_title"), y=1.15)
             ax.set_xlabel(T("lane_profile_x"))
             ax.set_ylabel(T("lane_profile_y"))
@@ -765,6 +821,10 @@ class DensitometryMixin:
             if event.inaxes != ax or not show_lines_var.get():
                 return
             
+            # 面積算出モード中は縦線ドラッグを無効化（on_area_click が処理する）
+            if area_state.get('cid') is not None:
+                return
+
             # 左クリック (button == 1) でドラッグ開始
             if event.button == 1:
                 click_x = event.xdata
@@ -909,6 +969,8 @@ class DensitometryMixin:
         def on_scroll(event):
             if event.inaxes != ax:
                 return
+            if event.key is not None and 'shift' in event.key:
+                return
             x = event.xdata
             if x is None:
                 return
@@ -951,14 +1013,56 @@ class DensitometryMixin:
                 except Exception:
                     pass
 
+        def on_shift_wheel(event):
+            cur_xmin, cur_xmax = ax.get_xlim()
+            w = cur_xmax - cur_xmin
+            
+            # スクロール量（ピクセル数相当）を決定
+            if hasattr(event, 'num') and event.num in (4, 5):
+                dx_pixels = 20 if event.num == 4 else -20
+            else:
+                dx_pixels = -(event.delta / 4)
+            
+            bbox = ax.get_window_extent()
+            ax_w_pixels = bbox.width
+            if ax_w_pixels <= 0:
+                return "break"
+            
+            # ピクセル移動量をデータ空間の移動量に変換
+            dx_data = (dx_pixels / ax_w_pixels) * w
+            
+            new_xmin = max(0.0, min(1.0 - w, cur_xmin + dx_data))
+            new_xmax = new_xmin + w
+            ax.set_xlim(new_xmin, new_xmax)
+            update_scrollbar()
+            canvas.draw_idle()
+            return "break"
+
+        tk_canvas = canvas.get_tk_widget()
+        tk_canvas.bind("<Shift-MouseWheel>", on_shift_wheel)
+        tk_canvas.bind("<Shift-Button-4>", on_shift_wheel)
+        tk_canvas.bind("<Shift-Button-5>", on_shift_wheel)
+
         fig.canvas.mpl_connect('button_press_event', on_press)
         fig.canvas.mpl_connect('motion_notify_event', on_motion)
         fig.canvas.mpl_connect('button_release_event', on_release)
         fig.canvas.mpl_connect('scroll_event', on_scroll)
         fig.canvas.mpl_connect('draw_event', on_draw)
 
-        # Shiftキーでのズームリセットをウィンドウにバインド
-        win.bind("<KeyPress>", lambda e: reset_view() if e.keysym in ('Shift_L', 'Shift_R') else None)
+        # Shiftキーダブルプレスでズーム・位置リセットをウィンドウにバインド
+        last_shift_press_time = 0.0
+
+        def on_profile_shift_press(event):
+            nonlocal last_shift_press_time
+            if event.keysym in ('Shift_L', 'Shift_R'):
+                now = time.time()
+                if now - last_shift_press_time < 0.5:
+                    last_shift_press_time = 0.0
+                    reset_view()
+                else:
+                    last_shift_press_time = now
+
+        win.bind("<KeyPress>", on_profile_shift_press)
 
         def export_plot(fmt):
             path = filedialog.asksaveasfilename(
@@ -983,6 +1087,171 @@ class DensitometryMixin:
                     redraw(exporting=False)
                     messagebox.showerror(T("err_title"), str(e), parent=win)
 
+        # ---- 面積算出 UI（クロージャ） ----
+        ttk.Separator(left, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=6)
+        area_frame = ttk.LabelFrame(left, text=T('area_calc_title'))
+        area_frame.pack(fill=tk.X, pady=2, padx=2)
+
+        ttk.Label(area_frame, text=T('area_calc_select_roi')).pack(anchor=tk.W, padx=5, pady=(4, 0))
+        roi_names = [self._translated_roi_name(r['name']) for r in self.densitometry_rois]
+        area_roi_var = tk.StringVar()
+        area_roi_combo = ttk.Combobox(area_frame, textvariable=area_roi_var,
+                                       values=roi_names, state='readonly', width=18)
+        area_roi_combo.pack(fill=tk.X, padx=5, pady=2)
+        if roi_names:
+            area_roi_combo.current(0)
+
+        area_status_lbl = ttk.Label(area_frame, text='', foreground='#555', wraplength=160)
+        area_status_lbl.pack(anchor=tk.W, padx=5, pady=2)
+
+        area_result_lbl = ttk.Label(area_frame, text='', foreground='#0055AA',
+                                     justify=tk.LEFT, wraplength=160)
+        area_result_lbl.pack(anchor=tk.W, padx=5, pady=2)
+
+        # 面積算出の内部状態（クロージャ変数）
+        area_state = {
+            'cid': None,           # matplotlib イベント接続ID
+            'clicks': [],          # クリックされたRf値のリスト
+            'vlines': [],          # グラフ上の縦線オブジェクト
+            'shade': None,         # 塗りつぶしオブジェクト
+        }
+
+        def area_reset():
+            """縦線と塗りつぶしをリセットし、内部状態を初期化する"""
+            for vl in area_state['vlines']:
+                try:
+                    vl.remove()
+                except Exception:
+                    pass
+            if area_state['shade'] is not None:
+                try:
+                    area_state['shade'].remove()
+                except Exception:
+                    pass
+            area_state['vlines'] = []
+            area_state['shade'] = None
+            area_state['clicks'] = []
+            if area_state['cid'] is not None:
+                try:
+                    fig.canvas.mpl_disconnect(area_state['cid'])
+                except Exception:
+                    pass
+                area_state['cid'] = None
+            area_status_lbl.config(text='')
+            area_result_lbl.config(text='')
+            canvas.draw_idle()
+
+        def on_area_click(event):
+            """グラフ上でのクリックを受けて縦線を設置・面積を算出する"""
+            if event.inaxes != ax or event.xdata is None:
+                return
+            rf = float(event.xdata)
+            area_state['clicks'].append(rf)
+
+            # 縦線を描画
+            vl = ax.axvline(x=rf, color='#FF3B30', linestyle='--', linewidth=1.5, alpha=0.9)
+            area_state['vlines'].append(vl)
+            canvas.draw_idle()
+
+            if len(area_state['clicks']) == 1:
+                # 1本目：2本目のクリックを促す
+                area_status_lbl.config(text=T('area_calc_second'))
+
+            elif len(area_state['clicks']) >= 2:
+                # 2本目：面積を算出して表示
+                fig.canvas.mpl_disconnect(area_state['cid'])
+                area_state['cid'] = None
+
+                rf_left, rf_right = sorted(area_state['clicks'][:2])
+
+                # 対象ROIを名前から取得
+                sel_name = area_roi_var.get()
+                target_roi = None
+                for r in self.densitometry_rois:
+                    if self._translated_roi_name(r.get('name', '')) == sel_name:
+                        target_roi = r
+                        break
+                if not target_roi:
+                    area_status_lbl.config(text=T('area_calc_no_roi'))
+                    return
+
+                profile_data = self._calculate_densitometry_profile(target_roi)
+                if not profile_data:
+                    area_status_lbl.config(text=T('area_calc_no_roi'))
+                    return
+
+                corrected = profile_data['corrected']
+                n_points = len(corrected)
+                roi_width_px = int(abs(target_roi['roi'][2] - target_roi['roi'][0]))
+
+                import numpy as np
+                arr = np.array(corrected, dtype=float)
+                xs = np.linspace(0.0, 1.0, n_points)
+                mask = (xs >= rf_left) & (xs <= rf_right)
+                dx = 1.0 / max(n_points - 1, 1)
+                sub_area = float(arr[mask].sum() * dx * roi_width_px) if mask.any() else 0.0
+                total_area = float(arr.sum() * dx * roi_width_px)
+                pct = (sub_area / total_area * 100.0) if total_area > 0 else 0.0
+
+                # 範囲を塗りつぶし表示
+                if mask.any():
+                    xs_sub = xs[mask]
+                    ys_sub = arr[mask]
+                    if area_state['shade'] is not None:
+                        try:
+                            area_state['shade'].remove()
+                        except Exception:
+                            pass
+                    shade = ax.fill_between(xs_sub, ys_sub, alpha=0.25, color='#FF3B30', zorder=2)
+                    area_state['shade'] = shade
+                    canvas.draw_idle()
+
+                result_text = T('area_calc_result').format(
+                    area=sub_area, left=rf_left, right=rf_right,
+                    width=roi_width_px, pct=pct
+                )
+                area_status_lbl.config(text='')
+                area_result_lbl.config(text=result_text)
+
+                # 結果テーブルに行を追加
+                range_str = f"Rf {rf_left:.3f} – {rf_right:.3f}"
+                area_tree.insert('', 'end', values=(
+                    sel_name,
+                    range_str,
+                    f"{sub_area:.1f}",
+                    f"{pct:.1f}%"
+                ))
+                # 最新行にスクロール
+                children = area_tree.get_children()
+                if children:
+                    area_tree.see(children[-1])
+
+        def start_area_calc():
+            """算出開始ボタン: ROI表示を選択に合わせ切替後、1点目クリック待ちにする"""
+            sel_name = area_roi_var.get()
+            if not sel_name:
+                area_status_lbl.config(text=T('area_calc_no_roi'))
+                return
+            area_reset()
+
+            # 選択したROIのみ表示し、それ以外を非表示にする
+            for roi in self.densitometry_rois:
+                translated = self._translated_roi_name(roi.get('name', ''))
+                vars_by_id[roi['id']].set(translated == sel_name)
+            redraw()
+
+            area_status_lbl.config(text=T('area_calc_first'))
+            area_result_lbl.config(text='')
+            area_state['cid'] = fig.canvas.mpl_connect('button_press_event', on_area_click)
+
+        btn_frame_area = ttk.Frame(area_frame)
+        btn_frame_area.pack(fill=tk.X, padx=5, pady=4)
+        ttk.Button(btn_frame_area, text=T('area_calc_btn'),
+                   command=start_area_calc).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(btn_frame_area, text=T('area_calc_reset'),
+                   command=area_reset).pack(side=tk.LEFT)
+
+        # ---- エクスポートボタン ----
         ttk.Button(left, text=T("export_png"), command=lambda: export_plot("png")).pack(fill=tk.X, pady=(12, 2))
         ttk.Button(left, text=T("export_svg"), command=lambda: export_plot("svg")).pack(fill=tk.X, pady=2)
         redraw()
@@ -1070,7 +1339,7 @@ class DensitometryMixin:
         entry_frame = ttk.Frame(win, padding=6)
         entry_frame.pack(fill=tk.X)
         for roi in self.densitometry_rois:
-            var = tk.StringVar(value=roi.get('name', T("dens_lane_prefix")))
+            var = tk.StringVar(value=self._translated_roi_name(roi.get('name', T("dens_lane_prefix"))))
             entries.append((roi, var))
             ttk.Entry(entry_frame, textvariable=var, width=14).pack(side=tk.LEFT, padx=3)
 

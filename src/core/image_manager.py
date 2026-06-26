@@ -220,6 +220,8 @@ class ImageManagerMixin:
             self.update_layer_panel()
             self.update_result_table()
             self.update_calibration_plot()
+            if hasattr(self, '_update_densitometry_panel'):
+                self._update_densitometry_panel()
             self.fit_image_to_canvas()
             self.btn_trim.config(state=tk.NORMAL)
             try:
@@ -437,6 +439,8 @@ class ImageManagerMixin:
         self.samples.clear()
         self.lane_labels = []
         self.densitometry_rois = []
+        if hasattr(self, '_update_densitometry_panel'):
+            self._update_densitometry_panel()
         self.fit_image_to_canvas()
         self.btn_trim.config(state=tk.NORMAL)
         self.lbl_status.config(text=T('status_rotation_done'))

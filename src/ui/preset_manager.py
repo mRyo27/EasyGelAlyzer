@@ -82,8 +82,8 @@ class PresetManagerWindow:
         self.mode_var = tk.StringVar(value="protein")
         mode_frame = ttk.Frame(self.right_frame)
         mode_frame.pack(fill=tk.X, pady=5)
-        ttk.Radiobutton(mode_frame, text="Protein (kDa)", variable=self.mode_var, value="protein", command=self._on_mode_change).pack(side=tk.LEFT, padx=5)
-        ttk.Radiobutton(mode_frame, text="DNA (bp)", variable=self.mode_var, value="dna", command=self._on_mode_change).pack(side=tk.LEFT, padx=5)
+        ttk.Radiobutton(mode_frame, text=T("preset_mode_protein_unit"), variable=self.mode_var, value="protein", command=self._on_mode_change).pack(side=tk.LEFT, padx=5)
+        ttk.Radiobutton(mode_frame, text=T("preset_mode_dna_unit"), variable=self.mode_var, value="dna", command=self._on_mode_change).pack(side=tk.LEFT, padx=5)
         
         # バンドサイズ一覧
         size_label = ttk.Label(self.right_frame, text=T("lbl_band_sizes"))
@@ -91,7 +91,7 @@ class PresetManagerWindow:
         
         self.size_tree = ttk.Treeview(self.right_frame, columns=("Index", "Size"), show="headings", selectmode="browse")
         self.size_tree.heading("Index", text="#")
-        self.size_tree.heading("Size", text="Size")
+        self.size_tree.heading("Size", text=T("layer_size"))
         self.size_tree.column("Index", width=40, anchor="center", stretch=False)
         self.size_tree.column("Size", width=150, anchor="center")
         self.size_tree.pack(fill=tk.BOTH, expand=True)
@@ -351,13 +351,13 @@ class PresetManagerWindow:
             
         new_name = self.entry_name.get().strip()
         if not new_name:
-            messagebox.showwarning(T("warn_input"), T("warn_angle_invalid"))
+            messagebox.showwarning(T("warn_input"), T("warn_preset_name_empty"))
             return
             
         presets = mp.list_presets()
         for p in presets:
             if p["name"] == new_name and p["name"] != self.current_preset_name:
-                messagebox.showwarning(T("warn_dup"), "Preset name already exists.")
+                messagebox.showwarning(T("warn_dup"), T("warn_preset_name_dup"))
                 return
                 
         sizes = [float(item["value"]) for item in self.temp_sizes]
