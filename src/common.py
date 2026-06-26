@@ -63,10 +63,12 @@ def _save_config(data):
     except Exception:
         LOGGER.exception("Failed to save config to %s", _CONFIG_PATH)
 
-import sys
-import os
-# Ensure the source directory is on the import path so that "i18n.translations" can be found
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+# ---- PyInstaller / 通常実行 両対応のパス設定 ----
+# PyInstaller --onefile では実行時に sys._MEIPASS が設定される。
+# それ以外では common.py 自身のディレクトリ (src/) を使う。
+_src_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
 
 _config = _load_config()
 _LANG = _config.get('language', 'en')  # デフォルト英語
