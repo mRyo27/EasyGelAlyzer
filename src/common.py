@@ -63,6 +63,11 @@ def _save_config(data):
     except Exception:
         LOGGER.exception("Failed to save config to %s", _CONFIG_PATH)
 
+import sys
+import os
+# Ensure the source directory is on the import path so that "i18n.translations" can be found
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
 _config = _load_config()
 _LANG = _config.get('language', 'en')  # デフォルト英語
 
