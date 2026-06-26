@@ -25,80 +25,8 @@ class DensitometryMixin:
         self._switch_mode('densitometry_roi')
         self.canvas.config(cursor="crosshair")
         self.lbl_status.config(text=T("dens_status_pick"))
-        self._draw_densitometry_rois()
+        self._show_densitometry_tab()
 
-    # -----------------------------------------------------
-    # Area calculation helper methods
-    # -----------------------------------------------------
-    def _start_area_calc(self):
-        """開始ボタンが押されたときにROIを選択し、2点クリックで範囲を指定して面積を算出する"""
-        combo = getattr(self, '_area_roi_combo', None)
-        if not combo:
-            return
-        selected_name = combo.get()
-        if not selected_name:
-            messagebox.showwarning(T('warn_title'), T('area_calc_no_roi'))
-            return
-        # Find ROI object matching selected (translated name)
-        target_roi = None
-        for roi in getattr(self, 'densitometry_rois', []):
-            if self._translated_roi_name(roi.get('name', '')) == selected_name:
-                target_roi = roi
-                break
-        if not target_roi:
-            messagebox.showwarning(T('warn_title'), T('area_calc_no_roi'))
-            return
-        self._area_calc_target_roi = target_roi
-        self._area_calc_clicks = []
-        self._area_result_label.config(text=T('area_calc_first'))
-        # Connect matplotlib click handler
-        self._area_cid = self._lane_profile_canvas.figure.canvas.mpl_connect('button_press_event', self._on_area_calc_click)
-
-    def _on_area_calc_click(self, event):
-        """Handle clicks on the profile plot for area calculation"""
-        if event.inaxes != getattr(self, '_lane_profile_ax', None):
-            return
-        if not hasattr(self, '_area_calc_target_roi'):
-            return
-        if event.xdata is None:
-            return
-        self._area_calc_clicks.append(event.xdata)
-        if len(self._area_calc_clicks) == 1:
-            self._area_result_label.config(text=T('area_calc_second'))
-            return
-        # Two points collected
-        left, right = sorted(self._area_calc_clicks[:2])
-        roi = self._area_calc_target_roi
-        profile = self._calculate_densitometry_profile(roi)
-        if not profile:
-            return
-        corrected = profile['corrected']
-        n_points = len(corrected)
-        roi_width_px = int(abs(roi['roi'][2] - roi['roi'][0]))
-        area, fraction = self._compute_area_between(corrected, n_points, left, right, roi_width_px)
-        # Update label
-        result_text = T('area_calc_result').format(area=area, left=left, right=right, width=roi_width_px, pct=fraction * 100)
-        self._area_result_label.config(text=result_text)
-        # Disconnect click handler
-        self._lane_profile_canvas.figure.canvas.mpl_disconnect(self._area_cid)
-        self._area_cid = None
-        self._area_calc_clicks = []
-        self._area_calc_target_roi = None
-
-    def _compute_area_between(self, corrected, n_points, rf_left, rf_right, roi_width_px):
-        """背景補正済み輝度プロファイルの区間積分面積と全体に対する割合を計算する"""
-        import numpy as np
-        arr = np.array(corrected, dtype=float)
-        xs = np.linspace(0.0, 1.0, n_points)
-        mask = (xs >= rf_left) & (xs <= rf_right)
-        if not mask.any():
-            return 0.0, 0.0
-        dx = 1.0 / max(n_points - 1, 1)
-        sub = arr[mask]
-        area = float(sub.sum() * dx * roi_width_px)
-        total = float(arr.sum() * dx * roi_width_px)
-        fraction = area / total if total > 0 else 0.0
-        return area, fraction
 
     def _show_densitometry_tab(self):
         self._ensure_densitometry_panel()
@@ -662,18 +590,6 @@ class DensitometryMixin:
             ttk.Checkbutton(left, text=self._translated_roi_name(roi.get('name', '')), variable=var,
                             command=lambda: redraw()).pack(anchor=tk.W)
 
-        # ---- Area Calculation UI ----
-        area_frame = ttk.LabelFrame(left, text=T('area_calc_title'))
-        area_frame.pack(fill=tk.X, pady=6)
-        # ROI selection
-        ttk.Label(area_frame, text=T('area_calc_select_roi')).pack(anchor=tk.W, padx=5, pady=2)
-        self._area_roi_combo = ttk.Combobox(area_frame, values=[self._translated_roi_name(r['name']) for r in self.densitometry_rois], state='readonly')
-        self._area_roi_combo.pack(fill=tk.X, padx=5, pady=2)
-        # Start button
-        ttk.Button(area_frame, text=T('area_calc_start'), command=self._start_area_calc).pack(pady=4)
-        # Result label
-        self._area_result_label = ttk.Label(area_frame, text='')
-        self._area_result_label.pack(anchor=tk.W, padx=5, pady=2)
 
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         from matplotlib.figure import Figure
@@ -684,7 +600,8 @@ class DensitometryMixin:
         _fig_w = round(_fig_h * 1.618, 3)
         fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
-        
+        self._lane_profile_ax = ax  # 面積算出クロージャから参照するために保存
+
         # グラフキャンバスとスクロールバーの配置
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
         self._lane_profile_canvas = canvas
@@ -871,6 +788,10 @@ class DensitometryMixin:
             if event.inaxes != ax or not show_lines_var.get():
                 return
             
+            # 面積算出モード中は縦線ドラッグを無効化（on_area_click が処理する）
+            if area_state.get('cid') is not None:
+                return
+
             # 左クリック (button == 1) でドラッグ開始
             if event.button == 1:
                 click_x = event.xdata
@@ -1133,6 +1054,151 @@ class DensitometryMixin:
                     redraw(exporting=False)
                     messagebox.showerror(T("err_title"), str(e), parent=win)
 
+        # ---- 面積算出 UI（クロージャ） ----
+        ttk.Separator(left, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=6)
+        area_frame = ttk.LabelFrame(left, text=T('area_calc_title'))
+        area_frame.pack(fill=tk.X, pady=2, padx=2)
+
+        ttk.Label(area_frame, text=T('area_calc_select_roi')).pack(anchor=tk.W, padx=5, pady=(4, 0))
+        roi_names = [self._translated_roi_name(r['name']) for r in self.densitometry_rois]
+        area_roi_var = tk.StringVar()
+        area_roi_combo = ttk.Combobox(area_frame, textvariable=area_roi_var,
+                                       values=roi_names, state='readonly', width=18)
+        area_roi_combo.pack(fill=tk.X, padx=5, pady=2)
+        if roi_names:
+            area_roi_combo.current(0)
+
+        area_status_lbl = ttk.Label(area_frame, text='', foreground='#555', wraplength=160)
+        area_status_lbl.pack(anchor=tk.W, padx=5, pady=2)
+
+        area_result_lbl = ttk.Label(area_frame, text='', foreground='#0055AA',
+                                     justify=tk.LEFT, wraplength=160)
+        area_result_lbl.pack(anchor=tk.W, padx=5, pady=2)
+
+        # 面積算出の内部状態（クロージャ変数）
+        area_state = {
+            'cid': None,           # matplotlib イベント接続ID
+            'clicks': [],          # クリックされたRf値のリスト
+            'vlines': [],          # グラフ上の縦線オブジェクト
+            'shade': None,         # 塗りつぶしオブジェクト
+        }
+
+        def area_reset():
+            """縦線と塗りつぶしをリセットし、内部状態を初期化する"""
+            for vl in area_state['vlines']:
+                try:
+                    vl.remove()
+                except Exception:
+                    pass
+            if area_state['shade'] is not None:
+                try:
+                    area_state['shade'].remove()
+                except Exception:
+                    pass
+            area_state['vlines'] = []
+            area_state['shade'] = None
+            area_state['clicks'] = []
+            if area_state['cid'] is not None:
+                try:
+                    fig.canvas.mpl_disconnect(area_state['cid'])
+                except Exception:
+                    pass
+                area_state['cid'] = None
+            area_status_lbl.config(text='')
+            area_result_lbl.config(text='')
+            canvas.draw_idle()
+
+        def on_area_click(event):
+            """グラフ上でのクリックを受けて縦線を設置・面積を算出する"""
+            if event.inaxes != ax or event.xdata is None:
+                return
+            rf = float(event.xdata)
+            area_state['clicks'].append(rf)
+
+            # 縦線を描画
+            vl = ax.axvline(x=rf, color='#FF3B30', linestyle='--', linewidth=1.5, alpha=0.9)
+            area_state['vlines'].append(vl)
+            canvas.draw_idle()
+
+            if len(area_state['clicks']) == 1:
+                # 1本目：2本目のクリックを促す
+                area_status_lbl.config(text=T('area_calc_second'))
+
+            elif len(area_state['clicks']) >= 2:
+                # 2本目：面積を算出して表示
+                fig.canvas.mpl_disconnect(area_state['cid'])
+                area_state['cid'] = None
+
+                rf_left, rf_right = sorted(area_state['clicks'][:2])
+
+                # 対象ROIを名前から取得
+                sel_name = area_roi_var.get()
+                target_roi = None
+                for r in self.densitometry_rois:
+                    if self._translated_roi_name(r.get('name', '')) == sel_name:
+                        target_roi = r
+                        break
+                if not target_roi:
+                    area_status_lbl.config(text=T('area_calc_no_roi'))
+                    return
+
+                profile_data = self._calculate_densitometry_profile(target_roi)
+                if not profile_data:
+                    area_status_lbl.config(text=T('area_calc_no_roi'))
+                    return
+
+                corrected = profile_data['corrected']
+                n_points = len(corrected)
+                roi_width_px = int(abs(target_roi['roi'][2] - target_roi['roi'][0]))
+
+                import numpy as np
+                arr = np.array(corrected, dtype=float)
+                xs = np.linspace(0.0, 1.0, n_points)
+                mask = (xs >= rf_left) & (xs <= rf_right)
+                dx = 1.0 / max(n_points - 1, 1)
+                sub_area = float(arr[mask].sum() * dx * roi_width_px) if mask.any() else 0.0
+                total_area = float(arr.sum() * dx * roi_width_px)
+                pct = (sub_area / total_area * 100.0) if total_area > 0 else 0.0
+
+                # 範囲を塗りつぶし表示
+                if mask.any():
+                    xs_sub = xs[mask]
+                    ys_sub = arr[mask]
+                    if area_state['shade'] is not None:
+                        try:
+                            area_state['shade'].remove()
+                        except Exception:
+                            pass
+                    shade = ax.fill_between(xs_sub, ys_sub, alpha=0.25, color='#FF3B30', zorder=2)
+                    area_state['shade'] = shade
+                    canvas.draw_idle()
+
+                result_text = T('area_calc_result').format(
+                    area=sub_area, left=rf_left, right=rf_right,
+                    width=roi_width_px, pct=pct
+                )
+                area_status_lbl.config(text='')
+                area_result_lbl.config(text=result_text)
+
+        def start_area_calc():
+            """算出開始ボタン: 既存の状態をリセットして1点目クリック待ちにする"""
+            sel_name = area_roi_var.get()
+            if not sel_name:
+                area_status_lbl.config(text=T('area_calc_no_roi'))
+                return
+            area_reset()
+            area_status_lbl.config(text=T('area_calc_first'))
+            area_result_lbl.config(text='')
+            area_state['cid'] = fig.canvas.mpl_connect('button_press_event', on_area_click)
+
+        btn_frame_area = ttk.Frame(area_frame)
+        btn_frame_area.pack(fill=tk.X, padx=5, pady=4)
+        ttk.Button(btn_frame_area, text=T('area_calc_btn'),
+                   command=start_area_calc).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(btn_frame_area, text=T('area_calc_reset'),
+                   command=area_reset).pack(side=tk.LEFT)
+
+        # ---- エクスポートボタン ----
         ttk.Button(left, text=T("export_png"), command=lambda: export_plot("png")).pack(fill=tk.X, pady=(12, 2))
         ttk.Button(left, text=T("export_svg"), command=lambda: export_plot("svg")).pack(fill=tk.X, pady=2)
         redraw()

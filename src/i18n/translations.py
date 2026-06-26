@@ -1367,6 +1367,38 @@ TRANSLATIONS = {
     "auto_detect_btn_confirm": {
         "en": "Confirm & Add",
         "ja": "適用/確定"
+    },
+    "area_calc_title": {
+        "en": "Area Calculation",
+        "ja": "面積算出"
+    },
+    "area_calc_btn": {
+        "en": "Start Area Calc",
+        "ja": "面積算出開始"
+    },
+    "area_calc_reset": {
+        "en": "Reset",
+        "ja": "リセット"
+    },
+    "area_calc_select_roi": {
+        "en": "Select lane/ROI:",
+        "ja": "レーン/ROI選択:"
+    },
+    "area_calc_first": {
+        "en": "Click left boundary on graph",
+        "ja": "グラフ上で左境界をクリック"
+    },
+    "area_calc_second": {
+        "en": "Click right boundary on graph",
+        "ja": "グラフ上で右境界をクリック"
+    },
+    "area_calc_no_roi": {
+        "en": "No ROI selected",
+        "ja": "ROIが選択されていません"
+    },
+    "area_calc_result": {
+        "en": "Area: {area:.1f}\nRange: Rf {left:.3f} – {right:.3f}\nROI width: {width} px\nFraction: {pct:.1f}%",
+        "ja": "面積: {area:.1f}\n区間: Rf {left:.3f} – {right:.3f}\nROI幅: {width} px\n割合: {pct:.1f}%"
     }
 }
 
