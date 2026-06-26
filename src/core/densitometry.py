@@ -583,6 +583,7 @@ class DensitometryMixin:
         ttk.Checkbutton(left, text=T("dens_show_lines"), variable=show_lines_var,
                         command=lambda: redraw()).pack(anchor=tk.W, pady=6)
 
+        # ---- ROI チェックボックス ----
         vars_by_id = {}
         for roi in self.densitometry_rois:
             var = tk.BooleanVar(value=True)
@@ -590,13 +591,23 @@ class DensitometryMixin:
             ttk.Checkbutton(left, text=self._translated_roi_name(roi.get('name', '')), variable=var,
                             command=lambda: redraw()).pack(anchor=tk.W)
 
+        # ---- 一括表示/非表示ボタン ----
+        bulk_btn_frame = ttk.Frame(left)
+        bulk_btn_frame.pack(fill=tk.X, pady=(4, 2))
+        ttk.Button(bulk_btn_frame, text=T('area_all_show'),
+                   command=lambda: [v.set(True) for v in vars_by_id.values()] or redraw()
+                   ).pack(side=tk.LEFT, padx=(0, 2))
+        ttk.Button(bulk_btn_frame, text=T('area_all_hide'),
+                   command=lambda: [v.set(False) for v in vars_by_id.values()] or redraw()
+                   ).pack(side=tk.LEFT)
+
 
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         from matplotlib.figure import Figure
 
         configure_matplotlib_japanese_font()
         # 黄金比 横1.618:縦1 (横長)
-        _fig_h = 5
+        _fig_h = 4.2
         _fig_w = round(_fig_h * 1.618, 3)
         fig = Figure(figsize=(_fig_w, _fig_h), dpi=100)
         ax = fig.add_subplot(111)
@@ -609,6 +620,28 @@ class DensitometryMixin:
 
         x_scrollbar = ttk.Scrollbar(plot_frame, orient=tk.HORIZONTAL)
         x_scrollbar.pack(fill=tk.X, side=tk.BOTTOM, pady=(2, 0))
+
+        # ---- 面積算出結果テーブル ----
+        result_table_frame = ttk.LabelFrame(plot_frame, text=T('area_result_table_title'))
+        result_table_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(4, 0))
+        area_cols = ('roi', 'range', 'area', 'pct')
+        area_tree = ttk.Treeview(result_table_frame, columns=area_cols, show='headings', height=4)
+        area_tree.heading('roi',   text=T('area_col_roi'))
+        area_tree.heading('range', text=T('area_col_range'))
+        area_tree.heading('area',  text=T('area_col_area'))
+        area_tree.heading('pct',   text=T('area_col_pct'))
+        area_tree.column('roi',   width=120, anchor='w')
+        area_tree.column('range', width=150, anchor='center')
+        area_tree.column('area',  width=100, anchor='e')
+        area_tree.column('pct',   width=80,  anchor='e')
+        area_tree_scroll = ttk.Scrollbar(result_table_frame, orient=tk.VERTICAL, command=area_tree.yview)
+        area_tree.configure(yscrollcommand=area_tree_scroll.set)
+        area_tree.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        area_tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        # テーブルクリアボタン
+        ttk.Button(result_table_frame, text=T('area_result_clear'),
+                   command=lambda: [area_tree.delete(i) for i in area_tree.get_children()]
+                   ).pack(side=tk.RIGHT, padx=4, pady=2)
 
         def selected_rois():
             return [r for r in self.densitometry_rois if vars_by_id[r['id']].get()]
@@ -1180,13 +1213,33 @@ class DensitometryMixin:
                 area_status_lbl.config(text='')
                 area_result_lbl.config(text=result_text)
 
+                # 結果テーブルに行を追加
+                range_str = f"Rf {rf_left:.3f} – {rf_right:.3f}"
+                area_tree.insert('', 'end', values=(
+                    sel_name,
+                    range_str,
+                    f"{sub_area:.1f}",
+                    f"{pct:.1f}%"
+                ))
+                # 最新行にスクロール
+                children = area_tree.get_children()
+                if children:
+                    area_tree.see(children[-1])
+
         def start_area_calc():
-            """算出開始ボタン: 既存の状態をリセットして1点目クリック待ちにする"""
+            """算出開始ボタン: ROI表示を選択に合わせ切替後、1点目クリック待ちにする"""
             sel_name = area_roi_var.get()
             if not sel_name:
                 area_status_lbl.config(text=T('area_calc_no_roi'))
                 return
             area_reset()
+
+            # 選択したROIのみ表示し、それ以外を非表示にする
+            for roi in self.densitometry_rois:
+                translated = self._translated_roi_name(roi.get('name', ''))
+                vars_by_id[roi['id']].set(translated == sel_name)
+            redraw()
+
             area_status_lbl.config(text=T('area_calc_first'))
             area_result_lbl.config(text='')
             area_state['cid'] = fig.canvas.mpl_connect('button_press_event', on_area_click)

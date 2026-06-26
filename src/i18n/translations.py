@@ -1391,14 +1391,241 @@ TRANSLATIONS = {
     "area_calc_second": {
         "en": "Click right boundary on graph",
         "ja": "グラフ上で右境界をクリック"
+    "preset_none": {
+        "en": "None",
+        "ja": "なし"
+    },
+    "lbl_presets": {
+        "en": "Presets",
+        "ja": "プリセット"
+    },
+    "menu_view": {
+        "en": "View",
+        "ja": "表示"
+    },
+    "menu_lane_compare": {
+        "en": "Lane Comparison Mode",
+        "ja": "レーン比較モード"
+    },
+    "btn_pdf": {
+        "en": "PDF",
+        "ja": "PDF"
+    },
+    "btn_densitometry": {
+        "en": "Densitometry",
+        "ja": "輝度定量"
+    },
+    "btn_lane_compare": {
+        "en": "Lane Compare",
+        "ja": "レーン比較"
+    },
+    "pdf_export_title": {
+        "en": "PDF Export",
+        "ja": "PDF出力"
+    },
+    "pdf_export_ok": {
+        "en": "PDF exported successfully.",
+        "ja": "PDFを出力しました。"
+    },
+    "pdf_export_failed": {
+        "en": "PDF export failed:",
+        "ja": "PDF出力に失敗しました:"
+    },
+    "pdf_include_profiles": {
+        "en": "Include densitometry profiles and lane comparison",
+        "ja": "輝度定量プロファイルとレーン比較を含める"
+    },
+    "dens_name_title": {
+        "en": "Densitometry Name",
+        "ja": "輝度定量名"
+    },
+    "dens_name_prompt": {
+        "en": "Select or enter a lane/sample name",
+        "ja": "レーン/試料名を選択または入力"
+    },
+    "dens_name_invalid": {
+        "en": "Names ending with -1, -2, etc. are not allowed.",
+        "ja": "末尾が -1、-2 などの名前は使用できません。"
+    },
+    "dens_overlap": {
+        "en": "Densitometry lanes cannot overlap.",
+        "ja": "輝度定量領域は重ねられません。"
+    },
+    "dens_status_pick": {
+        "en": "Drag horizontally to set the densitometry lane width.",
+        "ja": "横方向にドラッグして輝度定量レーン幅を指定してください。"
+    },
+    "dens_panel": {
+        "en": "Densitometry",
+        "ja": "輝度定量"
+    },
+    "dens_no_roi": {
+        "en": "No densitometry lane",
+        "ja": "輝度定量領域なし"
+    },
+    "dens_integrated": {
+        "en": "Integrated",
+        "ja": "積分値"
+    },
+    "dens_relative": {
+        "en": "Relative",
+        "ja": "相対値"
+    },
+    "dens_overlay_plot": {
+        "en": "Compare Profiles",
+        "ja": "プロファイル比較"
+    },
+    "dens_delete_roi": {
+        "en": "Delete",
+        "ja": "削除"
+    },
+    "pdf_marker_table": {
+        "en": "Marker Results",
+        "ja": "マーカー結果"
+    },
+    "pdf_sample_table": {
+        "en": "Sample Results",
+        "ja": "試料結果"
+    },
+    "pdf_page_annotated": {
+        "en": "Annotated Gel Image",
+        "ja": "アノテーション付きゲル画像"
+    },
+    "dens_lane_prefix": {
+        "en": "Lane",
+        "ja": "レーン"
+    },
+    "dens_status_move": {
+        "en": "Drag horizontally to move the densitometry lane.",
+        "ja": "横方向にドラッグして輝度定量領域を移動できます。"
+    },
+    "dens_no_data": {
+        "en": "No data",
+        "ja": "データなし"
+    },
+    "lane_profile_title": {
+        "en": "Lane Brightness Profiles",
+        "ja": "レーン輝度プロファイル"
+    },
+    "lane_profile_x": {
+        "en": "Relative migration distance",
+        "ja": "相対泳動距離"
+    },
+    "lane_profile_y": {
+        "en": "Background-corrected density",
+        "ja": "背景補正後輝度"
+    },
+    "lane_compare_guides": {
+        "en": "Show horizontal guides",
+        "ja": "水平ガイドラインを表示"
+    },
+    "export_png": {
+        "en": "Export PNG",
+        "ja": "PNG出力"
+    },
+    "export_svg": {
+        "en": "Export SVG",
+        "ja": "SVG出力"
+    },
+    "dens_show_lines": {
+        "en": "Show Marker/Sample Lines",
+        "ja": "マーカー・試料線を表示"
+    },
+    "btn_auto_marker": {
+        "en": "Auto Detect (Marker)",
+        "ja": "自動追加(ﾏｰｶｰ)"
+    },
+    "btn_auto_sample": {
+        "en": "Auto Detect (Sample)",
+        "ja": "自動追加(試料)"
+    },
+    "auto_detect_status_pick": {
+        "en": "Drag a rectangle over the lane to detect bands.",
+        "ja": "自動検出したいレーン領域をドラッグして囲んでください。"
+    },
+    "auto_detect_status_approve": {
+        "en": "Click candidates to accept/reject, then confirm.",
+        "ja": "候補枠をクリックして承認/却下を切り替え、確定してください。"
+    },
+    "auto_detect_panel_title": {
+        "en": "Approve Auto Detected Bands",
+        "ja": "自動検出バンドの承認"
+    },
+    "auto_detect_btn_approve_all": {
+        "en": "Approve All",
+        "ja": "すべて承認"
+    },
+    "auto_detect_btn_reject_all": {
+        "en": "Reject All",
+        "ja": "すべて却下"
+    },
+    "auto_detect_btn_confirm": {
+        "en": "Confirm & Add",
+        "ja": "適用/確定"
+    },
+    "area_calc_title": {
+        "en": "Area Calculation",
+        "ja": "面積算出"
+    },
+    "area_calc_btn": {
+        "en": "Start Area Calc",
+        "ja": "面積算出開始"
+    },
+    "area_calc_reset": {
+        "en": "Reset",
+        "ja": "リセット"
+    },
+    "area_calc_select_roi": {
+        "en": "Select lane/ROI:",
+        "ja": "レーン/ROI選択:"
+    },
+    "area_calc_first": {
+        "en": "Click left boundary on graph",
+        "ja": "グラフ上で左境界をクリック"
+    },
+    "area_calc_second": {
+        "en": "Click right boundary on graph",
+        "ja": "グラフ上で右境界をクリック"
     },
     "area_calc_no_roi": {
         "en": "No ROI selected",
         "ja": "ROIが選択されていません"
     },
     "area_calc_result": {
-        "en": "Area: {area:.1f}\nRange: Rf {left:.3f} – {right:.3f}\nROI width: {width} px\nFraction: {pct:.1f}%",
-        "ja": "面積: {area:.1f}\n区間: Rf {left:.3f} – {right:.3f}\nROI幅: {width} px\n割合: {pct:.1f}%"
+        "en": "Area: {area:.1f}\nRange: Rf {left:.3f} \u2013 {right:.3f}\nROI width: {width} px\nFraction: {pct:.1f}%",
+        "ja": "\u9762\u7a4d: {area:.1f}\n\u533a\u9593: Rf {left:.3f} \u2013 {right:.3f}\nROI\u5e45: {width} px\n\u5272\u5408: {pct:.1f}%"
+    },
+    "area_all_show": {
+        "en": "Show All",
+        "ja": "\u3059\u3079\u3066\u8868\u793a"
+    },
+    "area_all_hide": {
+        "en": "Hide All",
+        "ja": "\u3059\u3079\u3066\u975e\u8868\u793a"
+    },
+    "area_result_table_title": {
+        "en": "Area Calculation Results",
+        "ja": "\u9762\u7a4d\u7b97\u51fa\u7d50\u679c"
+    },
+    "area_result_clear": {
+        "en": "Clear Results",
+        "ja": "\u7d50\u679c\u3092\u30af\u30ea\u30a2"
+    },
+    "area_col_roi": {
+        "en": "Lane/ROI",
+        "ja": "\u30ec\u30fc\u30f3/ROI"
+    },
+    "area_col_range": {
+        "en": "Range (Rf)",
+        "ja": "\u533a\u9593 (Rf)"
+    },
+    "area_col_area": {
+        "en": "Area",
+        "ja": "\u9762\u7a4d"
+    },
+    "area_col_pct": {
+        "en": "Fraction",
+        "ja": "\u5272\u5408"
     }
 }
 
