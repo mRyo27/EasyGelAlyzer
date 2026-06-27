@@ -205,9 +205,46 @@ class PDFExportMixin:
             self._draw_pdf_annotations_on_image(out, 0, 0, layout, no_margin=True)
         else:
             img_w, img_h = base_img.size
-            margin = max(160, int(img_w * 0.25))
-            left_margin = margin if layout in (1, 3, 4) else 20
-            right_margin = margin if layout in (2, 3, 4) else 20
+            font_size = max(12, int(img_h * 0.018))
+            font = get_japanese_font(font_size)
+            unit = "kDa" if self.mode == "protein" else "bp"
+            temp_img = Image.new("RGB", (10, 10))
+            temp_draw = ImageDraw.Draw(temp_img)
+
+            def _text_w(text):
+                return int(temp_draw.textlength(text, font=font))
+
+            def _label(m):
+                size = f"{m['size']:.2f}" if self.mode == "protein" else f"{int(m['size'])}"
+                return f"{m['name']} Rf={m['rf']:.2f} ({size} {unit})"
+
+            def _slabel(s):
+                return f"{s['name']} Rf={s['rf']:.2f} ({self._format_sample_size(s)})"
+
+            marker_side = 'left' if layout in (1, 4) else 'right'
+            sample_side = 'left' if layout in (1, 3) else 'right'
+
+            left_max_w = 0
+            right_max_w = 0
+            for m in self.markers:
+                if self.item_export_visibility.get(m['id'], True):
+                    w = _text_w(_label(m))
+                    if marker_side == 'left':
+                        left_max_w = max(left_max_w, w)
+                    else:
+                        right_max_w = max(right_max_w, w)
+            for s in self.samples:
+                if self.item_export_visibility.get(s['id'], True):
+                    w = _text_w(_slabel(s))
+                    if sample_side == 'left':
+                        left_max_w = max(left_max_w, w)
+                    else:
+                        right_max_w = max(right_max_w, w)
+
+            leader_offset = 48 + font_size
+            extra_pad = max(20, font_size)
+            left_margin = (left_max_w + leader_offset + extra_pad) if left_max_w > 0 else 20
+            right_margin = (right_max_w + leader_offset + extra_pad) if right_max_w > 0 else 20
             top_margin = max(30, int(img_h * 0.05))
             bottom_margin = max(30, int(img_h * 0.05))
             # ラベルY座標の最大値を事前計算してbottom_marginを動的に拡張

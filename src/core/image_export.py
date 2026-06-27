@@ -395,6 +395,25 @@ class ImageExportMixin:
                     self._draw_antialiased_line(out_img, [(0, my_px), (img_w, my_px)], fill=color, width=line_w1)
 
 
+                # 試料ラベルのはみ出し量を事前計算してキャンバスを拡張
+                max_sample_right = 0
+                for s in sample_list:
+                    sx2 = int(s['x'])
+                    r = max(4, int(img_h * 0.005))
+                    lbl = make_sample_text(s)
+                    lbl_w = int(temp_draw.textlength(lbl, font=font))
+                    right_edge = sx2 + r + gap6 + lbl_w + gap6
+                    if right_edge > max_sample_right:
+                        max_sample_right = right_edge
+                cur_img_w = out_img.size[0]
+                if max_sample_right > cur_img_w:
+                    extra_w = max_sample_right - cur_img_w
+                    bg_color = "#404040" if (self.grayscale and self._annot_bw_white) else "white"
+                    expanded = Image.new("RGB", (cur_img_w + extra_w, img_h), color=bg_color)
+                    expanded.paste(out_img, (0, 0))
+                    out_img = expanded
+                    draw = ImageDraw.Draw(out_img)
+
                 # 試料（操作画面上と同様に点とデータを表示、引き出し線なし）
                 for s in sample_list:
                     color = get_annot_color_for(s['color'])
@@ -465,11 +484,12 @@ class ImageExportMixin:
                         mw = w
                 return mw
 
-            # 追加パディング (px) を定義
-            EXTRA_MARGIN_PAD = 40  # 余白に加えるピクセル数
+            # 追加パディング: フォントサイズに応じて動的に決定（最低40px）
+            EXTRA_MARGIN_PAD = max(40, font_size * 2)
             left_margin = 0
             right_margin = 0
-            padding = 40
+            # パディングもフォントサイズに応じて動的に設定（最低40px）
+            padding = max(40, font_size)
             # 右側ラベルの描画開始位置は img_w の右端から引き出し線オフセット(20*export_scale)分
             # 離れた場所から始まるため、その分を right_margin に加算する
             right_leader_offset = int(20 * export_scale) + 5  # 引き出し線 + anchor="lm" の余裕
@@ -479,7 +499,9 @@ class ImageExportMixin:
                     max_text_width(left_markers, make_marker_text),
                     max_text_width(left_samples, make_sample_text)
                 )
-                left_margin = int(mw) + padding + EXTRA_MARGIN_PAD
+                # テキスト幅 + ティック(15px*scale) + 引き出し線オフセット(20px*scale) + 余裕
+                left_leader_offset = int(15 * export_scale) + int(20 * export_scale) + 5
+                left_margin = int(mw) + left_leader_offset + padding + EXTRA_MARGIN_PAD
 
             if right_markers or right_samples:
                 mw = max(
