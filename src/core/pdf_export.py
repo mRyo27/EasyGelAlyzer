@@ -241,10 +241,10 @@ class PDFExportMixin:
                     else:
                         right_max_w = max(right_max_w, w)
 
-            leader_offset = 48 + font_size
-            extra_pad = max(20, font_size)
-            left_margin = (left_max_w + leader_offset + extra_pad) if left_max_w > 0 else 20
-            right_margin = (right_max_w + leader_offset + extra_pad) if right_max_w > 0 else 20
+            leader_offset = 48
+            PAD = 10
+            left_margin = (left_max_w + leader_offset + PAD) if left_max_w > 0 else 20
+            right_margin = (right_max_w + leader_offset + PAD) if right_max_w > 0 else 20
             top_margin = max(30, int(img_h * 0.05))
             bottom_margin = max(30, int(img_h * 0.05))
             # ラベルY座標の最大値を事前計算してbottom_marginを動的に拡張
@@ -314,7 +314,7 @@ class PDFExportMixin:
         marker_side = 'left' if layout in (1, 4) else 'right'
         sample_side = 'left' if layout in (1, 3) else 'right'
         label_items = []
-        tick_len = max(8, int(img_w * 0.015))
+        tick_len = 12  # 固定長（px）
         for m in self.markers:
             if not self.item_export_visibility.get(m['id'], True):
                 continue
@@ -322,9 +322,9 @@ class PDFExportMixin:
             m_color = color(MARKER_LINE_COLOR)
             # 画像全幅ではなくティック（短い横線）のみ描画（引き出し線は_draw_pdf_resolved_side_labelsで）
             if marker_side == 'left':
-                draw.line((tx(0), y, tx(0) + tick_len, y), fill=m_color, width=1)
+                draw.line((tx(0), y, tx(0) + tick_len, y), fill=m_color, width=2)
             else:
-                draw.line((tx(img_w) - tick_len, y, tx(img_w), y), fill=m_color, width=1)
+                draw.line((tx(img_w) - tick_len, y, tx(img_w), y), fill=m_color, width=2)
             size = f"{m['size']:.2f}" if self.mode == "protein" else f"{int(m['size'])}"
             label = f"{m['name']} Rf={m['rf']:.2f} ({size} {unit})"
             label_items.append({
@@ -391,7 +391,7 @@ class PDFExportMixin:
                     label_x = image_right + 48
                     anchor = "lm"
                 draw.line((item['source_x'], item['source_y'], label_x, item['draw_y']),
-                          fill=item['fill'], width=1)
+                          fill=item['fill'], width=2)
                 draw.text((label_x, item['draw_y']), item['label'],
                           fill=item['fill'], font=item['font'], anchor=anchor)
 

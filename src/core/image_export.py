@@ -237,14 +237,11 @@ class ImageExportMixin:
             line_font_size = pt_to_px(11)
             # ---- ここまで ----
             EXTRA_MARGIN_PAD = max(5, int(round(5 * export_scale)))
-            # ライン幅は画像サイズに依存せず、固定値を使用
-            base_line_w1 = 1
-            base_line_w2 = 2
-            base_line_w3 = 3
-            # 余白なしモードで使用する幅
-            line_w1 = base_line_w1
-            line_w2 = base_line_w2
-            line_w3 = base_line_w3
+            # ---- ライン幅: 解像度に関係なく固定px ----
+            line_w1 = 2   # 引き出し線・マーカーライン（余白なしモード）
+            line_w2 = 2   # マーカーティック
+            line_w3 = 3   # 開始/終了ライン
+            # 余白なしモードでも同じ幅を使用（変数名の互換性のため再定義なし）
             gap4 = max(4, int(round(4 * export_scale)))
             gap6 = max(6, int(round(6 * export_scale)))
             pad10 = max(10, int(round(10 * export_scale)))
@@ -366,7 +363,7 @@ class ImageExportMixin:
                 if export_start_line:
                     s_color = get_annot_color_for("#007AFF")
                     sy_px = int(start_line_y)
-                    self._draw_antialiased_line(out_img, [(0, sy_px), (img_w, sy_px)], fill=s_color, width=line_w2)
+                    self._draw_antialiased_line(out_img, [(0, sy_px), (img_w, sy_px)], fill=s_color, width=line_w3)
                     label_y_s = sy_px + 2
                     draw.text((img_w - 5, label_y_s), T("out_start"),
                               fill=s_color, font=line_font, anchor="ra")
@@ -375,7 +372,7 @@ class ImageExportMixin:
                 if export_end_line:
                     e_color = get_annot_color_for("#FF3B30")
                     ey_px = int(end_line_y)
-                    self._draw_antialiased_line(out_img, [(0, ey_px), (img_w, ey_px)], fill=e_color, width=line_w2)
+                    self._draw_antialiased_line(out_img, [(0, ey_px), (img_w, ey_px)], fill=e_color, width=line_w3)
                     end_label_h = int(img_h * 0.02) + 4
                     if ey_px + end_label_h > img_h:
                         draw.text((5, ey_px - end_label_h), T("out_end"), fill=e_color, font=line_font)
@@ -484,31 +481,27 @@ class ImageExportMixin:
                         mw = w
                 return mw
 
-            # 追加パディング: フォントサイズに応じて動的に決定（最低40px）
-            EXTRA_MARGIN_PAD = max(40, font_size * 2)
+            # ---- マージン計算 ----
+            # 引き出し線の固定長（px）: 解像度非依存
+            LEADER_LEN = 30   # 引き出し線の水平長
+            TICK_LEN   = 12   # マーカーティックの長さ
+            MARGIN_PAD = 10   # テキスト右端/左端からキャンバス端までの余白
             left_margin = 0
             right_margin = 0
-            # パディングもフォントサイズに応じて動的に設定（最低40px）
-            padding = max(40, font_size)
-            # 右側ラベルの描画開始位置は img_w の右端から引き出し線オフセット(20*export_scale)分
-            # 離れた場所から始まるため、その分を right_margin に加算する
-            right_leader_offset = int(20 * export_scale) + 5  # 引き出し線 + anchor="lm" の余裕
 
             if left_markers or left_samples:
                 mw = max(
                     max_text_width(left_markers, make_marker_text),
                     max_text_width(left_samples, make_sample_text)
                 )
-                # テキスト幅 + ティック(15px*scale) + 引き出し線オフセット(20px*scale) + 余裕
-                left_leader_offset = int(15 * export_scale) + int(20 * export_scale) + 5
-                left_margin = int(mw) + left_leader_offset + padding + EXTRA_MARGIN_PAD
+                left_margin = int(mw) + TICK_LEN + LEADER_LEN + MARGIN_PAD
 
             if right_markers or right_samples:
                 mw = max(
                     max_text_width(right_markers, make_marker_text),
                     max_text_width(right_samples, make_sample_text)
                 )
-                right_margin = int(mw) + right_leader_offset + padding + EXTRA_MARGIN_PAD
+                right_margin = int(mw) + LEADER_LEN + MARGIN_PAD
 
             # 左右のアイテムをそれぞれ統合してY座標を解決する
             left_items = []
@@ -598,10 +591,10 @@ class ImageExportMixin:
                     m = it['obj']
                     band_x, band_y = to_out(0, m['y'])
                     label_y = int(it['draw_y']) + top_margin
-                    # ティック
-                    self._draw_antialiased_line(out_img, [(band_x, band_y), (band_x + int(15 * export_scale), band_y)], fill=color, width=line_w2)
-                    # 引き出し線
-                    label_x = left_margin - int(20 * export_scale)
+                    # ティック（固定長）
+                    self._draw_antialiased_line(out_img, [(band_x, band_y), (band_x + TICK_LEN, band_y)], fill=color, width=line_w2)
+                    # 引き出し線（固定長）
+                    label_x = left_margin - LEADER_LEN
                     self._draw_antialiased_line(out_img, [(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x - 5, label_y - font_size // 2),
                                make_marker_text(m), fill=color, font=font, anchor="rm")
@@ -613,8 +606,8 @@ class ImageExportMixin:
                     r = max(4, int(img_h * 0.005))
                     draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
                                  fill=color, outline="white")
-                    # 引き出し線
-                    label_x = left_margin - int(20 * export_scale)
+                    # 引き出し線（固定長）
+                    label_x = left_margin - LEADER_LEN
                     self._draw_antialiased_line(out_img, [(label_x, label_y), (pt_x, pt_y)], fill=color, width=line_w1)
                     draw.text((label_x - 5, label_y - font_size // 2),
                                make_sample_text(s), fill=color, font=font, anchor="rm")
@@ -627,10 +620,10 @@ class ImageExportMixin:
                     m = it['obj']
                     band_x, band_y = to_out(img_w, m['y'])
                     label_y = int(it['draw_y']) + top_margin
-                    # ティック
-                    self._draw_antialiased_line(out_img, [(band_x - int(15 * export_scale), band_y), (band_x, band_y)], fill=color, width=line_w2)
-                    # 引き出し線
-                    label_x = left_margin + img_w + int(20 * export_scale)
+                    # ティック（固定長）
+                    self._draw_antialiased_line(out_img, [(band_x - TICK_LEN, band_y), (band_x, band_y)], fill=color, width=line_w2)
+                    # 引き出し線（固定長）
+                    label_x = left_margin + img_w + LEADER_LEN
                     self._draw_antialiased_line(out_img, [(band_x, band_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x + 5, label_y - font_size // 2),
                                make_marker_text(m), fill=color, font=font, anchor="lm")
@@ -642,8 +635,8 @@ class ImageExportMixin:
                     r = max(4, int(img_h * 0.005))
                     draw.ellipse((pt_x - r, pt_y - r, pt_x + r, pt_y + r),
                                  fill=color, outline="white")
-                    # 引き出し線
-                    label_x = left_margin + img_w + int(20 * export_scale)
+                    # 引き出し線（固定長）
+                    label_x = left_margin + img_w + LEADER_LEN
                     self._draw_antialiased_line(out_img, [(pt_x, pt_y), (label_x, label_y)], fill=color, width=line_w1)
                     draw.text((label_x + 5, label_y - font_size // 2),
                                make_sample_text(s), fill=color, font=font, anchor="lm")
