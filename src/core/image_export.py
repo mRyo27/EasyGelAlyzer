@@ -238,9 +238,9 @@ class ImageExportMixin:
             # ---- ここまで ----
             EXTRA_MARGIN_PAD = max(5, int(round(5 * export_scale)))
             # ---- ライン幅: 解像度に関係なく固定px ----
-            line_w1 = 6   # 引き出し線・マーカーライン（余白なしモード）
-            line_w2 = 6   # マーカーティック
-            line_w3 = 9   # 開始/終了ライン
+            line_w1 = 4   # 引き出し線・マーカーライン（余白なしモード）
+            line_w2 = 4   # マーカーティック
+            line_w3 = 6   # 開始/終了ライン
             # 余白なしモードでも同じ幅を使用（変数名の互換性のため再定義なし）
             gap4 = max(4, int(round(4 * export_scale)))
             gap6 = max(6, int(round(6 * export_scale)))
