@@ -89,22 +89,16 @@ echo [Step 1] Cython compile...
 rem ---- Set up Visual C++ environment if cl.exe is not in PATH ----
 where cl >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo cl.exe not found in PATH. Searching for vcvarsall.bat...
+    echo cl.exe not found in PATH. Searching for vcvars64.bat...
 
-    rem Search common install locations for vcvarsall.bat
-    set VCVARS=
-    for %%v in (2022 2019 2017) do (
-        for %%e in (Community Professional Enterprise BuildTools) do (
-            if exist "C:\Program Files\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat" (
-                if not defined VCVARS set VCVARS=C:\Program Files\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat
-            )
-            if exist "C:\Program Files (x86)\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat" (
-                if not defined VCVARS set VCVARS=C:\Program Files (x86)\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat
-            )
-        )
-    )
+    rem Use Python to locate vcvars64.bat (avoids bat nested-for expansion issues)
+    set VCVARS_TMP=%TEMP%\find_vcvars_%RANDOM%.txt
+    python -c "import os; candidates = [os.path.join(r'C:\Program Files\Microsoft Visual Studio', v, e, r'VC\Auxiliary\Build\vcvars64.bat') for v in ['2022','2019','2017'] for e in ['Community','Professional','Enterprise','BuildTools']] + [os.path.join(r'C:\Program Files (x86)\Microsoft Visual Studio', v, e, r'VC\Auxiliary\Build\vcvars64.bat') for v in ['2022','2019','2017'] for e in ['Community','Professional','Enterprise','BuildTools']]; found = next((p for p in candidates if os.path.exists(p)), ''); print(found)" > "%VCVARS_TMP%"
 
-    if not defined VCVARS (
+    set /p VCVARS=<"%VCVARS_TMP%"
+    del "%VCVARS_TMP%" 2>nul
+
+    if "%VCVARS%"=="" (
         echo Error: Microsoft Visual C++ Build Tools not found.
         echo Please install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
         echo Select "Desktop development with C++" workload during installation.
