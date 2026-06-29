@@ -91,13 +91,21 @@ where cl >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo cl.exe not found in PATH. Searching for vcvars64.bat...
 
-    rem Use Python to locate vcvars64.bat (avoids bat nested-for expansion issues)
+    rem Use Python to locate vcvars64.bat and write result to temp file
     set VCVARS_TMP=%TEMP%\find_vcvars_%RANDOM%.txt
-    python -c "import os; candidates = [os.path.join(r'C:\Program Files\Microsoft Visual Studio', v, e, r'VC\Auxiliary\Build\vcvars64.bat') for v in ['2022','2019','2017'] for e in ['Community','Professional','Enterprise','BuildTools']] + [os.path.join(r'C:\Program Files (x86)\Microsoft Visual Studio', v, e, r'VC\Auxiliary\Build\vcvars64.bat') for v in ['2022','2019','2017'] for e in ['Community','Professional','Enterprise','BuildTools']]; found = next((p for p in candidates if os.path.exists(p)), ''); print(found)" > "%VCVARS_TMP%"
+    python -c "import os; locs=[r'C:\Program Files',r'C:\Program Files (x86)']; vers=['2022','2019','2017']; eds=['Community','Professional','Enterprise','BuildTools']; found=next((os.path.join(l,'Microsoft Visual Studio',v,e,r'VC\Auxiliary\Build\vcvars64.bat') for l in locs for v in vers for e in eds if os.path.exists(os.path.join(l,'Microsoft Visual Studio',v,e,r'VC\Auxiliary\Build\vcvars64.bat'))),''); open(r'%VCVARS_TMP%','w').write(found)"
 
+    set VCVARS=
     set /p VCVARS=<"%VCVARS_TMP%"
-    del "%VCVARS_TMP%" 2>nul
+    del "%VCVARS_TMP%" >nul 2>nul
 
+    if not defined VCVARS (
+        echo Error: Microsoft Visual C++ Build Tools not found.
+        echo Please install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+        echo Select "Desktop development with C++" workload during installation.
+        pause
+        exit /b 1
+    )
     if "%VCVARS%"=="" (
         echo Error: Microsoft Visual C++ Build Tools not found.
         echo Please install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
@@ -107,7 +115,7 @@ if %ERRORLEVEL% neq 0 (
     )
 
     echo Found: %VCVARS%
-    call "%VCVARS%"
+    call "%VCVARS%" >nul
     echo Visual C++ environment initialized.
 ) else (
     echo Visual C++ already available. Skipping vcvarsall.
