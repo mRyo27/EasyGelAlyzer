@@ -87,15 +87,16 @@ echo.
 echo [Step 1] Cython compile...
 
 rem ---- Set up Visual C++ environment if cl.exe is not in PATH ----
+rem     VCVARS_TMP must be set before the if-block (%%RANDOM%% expands at parse time inside blocks)
+set VCVARS_TMP=%TEMP%\find_vcvars_%RANDOM%.txt
+set VCVARS=
+
 where cl >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo cl.exe not found in PATH. Searching for vcvars64.bat...
 
-    rem Use Python to locate vcvars64.bat and write result to temp file
-    set VCVARS_TMP=%TEMP%\find_vcvars_%RANDOM%.txt
     python -c "import os; locs=[r'C:\Program Files',r'C:\Program Files (x86)']; vers=['2022','2019','2017']; eds=['Community','Professional','Enterprise','BuildTools']; found=next((os.path.join(l,'Microsoft Visual Studio',v,e,r'VC\Auxiliary\Build\vcvars64.bat') for l in locs for v in vers for e in eds if os.path.exists(os.path.join(l,'Microsoft Visual Studio',v,e,r'VC\Auxiliary\Build\vcvars64.bat'))),''); open(r'%VCVARS_TMP%','w').write(found)"
 
-    set VCVARS=
     set /p VCVARS=<"%VCVARS_TMP%"
     del "%VCVARS_TMP%" >nul 2>nul
 
