@@ -95,7 +95,7 @@ where cl >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo cl.exe not found in PATH. Searching for vcvars64.bat...
 
-    python -c "import os; locs=[r'C:\Program Files',r'C:\Program Files (x86)']; vers=['2022','2019','2017']; eds=['Community','Professional','Enterprise','BuildTools']; found=next((os.path.join(l,'Microsoft Visual Studio',v,e,r'VC\Auxiliary\Build\vcvars64.bat') for l in locs for v in vers for e in eds if os.path.exists(os.path.join(l,'Microsoft Visual Studio',v,e,r'VC\Auxiliary\Build\vcvars64.bat'))),''); open(r'%VCVARS_TMP%','w').write(found)"
+    python -c "import os,glob; pats=[os.path.join(l,'Microsoft Visual Studio',v,e,r'VC\Auxiliary\Build\vcvars64.bat') for l in [r'C:\Program Files',r'C:\Program Files (x86)'] for v in ['2022','2019','2017','18','17','16','15'] for e in ['Community','Professional','Enterprise','BuildTools']]; globs=glob.glob(os.path.join(r'C:\Program Files\Microsoft Visual Studio',r'*\*\VC\Auxiliary\Build\vcvars64.bat'))+glob.glob(os.path.join(r'C:\Program Files (x86)\Microsoft Visual Studio',r'*\*\VC\Auxiliary\Build\vcvars64.bat')); all=pats+globs; found=next((p for p in all if os.path.exists(p)),''); open(r'%VCVARS_TMP%','w').write(found)"
 
     set /p VCVARS=<"%VCVARS_TMP%"
     del "%VCVARS_TMP%" >nul 2>nul
