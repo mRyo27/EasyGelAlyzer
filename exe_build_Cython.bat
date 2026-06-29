@@ -86,23 +86,35 @@ rem ================================================================
 echo.
 echo [Step 1] Cython compile...
 
+rem ---- Check for Visual C++ compiler (cl.exe) ----
+where cl >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo Error: Microsoft Visual C++ Build Tools not found.
+    echo Please install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+    echo Select "C++ Build Tools" workload during installation.
+    echo After installation, re-run this script from a "Developer Command Prompt for VS"
+    echo or run vcvarsall.bat before this script.
+    pause
+    exit /b 1
+)
+
 rem ---- Write setup_cython.py to a temp file ----
+rem     NOTE: Run from inside src/ so --inplace resolves correctly.
 set SETUP_PY=%TEMP%\setup_cython_%RANDOM%.py
 (
-echo from setuptools import setup, find_packages
+echo from setuptools import setup
 echo from Cython.Build import cythonize
 echo import glob, os
 echo.
-echo # Collect all .py files under src/ except main.py and version.py
-echo # (these must remain as plain Python for PyInstaller entry-point / version parsing^)
-echo src_root = os.path.abspath("src"^)
+echo # CWD is src/ when this script runs
+echo src_root = os.path.abspath("."^)
 echo exclude = {"main.py", "version.py"}
 echo.
 echo py_files = []
 echo for path in glob.glob(os.path.join(src_root, "**", "*.py"^), recursive=True^):
 echo     fname = os.path.basename(path^)
 echo     if fname not in exclude:
-echo         py_files.append(path^)
+echo         py_files.append(os.path.relpath(path, src_root^)^)
 echo.
 echo setup(
 echo     ext_modules=cythonize(
@@ -114,8 +126,12 @@ echo     script_args=["build_ext", "--inplace"],
 echo ^)
 ) > "%SETUP_PY%"
 
+pushd "%~dp0src"
 python "%SETUP_PY%"
-if %ERRORLEVEL% neq 0 (
+set CYTHON_RESULT=%ERRORLEVEL%
+popd
+
+if %CYTHON_RESULT% neq 0 (
     echo Error: Cython compilation failed.
     del "%SETUP_PY%" 2>nul
     pause
@@ -125,11 +141,12 @@ del "%SETUP_PY%" 2>nul
 echo Cython compilation done.
 
 rem ================================================================
-rem  STEP 2: Remove generated .c files (keep workspace clean)
+rem  STEP 2: Remove generated .c files and build/ dir (keep workspace clean)
 rem ================================================================
 echo.
-echo [Step 2] Cleaning up Cython C sources...
+echo [Step 2] Cleaning up Cython C sources and build directory...
 for /r "%~dp0src" %%f in (*.c) do del "%%f" 2>nul
+rmdir /s /q "%~dp0src\build" 2>nul
 
 rem ================================================================
 rem  STEP 3: PyInstaller packaging
