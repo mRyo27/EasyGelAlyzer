@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 echo ============================
 echo   EasyGelAlyzer Auto Build
 echo    (with Cython compilation)
@@ -107,7 +108,7 @@ if %ERRORLEVEL% neq 0 (
         pause
         exit /b 1
     )
-    if "%VCVARS%"=="" (
+    if "!VCVARS!"=="" (
         echo Error: Microsoft Visual C++ Build Tools not found.
         echo Please install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
         echo Select "Desktop development with C++" workload during installation.
@@ -115,8 +116,8 @@ if %ERRORLEVEL% neq 0 (
         exit /b 1
     )
 
-    echo Found: %VCVARS%
-    call "%VCVARS%" >nul
+    echo Found: !VCVARS!
+    call "!VCVARS!" >nul
     echo Visual C++ environment initialized.
 ) else (
     echo Visual C++ already available. Skipping vcvarsall.
