@@ -86,16 +86,37 @@ rem ================================================================
 echo.
 echo [Step 1] Cython compile...
 
-rem ---- Check for Visual C++ compiler (cl.exe) ----
+rem ---- Set up Visual C++ environment if cl.exe is not in PATH ----
 where cl >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo Error: Microsoft Visual C++ Build Tools not found.
-    echo Please install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-    echo Select "C++ Build Tools" workload during installation.
-    echo After installation, re-run this script from a "Developer Command Prompt for VS"
-    echo or run vcvarsall.bat before this script.
-    pause
-    exit /b 1
+    echo cl.exe not found in PATH. Searching for vcvarsall.bat...
+
+    rem Search common install locations for vcvarsall.bat
+    set VCVARS=
+    for %%v in (2022 2019 2017) do (
+        for %%e in (Community Professional Enterprise BuildTools) do (
+            if exist "C:\Program Files\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat" (
+                if not defined VCVARS set VCVARS=C:\Program Files\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat
+            )
+            if exist "C:\Program Files (x86)\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat" (
+                if not defined VCVARS set VCVARS=C:\Program Files (x86)\Microsoft Visual Studio\%%v\%%e\VC\Auxiliary\Build\vcvars64.bat
+            )
+        )
+    )
+
+    if not defined VCVARS (
+        echo Error: Microsoft Visual C++ Build Tools not found.
+        echo Please install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+        echo Select "Desktop development with C++" workload during installation.
+        pause
+        exit /b 1
+    )
+
+    echo Found: %VCVARS%
+    call "%VCVARS%"
+    echo Visual C++ environment initialized.
+) else (
+    echo Visual C++ already available. Skipping vcvarsall.
 )
 
 rem ---- Write setup_cython.py to a temp file ----
