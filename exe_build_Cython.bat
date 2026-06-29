@@ -70,7 +70,12 @@ where git >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     git add .
     git commit -m "Build v%CURRENT%"
-    git tag v%CURRENT%
+    git tag v%CURRENT% >nul 2>nul
+    if %ERRORLEVEL% neq 0 (
+        echo Tag v%CURRENT% already exists. Skipping tag.
+    ) else (
+        echo Tagged v%CURRENT%.
+    )
 ) else (
     echo Git not found, skipping git tagging.
 )
@@ -103,7 +108,7 @@ echo setup(
 echo     ext_modules=cythonize(
 echo         py_files,
 echo         compiler_directives={"language_level": "3"},
-echo         nthreads=4,
+echo         nthreads=0,
 echo     ^),
 echo     script_args=["build_ext", "--inplace"],
 echo ^)
